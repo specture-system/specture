@@ -8,8 +8,8 @@ Specture is a spec-driven software architecture and project management system de
 
 ### The Concept
 
-- **Specs for Everything**: New features, major refactors, redesigns, and tooling improvements are added as markdown files in `specs/`, with discussion happening in the pull request that adds the spec
-- **Issues for Bugs Only**: The issue tracker stays focused on actual bugs and problems
+- **Specs for Planned Changes**: New features, major refactors, redesigns, and tooling improvements are added as markdown files in `specs/`, with discussion happening in the pull request that adds the spec
+- **Issues for Bugs Only**: The issue tracker is for bugs - cases where the software doesn't match what's described in the specs
 - **AI-Friendly Workflow**: Designed to work seamlessly with AI agents that help build and maintain your codebase
 - **Small Team Focus**: Built for teams where lightweight, document-driven planning makes sense
 

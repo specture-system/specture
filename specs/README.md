@@ -12,7 +12,7 @@ Specs are living documents that describe planned changes to the system. They ser
 
 Each spec file should be a markdown document in the `specs/` directory with the following sections:
 
-### 1. Title
+### Title
 
 The spec should start with a clear, descriptive H1 heading that summarizes what is being proposed.
 
@@ -20,7 +20,7 @@ The spec should start with a clear, descriptive H1 heading that summarizes what 
 # Feature Name or Change Description
 ```
 
-### 2. Brief Description
+### Brief Description
 
 A concise overview (2-4 paragraphs) that explains:
 - What is being proposed
@@ -28,7 +28,7 @@ A concise overview (2-4 paragraphs) that explains:
 - What problem it solves
 - High-level approach
 
-### 3. Design Decisions
+### Design Decisions
 
 This section documents the design exploration process. For each major decision point:
 
@@ -63,7 +63,7 @@ Brief context about what needs to be decided.
 
 Include as many decision points as needed. This creates a valuable historical record of why certain choices were made.
 
-### 4. Task List
+### Task List
 
 A detailed breakdown of implementation tasks using markdown checklists. Split into logical sections if needed.
 

@@ -1,3 +1,9 @@
+---
+status: draft
+author: Addison Emig
+creation_date: 2025-12-18
+---
+
 # Implement Basic CLI
 
 Implement a basic CLI that makes it convenient to use the Specture System in any repoistory.

@@ -1,6 +1,6 @@
 # Spec Guidelines
 
-> **Source**: https://github.com/specture-system/specture
+> This project uses the [Specture System](https://github.com/specture-system/specture)
 
 This document outlines the structure and best practices for writing spec files in Specture.
 

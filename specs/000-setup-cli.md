@@ -1,24 +1,86 @@
-# Implement Setup CLI
+# Implement Basic CLI
 
-## Description
+Implement a basic CLI that makes it convenient to use the Specture System in any repoistory.
 
-Implement a basic CLI tool to make it convenient to add the Specture System to any git repository. The CLI will be written in Go and prompt the user for configuration options like git forge.
+## Tools
 
-This tool will streamline the onboarding process for teams wanting to adopt the Specture System, automating the creation of necessary directories, documentation, and configuration files. The CLI will set up:
+### Setup Project
+
+`specture setup`
+
+Alias: `update`
+
+This makes it easy to add the Specture System to any git repository.
+
+The tool will exit early if it doesn't detect a git repository in the current directory, or if the repository has uncommitted changes. Users will be prompted to verify the generated changes before committing. The tool will _not_ automatically commit.
+
+The tool looks at the git remotes to determine which forge they are using. If there are no remotes, prompt the user to find out which forge.
+
+- If they are using GitLab, the generated files should refer to "merge requests"
+- Otherwise, the generated files should refer to "pull requests"
+
+Things that will be generated:
 
 - `specs/` directory for spec files
 - `specs/README.md` with the spec guidelines
-- `AGENTS.md` file (adding a Specture System section without overwriting existing content)
 
-The CLI will exit early if it doesn't detect a git repository in the current directory, or if the repository has uncommitted changes. Users will be able to disable individual changes they don't want, and will always be prompted to verify the proposed changes before committing. This interactive approach ensures users maintain full control over what gets added to their repository while reducing manual setup effort.
+The tool should automatically detect if the repo has the following files:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+
+For each file, the CLI should prompt the user if they want to update that file. If yes, then the CLI should give them a prompt to copy and paste into their agent. The prompt will be something to the effect of "This project uses the Specture System. Read specs/README.md to learn about the system, then update AGENTS.md with what you learn."
 
 A `--dry-run` flag will allow users to preview all changes without modifying any files or creating commits. This mode will be particularly useful for automated testing within Specture itself, ensuring the CLI behaves correctly across different repository configurations.
 
-The CLI will be defensive against accidentally overwriting existing spec files, protecting user-created specifications. However, it will freely replace `specs/README.md` to ensure repositories stay up-to-date as the Specture System evolves. The CLI will support updating repositories that already have the Specture System installed, making it easy to pull in the latest guidelines and improvements.
+The tool will be defensive against accidentally overwriting existing spec files, protecting user-created specifications. However, it will freely replace `specs/README.md` to ensure repositories stay up-to-date as the Specture System evolves.
+
+Users can run the tool in repos that already have the Specture System installed to pull in the latest guidelines and improvements.
+
+### New Spec
+
+`specture new`
+
+alias: `n`
+
+This makes it easy to add new specs.
+
+It should automate all the following:
+
+- Create branch
+- Create file based on basic template
+- Open file in user's editor
+
+### Validate Spec
+
+`specture validate`
+
+alias: `v`
+
+This makes it easy to validate specs to make sure they follow the Specture System.
+
+It should check the following:
+
+- Valid frontmatter
+  - Valid status
+- Valid description
+- Valid task list
+
+It should be possible to validate one specific spec or all the specs.
 
 ## Design Decisions
 
-TBD
+### Programming Language
+
+- Chosen: go
+  - Easy to build standalone binary
+  - Good CLI tooling
+  - Fast
+- Considered: bash
+  - Designed for scripting
+  - Hard to maintain
+  - Hard to implement complex features
+  - Slow
 
 ## Task List
 

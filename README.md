@@ -19,4 +19,4 @@ This project is in early stages. Documentation and tooling coming soon.
 
 ---
 
-**Note**: Issues are for bugs only. For feature ideas, you'll be able to submit specs once the system is set up!
+**Note**: Issues are for bugs only. For feature ideas, submit a pull request adding a spec file to `specs/`.

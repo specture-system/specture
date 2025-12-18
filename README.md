@@ -4,18 +4,19 @@
 
 ## 🚧 Coming Soon
 
-Specture is currently under active development. We're building a powerful system for spec-driven software architecture that will help you design, validate, and manage your software architecture with precision.
+Specture is a spec-driven software architecture and project management system designed for small teams working with AI agents.
 
-### What to Expect
+### The Concept
 
-- **Specification-First Approach**: Define your architecture with clear, executable specifications
-- **Architecture Validation**: Ensure your implementation matches your architectural vision
-- **Developer-Friendly**: Tools designed to integrate seamlessly into your workflow
+- **Specs, Not Feature Requests**: New features and refactor ideas live as markdown files in `specs/`, inspired by Python's PEP system but less formal
+- **Issues for Bugs Only**: The issue tracker stays focused on actual bugs and problems
+- **AI-Friendly Workflow**: Designed to work seamlessly with AI agents that help build and maintain your codebase
+- **Small Team Focus**: Built for teams where lightweight, document-driven planning makes sense
 
-### Stay Tuned
+### Status
 
-This project is in early stages. Check back soon for updates, documentation, and release information.
+This project is in early stages. Documentation and tooling coming soon.
 
 ---
 
-📧 Questions or interested in contributing? Feel free to open an issue!
+**Note**: Issues are for bugs only. For feature ideas, you'll be able to submit specs once the system is set up!

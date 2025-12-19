@@ -121,6 +121,22 @@ It should be possible to validate one specific spec or all the specs.
   - Additional dependencies
   - Overkill for our use case
 
+### Git Interaction
+
+- Chosen: Shell out to git CLI using `os/exec`
+  - Git is already a requirement (tool exits if not a git repo)
+  - Simple implementation for basic operations
+  - Respects user's git configuration and hooks
+  - Full feature parity with git CLI
+  - Only need 4 simple operations: repo check, status check, remote detection, branch creation
+  - Easier to debug and test
+- Considered: go-git library
+  - Pure Go, no git dependency
+  - Large dependency (~3MB added to binary)
+  - Doesn't respect user's git config/hooks
+  - More complex than needed for simple operations
+  - Overkill for our use case
+
 ## Task List
 
 ### Project Setup

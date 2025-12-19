@@ -88,6 +88,203 @@ It should be possible to validate one specific spec or all the specs.
   - Hard to implement complex features
   - Slow
 
+### CLI Framework
+
+- Chosen: Cobra (github.com/spf13/cobra)
+  - Industry standard (used by kubectl, Hugo, GitHub CLI, Docker CLI)
+  - First-class support for subcommands and aliases
+  - Excellent auto-generated help text
+  - Team familiarity from other projects
+  - Scales well as the CLI grows
+- Considered: urfave/cli
+  - Lighter weight than Cobra
+  - Simpler API
+  - Less feature-rich for complex CLIs
+- Considered: Standard library `flag`
+  - Zero dependencies
+  - No built-in subcommand or alias support
+  - Would require significant manual implementation
+
+### Template Engine
+
+- Chosen: `text/template` (standard library)
+  - Zero dependencies (standard library)
+  - Handles conditionals well (needed for forge-specific terminology)
+  - Can embed templates in binary using `go:embed`
+  - Standard for Go developers
+  - Perfect for markdown generation
+- Considered: Simple string replacement (`fmt.Sprintf`, `strings.Replace`)
+  - Very simple for basic cases
+  - Poor support for conditionals and logic
+  - Hard to maintain for complex templates
+- Considered: Third-party libraries (pongo2, raymond)
+  - Additional dependencies
+  - Overkill for our use case
+
+### Git Interaction
+
+- Chosen: Shell out to git CLI using `os/exec`
+  - Git is already a requirement (tool exits if not a git repo)
+  - Simple implementation for basic operations
+  - Respects user's git configuration and hooks
+  - Full feature parity with git CLI
+  - Only need 4 simple operations: repo check, status check, remote detection, branch creation
+  - Easier to debug and test
+- Considered: go-git library
+  - Pure Go, no git dependency
+  - Large dependency (~3MB added to binary)
+  - Doesn't respect user's git config/hooks
+  - More complex than needed for simple operations
+  - Overkill for our use case
+
+### Markdown and YAML Parsing
+
+- Chosen: goldmark with frontmatter extension
+  - **github.com/yuin/goldmark** - CommonMark compliant markdown parser
+  - **github.com/abhinav/goldmark-frontmatter** - Frontmatter extension for goldmark
+  - Unified approach for both markdown structure and YAML frontmatter parsing
+  - Proper AST for robust validation (headings, task lists, sections)
+  - Future-proof for more complex markdown parsing requirements
+  - Industry standard for Go markdown processing
+  - Extensible for additional validation rules
+- Considered: gopkg.in/yaml.v3 + simple string/regex parsing
+  - Would work for current basic validation needs
+  - Separate approaches for frontmatter vs markdown
+  - Manual parsing less robust and harder to extend
+  - Would require migration to proper parser later
+- Considered: Simple string/regex parsing only
+  - No dependencies
+  - Too fragile for reliable validation
+  - Difficult to maintain and extend
+
+### Build and Release Tooling
+
+- Chosen: GoReleaser
+  - Industry standard for Go CLI releases
+  - Automatic GitHub release generation with one command
+  - Cross-platform builds (Linux, macOS, Windows) configured in one file
+  - Automatic changelog generation
+  - Checksums and archive creation
+  - Simple GitHub Actions integration
+  - Consolidates build/release logic that would otherwise require multiple scripts
+- Considered: Manual builds with Makefile + gh CLI
+  - Simpler initial setup
+  - Requires manual build scripts for each platform
+  - Manual release creation and binary uploads
+  - Gets tedious with frequent releases
+  - More error-prone
+
+### Development Task Runner
+
+- Chosen: just (justfile)
+  - Clean, modern syntax (no Make's quirks)
+  - Designed specifically for running commands (not dependency management)
+  - Better error messages than Make
+  - Cross-platform support
+  - Easy to read and maintain
+- Considered: Makefile
+  - More ubiquitous (installed everywhere)
+  - Complex syntax with tabs/spaces issues
+  - Designed for build dependencies, not task running
+  - Less intuitive for simple command aliases
+
 ## Task List
 
-TBD
+### Project Setup
+
+- [ ] Initialize Go module and project structure
+- [ ] Set up Cobra CLI framework
+- [ ] Set up testing infrastructure (framework, helpers, test fixtures)
+- [ ] Configure justfile for local development commands
+
+### Core Infrastructure
+
+- [ ] Write unit tests for git repository detection
+- [ ] Implement git repository detection (using os/exec)
+- [ ] Write unit tests for uncommitted changes check
+- [ ] Implement uncommitted changes check (using os/exec)
+- [ ] Write unit tests for forge identification
+- [ ] Implement git remote detection and forge identification (GitLab vs others)
+- [ ] Write unit tests for terminology detection
+- [ ] Create utility for terminology detection ("merge request" vs "pull request")
+- [ ] Write unit tests for file system utilities
+- [ ] Create file system utilities (safe read/write, directory creation)
+- [ ] Write unit tests for prompt system (with mocked input)
+- [ ] Implement user prompt/confirmation system
+- [ ] Write unit tests for template utilities
+- [ ] Create text/template-based markdown file generation utilities
+
+### Setup Command (`specture setup`)
+
+- [ ] Implement basic command structure and aliases (`setup`, `update`)
+- [ ] Write integration tests for setup command preconditions
+- [ ] Add git repository validation (exit if not a git repo)
+- [ ] Add uncommitted changes check (exit if dirty working tree)
+- [ ] Implement forge detection logic
+- [ ] Write tests for dry-run mode (no file modifications)
+- [ ] Add `--dry-run` flag support
+- [ ] Write integration tests for setup command file generation
+- [ ] Create `specs/` directory generation
+- [ ] Create `specs/README.md` template with forge-appropriate terminology
+- [ ] Implement `specs/README.md` generation/update logic
+- [ ] Write tests for AGENTS.md/CLAUDE.md detection
+- [ ] Implement `AGENTS.md` detection and update prompt
+- [ ] Implement `CLAUDE.md` detection and update prompt
+- [ ] Write tests for overwrite protection
+- [ ] Add protection against overwriting existing spec files
+- [ ] Write integration tests for complete setup workflow
+- [ ] Implement user confirmation flow before making changes
+- [ ] Add comprehensive error handling and user-friendly messages
+
+### New Spec Command (`specture new`)
+
+- [ ] Implement basic command structure and alias (`new`, `n`)
+- [ ] Write tests for spec template generation
+- [ ] Create spec file template with YAML frontmatter (using text/template)
+- [ ] Write tests for spec numbering logic
+- [ ] Implement automatic spec numbering (find next available number)
+- [ ] Write tests for branch creation (with test git repos)
+- [ ] Implement branch creation with appropriate naming (using git CLI via os/exec)
+- [ ] Add user prompt for spec title/description
+- [ ] Write integration tests for complete new spec workflow
+- [ ] Implement file creation from template
+- [ ] Implement editor detection and opening (respect $EDITOR)
+- [ ] Write tests for error handling scenarios
+- [ ] Add error handling for edge cases (no git, existing file, etc.)
+
+### Validate Command (`specture validate`)
+
+- [ ] Implement basic command structure and alias (`validate`, `v`)
+- [ ] Write tests for spec parsing (valid and invalid specs)
+- [ ] Implement goldmark-based spec parser with frontmatter extension
+- [ ] Write tests for frontmatter validation
+- [ ] Add frontmatter validation (required fields present)
+- [ ] Write tests for status validation
+- [ ] Add status field validation (draft/approved/in-progress/completed/rejected)
+- [ ] Write tests for description validation
+- [ ] Implement description section validation (using goldmark AST)
+- [ ] Write tests for task list validation
+- [ ] Implement task list detection and validation (using goldmark AST)
+- [ ] Write integration tests for both validation modes
+- [ ] Add single-spec validation mode (by file path or number)
+- [ ] Add all-specs validation mode
+- [ ] Write tests for error messages and summary output
+- [ ] Implement clear, actionable error messages for validation failures
+- [ ] Add summary output (X of Y specs valid)
+
+### Documentation
+
+- [ ] Create CLI usage documentation
+- [ ] Add command-line help text for all commands
+
+### Distribution & Deployment
+
+- [ ] Configure GoReleaser for multi-platform builds (Linux, macOS, Windows)
+- [ ] Set up GitHub Actions workflow for automated releases with GoReleaser
+- [ ] Create installation instructions
+- [ ] Create release process documentation (git tag workflow)
+
+### Cross-Platform Testing
+
+- [ ] Test on different repository configurations (GitLab, GitHub, no remote)
+- [ ] Test on different platforms (Linux, macOS, Windows if available)

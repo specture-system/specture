@@ -211,8 +211,8 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Create utility for terminology detection ("merge request" vs "pull request")
 - [x] Write unit tests for file system utilities
 - [x] Create file system utilities (safe read/write, directory creation)
-- [ ] Write unit tests for prompt system (with mocked input)
-- [ ] Implement user prompt/confirmation system
+- [x] Write unit tests for prompt system (with mocked input)
+- [x] Implement user prompt/confirmation system
 - [ ] Write unit tests for template utilities
 - [ ] Create text/template-based markdown file generation utilities
 

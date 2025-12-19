@@ -9,6 +9,38 @@ import (
 	"github.com/specture-system/specture/internal/testhelpers"
 )
 
+// setupGitRepo initializes a git repository with user config.
+func setupGitRepo(t *testing.T, dir string) error {
+	t.Helper()
+	cmd := exec.Command("git", "init")
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("git", "config", "user.email", "test@example.com")
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = dir
+	return cmd.Run()
+}
+
+// commitFile creates a file, stages it, and commits it.
+func commitFile(t *testing.T, dir, filename, content string) error {
+	t.Helper()
+	testhelpers.WriteFile(t, dir, filename, content)
+	cmd := exec.Command("git", "add", filename)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("git", "commit", "-m", "add "+filename)
+	cmd.Dir = dir
+	return cmd.Run()
+}
+
 func TestHasUncommittedChanges(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -19,31 +51,10 @@ func TestHasUncommittedChanges(t *testing.T) {
 		{
 			name: "clean working tree",
 			setup: func(dir string) error {
-				// Initialize git repo and commit a file
-				cmd := exec.Command("git", "init")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
+				if err := setupGitRepo(t, dir); err != nil {
 					return err
 				}
-				cmd = exec.Command("git", "config", "user.email", "test@example.com")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
-					return err
-				}
-				cmd = exec.Command("git", "config", "user.name", "Test User")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
-					return err
-				}
-				testhelpers.WriteFile(t, dir, "test.txt", "content")
-				cmd = exec.Command("git", "add", "test.txt")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
-					return err
-				}
-				cmd = exec.Command("git", "commit", "-m", "initial")
-				cmd.Dir = dir
-				return cmd.Run()
+				return commitFile(t, dir, "test.txt", "content")
 			},
 			hasUncommitted: false,
 			wantErr:        false,
@@ -51,34 +62,12 @@ func TestHasUncommittedChanges(t *testing.T) {
 		{
 			name: "uncommitted changes",
 			setup: func(dir string) error {
-				// Initialize git repo with a file, then modify it
-				cmd := exec.Command("git", "init")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
+				if err := setupGitRepo(t, dir); err != nil {
 					return err
 				}
-				cmd = exec.Command("git", "config", "user.email", "test@example.com")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
+				if err := commitFile(t, dir, "test.txt", "content"); err != nil {
 					return err
 				}
-				cmd = exec.Command("git", "config", "user.name", "Test User")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
-					return err
-				}
-				testhelpers.WriteFile(t, dir, "test.txt", "content")
-				cmd = exec.Command("git", "add", "test.txt")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
-					return err
-				}
-				cmd = exec.Command("git", "commit", "-m", "initial")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
-					return err
-				}
-				// Now modify the file
 				return os.WriteFile(filepath.Join(dir, "test.txt"), []byte("modified"), 0644)
 			},
 			hasUncommitted: true,
@@ -87,34 +76,12 @@ func TestHasUncommittedChanges(t *testing.T) {
 		{
 			name: "untracked files",
 			setup: func(dir string) error {
-				// Initialize git repo and add an untracked file
-				cmd := exec.Command("git", "init")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
+				if err := setupGitRepo(t, dir); err != nil {
 					return err
 				}
-				cmd = exec.Command("git", "config", "user.email", "test@example.com")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
+				if err := commitFile(t, dir, "tracked.txt", "content"); err != nil {
 					return err
 				}
-				cmd = exec.Command("git", "config", "user.name", "Test User")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
-					return err
-				}
-				testhelpers.WriteFile(t, dir, "tracked.txt", "content")
-				cmd = exec.Command("git", "add", "tracked.txt")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
-					return err
-				}
-				cmd = exec.Command("git", "commit", "-m", "initial")
-				cmd.Dir = dir
-				if err := cmd.Run(); err != nil {
-					return err
-				}
-				// Add untracked file
 				_, err := os.Create(filepath.Join(dir, "untracked.txt"))
 				return err
 			},

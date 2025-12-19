@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/specture-system/specture/internal/testhelpers"
@@ -15,7 +16,7 @@ func TestHasUncommittedChanges(t *testing.T) {
 		setup          func(dir string) error
 		testDir        *string
 		hasUncommitted bool
-		wantErr        bool
+		wantErr        string // empty string means no error expected
 	}{
 		{
 			name: "clean working tree",
@@ -26,7 +27,7 @@ func TestHasUncommittedChanges(t *testing.T) {
 				return commitFile(t, dir, "test.txt", "content")
 			},
 			hasUncommitted: false,
-			wantErr:        false,
+			wantErr:        "",
 		},
 		{
 			name: "uncommitted changes",
@@ -40,7 +41,7 @@ func TestHasUncommittedChanges(t *testing.T) {
 				return os.WriteFile(filepath.Join(dir, "test.txt"), []byte("modified"), 0644)
 			},
 			hasUncommitted: true,
-			wantErr:        false,
+			wantErr:        "",
 		},
 		{
 			name: "untracked files",
@@ -55,20 +56,20 @@ func TestHasUncommittedChanges(t *testing.T) {
 				return err
 			},
 			hasUncommitted: true,
-			wantErr:        false,
+			wantErr:        "",
 		},
 		{
 			name:           "not a git repository",
 			setup:          func(dir string) error { return nil },
 			hasUncommitted: false,
-			wantErr:        true,
+			wantErr:        "failed to check git status",
 		},
 		{
 			name:           "nonexistent directory",
 			setup:          func(dir string) error { return nil },
 			testDir:        strPtr("/nonexistent/path"),
 			hasUncommitted: false,
-			wantErr:        true,
+			wantErr:        "failed to check git status",
 		},
 	}
 
@@ -85,8 +86,18 @@ func TestHasUncommittedChanges(t *testing.T) {
 			}
 
 			hasUncommitted, err := HasUncommittedChanges(testDir)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("HasUncommittedChanges() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Errorf("HasUncommittedChanges() expected error, got nil")
+					return
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("HasUncommittedChanges() error = %v, want error containing %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("HasUncommittedChanges() unexpected error = %v", err)
 				return
 			}
 			if hasUncommitted != tt.hasUncommitted {

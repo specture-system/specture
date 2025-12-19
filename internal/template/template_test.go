@@ -8,7 +8,7 @@ func TestRenderTemplate(t *testing.T) {
 	tests := []struct {
 		name    string
 		tpl     string
-		data    interface{}
+		data    any
 		want    string
 		wantErr bool
 	}{

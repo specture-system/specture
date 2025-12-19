@@ -205,10 +205,10 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Implement git repository detection (using os/exec)
 - [x] Write unit tests for uncommitted changes check
 - [x] Implement uncommitted changes check (using os/exec)
-- [ ] Write unit tests for forge identification
-- [ ] Implement git remote detection and forge identification (GitLab vs others)
-- [ ] Write unit tests for terminology detection
-- [ ] Create utility for terminology detection ("merge request" vs "pull request")
+- [x] Write unit tests for forge identification
+- [x] Implement git remote detection and forge identification (GitLab vs others)
+- [x] Write unit tests for terminology detection
+- [x] Create utility for terminology detection ("merge request" vs "pull request")
 - [ ] Write unit tests for file system utilities
 - [ ] Create file system utilities (safe read/write, directory creation)
 - [ ] Write unit tests for prompt system (with mocked input)

@@ -180,18 +180,18 @@ It should be possible to validate one specific spec or all the specs.
 
 - [ ] Initialize Go module and project structure
 - [ ] Set up Cobra CLI framework
-- [ ] Configure build system and Makefile
+- [ ] Configure Makefile for local development builds
 - [ ] Set up basic testing infrastructure
 
 ### Core Infrastructure
 
-- [ ] Implement git repository detection
-- [ ] Implement uncommitted changes check
+- [ ] Implement git repository detection (using os/exec)
+- [ ] Implement uncommitted changes check (using os/exec)
 - [ ] Implement git remote detection and forge identification (GitLab vs others)
 - [ ] Create utility for terminology detection ("merge request" vs "pull request")
 - [ ] Create file system utilities (safe read/write, directory creation)
 - [ ] Implement user prompt/confirmation system
-- [ ] Create template engine for generating markdown files
+- [ ] Create text/template-based markdown file generation utilities
 
 ### Setup Command (`specture setup`)
 
@@ -212,9 +212,9 @@ It should be possible to validate one specific spec or all the specs.
 ### New Spec Command (`specture new`)
 
 - [ ] Implement basic command structure and alias (`new`, `n`)
-- [ ] Create spec file template with YAML frontmatter
+- [ ] Create spec file template with YAML frontmatter (using text/template)
 - [ ] Implement automatic spec numbering (find next available number)
-- [ ] Implement branch creation with appropriate naming
+- [ ] Implement branch creation with appropriate naming (using git CLI via os/exec)
 - [ ] Add user prompt for spec title/description
 - [ ] Implement file creation from template
 - [ ] Implement editor detection and opening (respect $EDITOR)
@@ -223,11 +223,11 @@ It should be possible to validate one specific spec or all the specs.
 ### Validate Command (`specture validate`)
 
 - [ ] Implement basic command structure and alias (`validate`, `v`)
-- [ ] Implement YAML frontmatter parser
+- [ ] Implement goldmark-based spec parser with frontmatter extension
 - [ ] Add frontmatter validation (required fields present)
 - [ ] Add status field validation (draft/approved/in-progress/completed/rejected)
-- [ ] Implement description section validation
-- [ ] Implement task list detection and validation
+- [ ] Implement description section validation (using goldmark AST)
+- [ ] Implement task list detection and validation (using goldmark AST)
 - [ ] Add single-spec validation mode (by file path or number)
 - [ ] Add all-specs validation mode
 - [ ] Implement clear, actionable error messages for validation failures
@@ -246,7 +246,7 @@ It should be possible to validate one specific spec or all the specs.
 
 ### Distribution & Deployment
 
-- [ ] Configure build for multiple platforms (Linux, macOS, Windows)
+- [ ] Configure GoReleaser for multi-platform builds (Linux, macOS, Windows)
+- [ ] Set up GitHub Actions workflow for automated releases with GoReleaser
 - [ ] Create installation instructions
-- [ ] Set up CI/CD for building releases
-- [ ] Create release process documentation
+- [ ] Create release process documentation (git tag workflow)

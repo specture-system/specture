@@ -13,7 +13,7 @@ var setupCmd = &cobra.Command{
 It creates the specs/ directory and specs/README.md with guidelines,
 and optionally updates AGENTS.md and CLAUDE.md.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO: Implement setup command
+		cmd.Println("Coming soon: setup command is under development")
 		return nil
 	},
 }

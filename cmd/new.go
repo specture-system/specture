@@ -11,7 +11,7 @@ var newCmd = &cobra.Command{
 	Long: `New creates a new spec file with the proper numbering,
 creates a branch for the spec, and opens the file in your editor.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO: Implement new command
+		cmd.Println("Coming soon: new command is under development")
 		return nil
 	},
 }

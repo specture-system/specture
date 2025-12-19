@@ -12,7 +12,7 @@ var validateCmd = &cobra.Command{
 
 It validates frontmatter, status, descriptions, and task lists.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO: Implement validate command
+		cmd.Println("Coming soon: validate command is under development")
 		return nil
 	},
 }

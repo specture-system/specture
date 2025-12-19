@@ -192,10 +192,10 @@ It should be possible to validate one specific spec or all the specs.
 
 ### Project Setup
 
-- [ ] Initialize Go module and project structure
-- [ ] Set up Cobra CLI framework
-- [ ] Set up testing infrastructure (framework, helpers, test fixtures)
-- [ ] Configure justfile for local development commands
+- [x] Initialize Go module and project structure
+- [x] Set up Cobra CLI framework
+- [x] Set up testing infrastructure (framework, helpers, test fixtures)
+- [x] Configure justfile for local development commands
 
 ### Core Infrastructure
 

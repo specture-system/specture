@@ -4,7 +4,7 @@
 
 ## 🚧 Coming Soon
 
-Specture is a spec-driven software architecture and project management system designed for small teams working with AI agents.
+Specture is a spec-driven software architecture and project management system.
 
 ### The Concept
 

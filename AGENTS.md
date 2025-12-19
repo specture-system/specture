@@ -2,7 +2,7 @@
 
 ## Overview
 
-Specture is a spec-driven software architecture system designed for small teams working with AI agents. It provides a lightweight, document-driven approach to project planning where specs are markdown files in the `specs/` directory.
+Specture is a spec-driven software architecture system. It provides a lightweight, document-driven approach to project planning where specs are markdown files in the `specs/` directory.
 
 **For detailed information about the Specture System, see `specs/README.md`.**
 
@@ -64,9 +64,24 @@ Higher-numbered specs take precedence over lower-numbered specs. If two specs co
 
 See `specs/README.md` for detailed guidelines on spec workflow, best practices, and design decision documentation.
 
+## Development Setup
+
+Before starting work, ensure pre-commit hooks are installed:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+This runs `just check` (formatting, linting, tests) before every commit.
+
 ## Build/Test Commands
 
-No build or test commands yet—project is in early stages. Implementation will be in Go.
+Use `just` to run development tasks. See `justfile` for available recipes. Common commands:
+
+- `just build`: Build the CLI binary
+- `just test`: Run tests
+- `just check`: Format, lint, and test (runs automatically on commit)
 
 ## Code Style (When Implementation Begins)
 

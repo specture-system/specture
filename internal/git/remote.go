@@ -75,3 +75,12 @@ func (f Forge) String() string {
 		return "Unknown"
 	}
 }
+
+// GetTerminology returns the appropriate terminology for the forge.
+// Returns "merge request" for GitLab, "pull request" for others.
+func GetTerminology(forge Forge) string {
+	if forge == ForgeGitLab {
+		return "merge request"
+	}
+	return "pull request"
+}

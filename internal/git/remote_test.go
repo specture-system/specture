@@ -84,6 +84,39 @@ func TestGetRemoteURL(t *testing.T) {
 	}
 }
 
+func TestGetTerminology(t *testing.T) {
+	tests := []struct {
+		name  string
+		forge Forge
+		want  string
+	}{
+		{
+			name:  "github terminology",
+			forge: ForgeGitHub,
+			want:  "pull request",
+		},
+		{
+			name:  "gitlab terminology",
+			forge: ForgeGitLab,
+			want:  "merge request",
+		},
+		{
+			name:  "unknown defaults to pull request",
+			forge: ForgeUnknown,
+			want:  "pull request",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GetTerminology(tt.forge)
+			if got != tt.want {
+				t.Errorf("GetTerminology() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestIdentifyForge(t *testing.T) {
 	tests := []struct {
 		name      string

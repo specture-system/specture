@@ -9,38 +9,6 @@ import (
 	"github.com/specture-system/specture/internal/testhelpers"
 )
 
-// setupGitRepo initializes a git repository with user config.
-func setupGitRepo(t *testing.T, dir string) error {
-	t.Helper()
-	cmd := exec.Command("git", "init")
-	cmd.Dir = dir
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	cmd = exec.Command("git", "config", "user.email", "test@example.com")
-	cmd.Dir = dir
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	cmd = exec.Command("git", "config", "user.name", "Test User")
-	cmd.Dir = dir
-	return cmd.Run()
-}
-
-// commitFile creates a file, stages it, and commits it.
-func commitFile(t *testing.T, dir, filename, content string) error {
-	t.Helper()
-	testhelpers.WriteFile(t, dir, filename, content)
-	cmd := exec.Command("git", "add", filename)
-	cmd.Dir = dir
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	cmd = exec.Command("git", "commit", "-m", "add "+filename)
-	cmd.Dir = dir
-	return cmd.Run()
-}
-
 func TestHasUncommittedChanges(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -107,4 +75,36 @@ func TestHasUncommittedChanges(t *testing.T) {
 			}
 		})
 	}
+}
+
+// setupGitRepo initializes a git repository with user config.
+func setupGitRepo(t *testing.T, dir string) error {
+	t.Helper()
+	cmd := exec.Command("git", "init")
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("git", "config", "user.email", "test@example.com")
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = dir
+	return cmd.Run()
+}
+
+// commitFile creates a file, stages it, and commits it.
+func commitFile(t *testing.T, dir, filename, content string) error {
+	t.Helper()
+	testhelpers.WriteFile(t, dir, filename, content)
+	cmd := exec.Command("git", "add", filename)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("git", "commit", "-m", "add "+filename)
+	cmd.Dir = dir
+	return cmd.Run()
 }

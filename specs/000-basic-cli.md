@@ -258,12 +258,10 @@ It should be possible to validate one specific spec or all the specs.
 - [ ] Add summary output (X of Y specs valid)
 - [ ] Write tests for error messages and summary output
 
-### Documentation & Cross-Platform Testing
+### Documentation
 
 - [ ] Create CLI usage documentation
 - [ ] Add command-line help text for all commands
-- [ ] Test on different repository configurations (GitLab, GitHub, no remote)
-- [ ] Test on different platforms (Linux, macOS, Windows if available)
 
 ### Distribution & Deployment
 
@@ -271,3 +269,8 @@ It should be possible to validate one specific spec or all the specs.
 - [ ] Set up GitHub Actions workflow for automated releases with GoReleaser
 - [ ] Create installation instructions
 - [ ] Create release process documentation (git tag workflow)
+
+### Cross-Platform Testing
+
+- [ ] Test on different repository configurations (GitLab, GitHub, no remote)
+- [ ] Test on different platforms (Linux, macOS, Windows if available)

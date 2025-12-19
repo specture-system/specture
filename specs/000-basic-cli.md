@@ -213,8 +213,8 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Create file system utilities (safe read/write, directory creation)
 - [x] Write unit tests for prompt system (with mocked input)
 - [x] Implement user prompt/confirmation system
-- [ ] Write unit tests for template utilities
-- [ ] Create text/template-based markdown file generation utilities
+- [x] Write unit tests for template utilities
+- [x] Create text/template-based markdown file generation utilities
 
 ### Setup Command (`specture setup`)
 

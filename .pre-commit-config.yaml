@@ -1,0 +1,10 @@
+repos:
+  - repo: local
+    hooks:
+      - id: check
+        name: Check code
+        entry: just check
+        language: system
+        types: [go]
+        pass_filenames: false
+        stages: [pre-commit]

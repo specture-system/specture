@@ -11,14 +11,13 @@ default:
 build:
   go build -o specture .
 
+# Run the CLI with arguments (usage: just run-dev setup --help)
+run-dev *args:
+  go run . {{args}}
+
 # Run tests
 test:
   go test -v ./...
-
-# Run tests with coverage
-coverage:
-  go test -v -coverprofile=coverage.out ./...
-  go tool cover -html=coverage.out
 
 # Format code
 fmt:
@@ -32,9 +31,8 @@ lint:
 tidy:
   go mod tidy
 
-# Run the CLI with arguments (usage: just run setup --help)
-run *args:
-  go run . {{args}}
+# Check code (format, lint, test)
+check: fmt lint test
 
 # Install the CLI locally
 install:

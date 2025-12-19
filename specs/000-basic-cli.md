@@ -157,6 +157,23 @@ It should be possible to validate one specific spec or all the specs.
   - Too fragile for reliable validation
   - Difficult to maintain and extend
 
+### Build and Release Tooling
+
+- Chosen: GoReleaser
+  - Industry standard for Go CLI releases
+  - Automatic GitHub release generation with one command
+  - Cross-platform builds (Linux, macOS, Windows) configured in one file
+  - Automatic changelog generation
+  - Checksums and archive creation
+  - Simple GitHub Actions integration
+  - Consolidates build/release logic that would otherwise require multiple scripts
+- Considered: Manual builds with Makefile + gh CLI
+  - Simpler initial setup
+  - Requires manual build scripts for each platform
+  - Manual release creation and binary uploads
+  - Gets tedious with frequent releases
+  - More error-prone
+
 ## Task List
 
 ### Project Setup

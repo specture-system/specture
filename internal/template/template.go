@@ -7,7 +7,7 @@ import (
 )
 
 // RenderTemplate renders a Go template with the given data and returns the result as a string.
-func RenderTemplate(templateStr string, data interface{}) (string, error) {
+func RenderTemplate(templateStr string, data any) (string, error) {
 	t, err := tpl.New("").Parse(templateStr)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse template: %w", err)

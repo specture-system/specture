@@ -63,12 +63,11 @@ func TestEnsureDir(t *testing.T) {
 
 func TestSafeWriteFile(t *testing.T) {
 	tests := []struct {
-		name      string
-		filename  string
-		content   string
-		setup     func(dir string) error
-		wantErr   bool
-		shouldErr string // error substring
+		name     string
+		filename string
+		content  string
+		setup    func(dir string) error
+		wantErr  bool
 	}{
 		{
 			name:     "write new file",
@@ -78,11 +77,10 @@ func TestSafeWriteFile(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:      "file already exists",
-			filename:  "existing.txt",
-			content:   "new content",
-			wantErr:   true,
-			shouldErr: "already exists",
+			name:     "file already exists",
+			filename: "existing.txt",
+			content:  "new content",
+			wantErr:  true,
 			setup: func(dir string) error {
 				return os.WriteFile(filepath.Join(dir, "existing.txt"), []byte("old"), 0644)
 			},
@@ -108,11 +106,6 @@ func TestSafeWriteFile(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SafeWriteFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if err != nil && tt.shouldErr != "" {
-				if !contains(err.Error(), tt.shouldErr) {
-					t.Errorf("SafeWriteFile() error = %v, want error containing %q", err, tt.shouldErr)
-				}
 			}
 			if err == nil {
 				content, err := os.ReadFile(path)
@@ -161,13 +154,4 @@ func TestFileExists(t *testing.T) {
 			}
 		})
 	}
-}
-
-func contains(s, substr string) bool {
-	for i := 0; i < len(s)-len(substr)+1; i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

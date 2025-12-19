@@ -105,6 +105,22 @@ It should be possible to validate one specific spec or all the specs.
   - No built-in subcommand or alias support
   - Would require significant manual implementation
 
+### Template Engine
+
+- Chosen: `text/template` (standard library)
+  - Zero dependencies (standard library)
+  - Handles conditionals well (needed for forge-specific terminology)
+  - Can embed templates in binary using `go:embed`
+  - Standard for Go developers
+  - Perfect for markdown generation
+- Considered: Simple string replacement (`fmt.Sprintf`, `strings.Replace`)
+  - Very simple for basic cases
+  - Poor support for conditionals and logic
+  - Hard to maintain for complex templates
+- Considered: Third-party libraries (pongo2, raymond)
+  - Additional dependencies
+  - Overkill for our use case
+
 ## Task List
 
 ### Project Setup

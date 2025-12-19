@@ -199,78 +199,78 @@ It should be possible to validate one specific spec or all the specs.
 
 ### Core Infrastructure
 
-- [ ] Implement git repository detection (using os/exec)
 - [ ] Write unit tests for git repository detection
-- [ ] Implement uncommitted changes check (using os/exec)
+- [ ] Implement git repository detection (using os/exec)
 - [ ] Write unit tests for uncommitted changes check
-- [ ] Implement git remote detection and forge identification (GitLab vs others)
+- [ ] Implement uncommitted changes check (using os/exec)
 - [ ] Write unit tests for forge identification
-- [ ] Create utility for terminology detection ("merge request" vs "pull request")
+- [ ] Implement git remote detection and forge identification (GitLab vs others)
 - [ ] Write unit tests for terminology detection
-- [ ] Create file system utilities (safe read/write, directory creation)
+- [ ] Create utility for terminology detection ("merge request" vs "pull request")
 - [ ] Write unit tests for file system utilities
-- [ ] Implement user prompt/confirmation system
+- [ ] Create file system utilities (safe read/write, directory creation)
 - [ ] Write unit tests for prompt system (with mocked input)
-- [ ] Create text/template-based markdown file generation utilities
+- [ ] Implement user prompt/confirmation system
 - [ ] Write unit tests for template utilities
+- [ ] Create text/template-based markdown file generation utilities
 
 ### Setup Command (`specture setup`)
 
 - [ ] Implement basic command structure and aliases (`setup`, `update`)
+- [ ] Write integration tests for setup command preconditions
 - [ ] Add git repository validation (exit if not a git repo)
 - [ ] Add uncommitted changes check (exit if dirty working tree)
-- [ ] Write integration tests for setup command preconditions
 - [ ] Implement forge detection logic
-- [ ] Add `--dry-run` flag support
 - [ ] Write tests for dry-run mode (no file modifications)
+- [ ] Add `--dry-run` flag support
+- [ ] Write integration tests for setup command file generation
 - [ ] Create `specs/` directory generation
 - [ ] Create `specs/README.md` template with forge-appropriate terminology
 - [ ] Implement `specs/README.md` generation/update logic
-- [ ] Write integration tests for setup command file generation
+- [ ] Write tests for AGENTS.md/CLAUDE.md detection
 - [ ] Implement `AGENTS.md` detection and update prompt
 - [ ] Implement `CLAUDE.md` detection and update prompt
-- [ ] Write tests for AGENTS.md/CLAUDE.md detection
-- [ ] Add protection against overwriting existing spec files
 - [ ] Write tests for overwrite protection
+- [ ] Add protection against overwriting existing spec files
+- [ ] Write integration tests for complete setup workflow
 - [ ] Implement user confirmation flow before making changes
 - [ ] Add comprehensive error handling and user-friendly messages
-- [ ] Write integration tests for complete setup workflow
 
 ### New Spec Command (`specture new`)
 
 - [ ] Implement basic command structure and alias (`new`, `n`)
-- [ ] Create spec file template with YAML frontmatter (using text/template)
 - [ ] Write tests for spec template generation
-- [ ] Implement automatic spec numbering (find next available number)
+- [ ] Create spec file template with YAML frontmatter (using text/template)
 - [ ] Write tests for spec numbering logic
-- [ ] Implement branch creation with appropriate naming (using git CLI via os/exec)
+- [ ] Implement automatic spec numbering (find next available number)
 - [ ] Write tests for branch creation (with test git repos)
+- [ ] Implement branch creation with appropriate naming (using git CLI via os/exec)
 - [ ] Add user prompt for spec title/description
-- [ ] Implement file creation from template
 - [ ] Write integration tests for complete new spec workflow
+- [ ] Implement file creation from template
 - [ ] Implement editor detection and opening (respect $EDITOR)
-- [ ] Add error handling for edge cases (no git, existing file, etc.)
 - [ ] Write tests for error handling scenarios
+- [ ] Add error handling for edge cases (no git, existing file, etc.)
 
 ### Validate Command (`specture validate`)
 
 - [ ] Implement basic command structure and alias (`validate`, `v`)
-- [ ] Implement goldmark-based spec parser with frontmatter extension
 - [ ] Write tests for spec parsing (valid and invalid specs)
-- [ ] Add frontmatter validation (required fields present)
+- [ ] Implement goldmark-based spec parser with frontmatter extension
 - [ ] Write tests for frontmatter validation
-- [ ] Add status field validation (draft/approved/in-progress/completed/rejected)
+- [ ] Add frontmatter validation (required fields present)
 - [ ] Write tests for status validation
-- [ ] Implement description section validation (using goldmark AST)
+- [ ] Add status field validation (draft/approved/in-progress/completed/rejected)
 - [ ] Write tests for description validation
-- [ ] Implement task list detection and validation (using goldmark AST)
+- [ ] Implement description section validation (using goldmark AST)
 - [ ] Write tests for task list validation
+- [ ] Implement task list detection and validation (using goldmark AST)
+- [ ] Write integration tests for both validation modes
 - [ ] Add single-spec validation mode (by file path or number)
 - [ ] Add all-specs validation mode
-- [ ] Write integration tests for both validation modes
+- [ ] Write tests for error messages and summary output
 - [ ] Implement clear, actionable error messages for validation failures
 - [ ] Add summary output (X of Y specs valid)
-- [ ] Write tests for error messages and summary output
 
 ### Documentation
 

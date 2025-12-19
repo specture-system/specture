@@ -88,6 +88,9 @@ Use `just` to run development tasks. See `justfile` for available recipes. Commo
 - **Language**: Go
 - **Naming**: Kebab-case with numeric prefix for specs and files
 - **Documentation**: Prioritize clarity; explain "why" in specs; code shows "how"
+- **Types**: Use `any` instead of `interface{}` (Go 1.18+)
+- **Formatting**: Code must pass `go fmt` and `go vet`
+- **Commits**: Use conventional commits (feat:, fix:, test:, refactor:, etc.)
 
 ## CLI Tools (To Be Implemented)
 

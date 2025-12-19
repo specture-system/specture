@@ -88,6 +88,23 @@ It should be possible to validate one specific spec or all the specs.
   - Hard to implement complex features
   - Slow
 
+### CLI Framework
+
+- Chosen: Cobra (github.com/spf13/cobra)
+  - Industry standard (used by kubectl, Hugo, GitHub CLI, Docker CLI)
+  - First-class support for subcommands and aliases
+  - Excellent auto-generated help text
+  - Team familiarity from other projects
+  - Scales well as the CLI grows
+- Considered: urfave/cli
+  - Lighter weight than Cobra
+  - Simpler API
+  - Less feature-rich for complex CLIs
+- Considered: Standard library `flag`
+  - Zero dependencies
+  - No built-in subcommand or alias support
+  - Would require significant manual implementation
+
 ## Task List
 
 ### Project Setup

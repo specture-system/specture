@@ -110,7 +110,7 @@ It should be possible to validate one specific spec or all the specs.
 ### Project Setup
 
 - [ ] Initialize Go module and project structure
-- [ ] Set up CLI framework (e.g., cobra or similar)
+- [ ] Set up Cobra CLI framework
 - [ ] Configure build system and Makefile
 - [ ] Set up basic testing infrastructure
 

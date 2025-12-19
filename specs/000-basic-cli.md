@@ -90,4 +90,77 @@ It should be possible to validate one specific spec or all the specs.
 
 ## Task List
 
-TBD
+### Project Setup
+
+- [ ] Initialize Go module and project structure
+- [ ] Set up CLI framework (e.g., cobra or similar)
+- [ ] Configure build system and Makefile
+- [ ] Set up basic testing infrastructure
+
+### Core Infrastructure
+
+- [ ] Implement git repository detection
+- [ ] Implement uncommitted changes check
+- [ ] Implement git remote detection and forge identification (GitLab vs others)
+- [ ] Create utility for terminology detection ("merge request" vs "pull request")
+- [ ] Create file system utilities (safe read/write, directory creation)
+- [ ] Implement user prompt/confirmation system
+- [ ] Create template engine for generating markdown files
+
+### Setup Command (`specture setup`)
+
+- [ ] Implement basic command structure and aliases (`setup`, `update`)
+- [ ] Add git repository validation (exit if not a git repo)
+- [ ] Add uncommitted changes check (exit if dirty working tree)
+- [ ] Implement forge detection logic
+- [ ] Add `--dry-run` flag support
+- [ ] Create `specs/` directory generation
+- [ ] Create `specs/README.md` template with forge-appropriate terminology
+- [ ] Implement `specs/README.md` generation/update logic
+- [ ] Implement `AGENTS.md` detection and update prompt
+- [ ] Implement `CLAUDE.md` detection and update prompt
+- [ ] Add protection against overwriting existing spec files
+- [ ] Implement user confirmation flow before making changes
+- [ ] Add comprehensive error handling and user-friendly messages
+
+### New Spec Command (`specture new`)
+
+- [ ] Implement basic command structure and alias (`new`, `n`)
+- [ ] Create spec file template with YAML frontmatter
+- [ ] Implement automatic spec numbering (find next available number)
+- [ ] Implement branch creation with appropriate naming
+- [ ] Add user prompt for spec title/description
+- [ ] Implement file creation from template
+- [ ] Implement editor detection and opening (respect $EDITOR)
+- [ ] Add error handling for edge cases (no git, existing file, etc.)
+
+### Validate Command (`specture validate`)
+
+- [ ] Implement basic command structure and alias (`validate`, `v`)
+- [ ] Implement YAML frontmatter parser
+- [ ] Add frontmatter validation (required fields present)
+- [ ] Add status field validation (draft/approved/in-progress/completed/rejected)
+- [ ] Implement description section validation
+- [ ] Implement task list detection and validation
+- [ ] Add single-spec validation mode (by file path or number)
+- [ ] Add all-specs validation mode
+- [ ] Implement clear, actionable error messages for validation failures
+- [ ] Add summary output (X of Y specs valid)
+
+### Testing & Documentation
+
+- [ ] Write unit tests for core utilities
+- [ ] Write integration tests for `setup` command
+- [ ] Write integration tests for `new` command
+- [ ] Write integration tests for `validate` command
+- [ ] Test dry-run mode thoroughly
+- [ ] Create CLI usage documentation
+- [ ] Add command-line help text for all commands
+- [ ] Test on different repository configurations (GitLab, GitHub, no remote)
+
+### Distribution & Deployment
+
+- [ ] Configure build for multiple platforms (Linux, macOS, Windows)
+- [ ] Create installation instructions
+- [ ] Set up CI/CD for building releases
+- [ ] Create release process documentation

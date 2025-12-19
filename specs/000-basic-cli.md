@@ -137,6 +137,26 @@ It should be possible to validate one specific spec or all the specs.
   - More complex than needed for simple operations
   - Overkill for our use case
 
+### Markdown and YAML Parsing
+
+- Chosen: goldmark with frontmatter extension
+  - **github.com/yuin/goldmark** - CommonMark compliant markdown parser
+  - **github.com/abhinav/goldmark-frontmatter** - Frontmatter extension for goldmark
+  - Unified approach for both markdown structure and YAML frontmatter parsing
+  - Proper AST for robust validation (headings, task lists, sections)
+  - Future-proof for more complex markdown parsing requirements
+  - Industry standard for Go markdown processing
+  - Extensible for additional validation rules
+- Considered: gopkg.in/yaml.v3 + simple string/regex parsing
+  - Would work for current basic validation needs
+  - Separate approaches for frontmatter vs markdown
+  - Manual parsing less robust and harder to extend
+  - Would require migration to proper parser later
+- Considered: Simple string/regex parsing only
+  - No dependencies
+  - Too fragile for reliable validation
+  - Difficult to maintain and extend
+
 ## Task List
 
 ### Project Setup

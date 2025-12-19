@@ -10,8 +10,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "specture",
 	Short: "A spec-driven software architecture system",
-	Long: `Specture is a spec-driven software architecture system designed for small teams 
-working with AI agents. It provides a lightweight, document-driven approach to project planning.`,
+	Long:  `Specture is a spec-driven software architecture system. It provides a lightweight, document-driven approach to project planning.`,
 }
 
 func Execute() {

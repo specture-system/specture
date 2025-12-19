@@ -2,7 +2,7 @@
 
 ## Overview
 
-Specture is a spec-driven software architecture system designed for small teams working with AI agents. It provides a lightweight, document-driven approach to project planning where specs are markdown files in the `specs/` directory.
+Specture is a spec-driven software architecture system. It provides a lightweight, document-driven approach to project planning where specs are markdown files in the `specs/` directory.
 
 **For detailed information about the Specture System, see `specs/README.md`.**
 

@@ -13,6 +13,7 @@ func TestHasUncommittedChanges(t *testing.T) {
 	tests := []struct {
 		name           string
 		setup          func(dir string) error
+		testDir        *string
 		hasUncommitted bool
 		wantErr        bool
 	}{
@@ -56,6 +57,19 @@ func TestHasUncommittedChanges(t *testing.T) {
 			hasUncommitted: true,
 			wantErr:        false,
 		},
+		{
+			name:           "not a git repository",
+			setup:          func(dir string) error { return nil },
+			hasUncommitted: false,
+			wantErr:        true,
+		},
+		{
+			name:           "nonexistent directory",
+			setup:          func(dir string) error { return nil },
+			testDir:        strPtr("/nonexistent/path"),
+			hasUncommitted: false,
+			wantErr:        true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -65,7 +79,12 @@ func TestHasUncommittedChanges(t *testing.T) {
 				t.Fatalf("setup failed: %v", err)
 			}
 
-			hasUncommitted, err := HasUncommittedChanges(dir)
+			testDir := dir
+			if tt.testDir != nil {
+				testDir = *tt.testDir
+			}
+
+			hasUncommitted, err := HasUncommittedChanges(testDir)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("HasUncommittedChanges() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -107,4 +126,9 @@ func commitFile(t *testing.T, dir, filename, content string) error {
 	cmd = exec.Command("git", "commit", "-m", "add "+filename)
 	cmd.Dir = dir
 	return cmd.Run()
+}
+
+// strPtr returns a pointer to a string.
+func strPtr(s string) *string {
+	return &s
 }

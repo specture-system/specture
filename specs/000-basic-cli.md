@@ -1,7 +1,9 @@
 ---
-status: draft
+status: in-progress
 author: Addison Emig
 creation_date: 2025-12-18
+approved_by: Addison Emig
+approval_date: 2025-12-19
 ---
 
 # Implement Basic CLI

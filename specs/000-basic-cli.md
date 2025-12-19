@@ -201,8 +201,8 @@ It should be possible to validate one specific spec or all the specs.
 
 ### Core Infrastructure
 
-- [ ] Write unit tests for git repository detection
-- [ ] Implement git repository detection (using os/exec)
+- [x] Write unit tests for git repository detection
+- [x] Implement git repository detection (using os/exec)
 - [ ] Write unit tests for uncommitted changes check
 - [ ] Implement uncommitted changes check (using os/exec)
 - [ ] Write unit tests for forge identification

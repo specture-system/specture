@@ -29,7 +29,7 @@ func TestRenderTemplate(t *testing.T) {
 		{
 			name:    "nested struct access",
 			tpl:     "{{.User.Name}} - {{.User.Email}}",
-			data:    map[string]interface{}{"User": map[string]string{"Name": "Bob", "Email": "bob@example.com"}},
+			data:    map[string]any{"User": map[string]string{"Name": "Bob", "Email": "bob@example.com"}},
 			want:    "Bob - bob@example.com",
 			wantErr: false,
 		},

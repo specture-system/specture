@@ -83,7 +83,7 @@ Use `just` to run development tasks. See `justfile` for available recipes. Commo
 - `just test`: Run tests
 - `just check`: Format, lint, and test (runs automatically on commit)
 
-## Code Style (When Implementation Begins)
+## Code Style
 
 - **Language**: Go
 - **Naming**: Kebab-case with numeric prefix for specs and files
@@ -92,7 +92,7 @@ Use `just` to run development tasks. See `justfile` for available recipes. Commo
 - **Formatting**: Code must pass `go fmt` and `go vet`
 - **Commits**: Use conventional commits (feat:, fix:, test:, refactor:, etc.)
 
-## CLI Tools (To Be Implemented)
+## CLI Tools (in development)
 
 - `specture setup`: Initialize Specture in a repo
 - `specture new`: Create new spec with template

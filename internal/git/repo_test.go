@@ -3,6 +3,7 @@ package git
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/specture-system/specture/internal/testhelpers"
@@ -12,21 +13,20 @@ func TestIsGitRepository(t *testing.T) {
 	tests := []struct {
 		name    string
 		setup   func(dir string) error
-		wantErr bool
+		wantErr string // empty string means no error expected
 	}{
 		{
 			name: "valid git repo",
 			setup: func(dir string) error {
 				return os.Mkdir(filepath.Join(dir, ".git"), 0755)
 			},
-			wantErr: false,
 		},
 		{
 			name: "not a git repo",
 			setup: func(dir string) error {
 				return nil
 			},
-			wantErr: true,
+			wantErr: "not a git repository",
 		},
 		{
 			name: "git directory is a file",
@@ -34,7 +34,6 @@ func TestIsGitRepository(t *testing.T) {
 				_, err := os.Create(filepath.Join(dir, ".git"))
 				return err
 			},
-			wantErr: false, // We're lenient - if .git exists (even as a file), consider it a git repo
 		},
 	}
 
@@ -46,8 +45,18 @@ func TestIsGitRepository(t *testing.T) {
 			}
 
 			err := IsGitRepository(dir)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("IsGitRepository() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Errorf("IsGitRepository() expected error, got nil")
+					return
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("IsGitRepository() error = %v, want error containing %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("IsGitRepository() unexpected error = %v", err)
 			}
 		})
 	}
@@ -57,5 +66,9 @@ func TestIsGitRepositoryNotFound(t *testing.T) {
 	err := IsGitRepository("/nonexistent/path")
 	if err == nil {
 		t.Errorf("IsGitRepository() expected error for nonexistent path")
+		return
+	}
+	if !strings.Contains(err.Error(), "not a git repository") {
+		t.Errorf("IsGitRepository() error = %v, want error containing %q", err, "not a git repository")
 	}
 }

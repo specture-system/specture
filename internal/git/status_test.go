@@ -27,7 +27,6 @@ func TestHasUncommittedChanges(t *testing.T) {
 				return commitFile(t, dir, "test.txt", "content")
 			},
 			hasUncommitted: false,
-			wantErr:        "",
 		},
 		{
 			name: "uncommitted changes",
@@ -41,7 +40,6 @@ func TestHasUncommittedChanges(t *testing.T) {
 				return os.WriteFile(filepath.Join(dir, "test.txt"), []byte("modified"), 0644)
 			},
 			hasUncommitted: true,
-			wantErr:        "",
 		},
 		{
 			name: "untracked files",
@@ -56,7 +54,6 @@ func TestHasUncommittedChanges(t *testing.T) {
 				return err
 			},
 			hasUncommitted: true,
-			wantErr:        "",
 		},
 		{
 			name:           "not a git repository",

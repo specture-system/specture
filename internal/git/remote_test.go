@@ -2,6 +2,7 @@ package git
 
 import (
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/specture-system/specture/internal/testhelpers"
@@ -13,7 +14,7 @@ func TestGetRemoteURL(t *testing.T) {
 		remoteName string
 		setup      func(dir string) error
 		want       string
-		wantErr    bool
+		wantErr    string // empty string means no error expected
 	}{
 		{
 			name:       "origin remote exists",
@@ -28,8 +29,7 @@ func TestGetRemoteURL(t *testing.T) {
 				cmd.Dir = dir
 				return cmd.Run()
 			},
-			want:    "https://github.com/user/repo.git",
-			wantErr: false,
+			want: "https://github.com/user/repo.git",
 		},
 		{
 			name:       "no remotes",
@@ -40,7 +40,7 @@ func TestGetRemoteURL(t *testing.T) {
 				return cmd.Run()
 			},
 			want:    "",
-			wantErr: true,
+			wantErr: "failed to get remote URL",
 		},
 		{
 			name:       "multiple remotes, get origin",
@@ -60,8 +60,7 @@ func TestGetRemoteURL(t *testing.T) {
 				cmd.Dir = dir
 				return cmd.Run()
 			},
-			want:    "https://github.com/user/repo.git",
-			wantErr: false,
+			want: "https://github.com/user/repo.git",
 		},
 	}
 
@@ -73,8 +72,18 @@ func TestGetRemoteURL(t *testing.T) {
 			}
 
 			got, err := GetRemoteURL(dir, tt.remoteName)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetRemoteURL() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Errorf("GetRemoteURL() expected error containing %q, got nil", tt.wantErr)
+					return
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("GetRemoteURL() error = %v, want error containing %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("GetRemoteURL() unexpected error: %v", err)
 				return
 			}
 			if got != tt.want {
@@ -122,57 +131,72 @@ func TestIdentifyForge(t *testing.T) {
 		name      string
 		remoteURL string
 		want      Forge
-		wantErr   bool
+		wantErr   string // empty string means no error expected
 	}{
 		{
 			name:      "github HTTPS",
 			remoteURL: "https://github.com/user/repo.git",
 			want:      ForgeGitHub,
-			wantErr:   false,
 		},
 		{
 			name:      "github SSH",
 			remoteURL: "git@github.com:user/repo.git",
 			want:      ForgeGitHub,
-			wantErr:   false,
 		},
 		{
 			name:      "gitlab HTTPS",
 			remoteURL: "https://gitlab.com/user/repo.git",
 			want:      ForgeGitLab,
-			wantErr:   false,
 		},
 		{
 			name:      "gitlab SSH",
 			remoteURL: "git@gitlab.com:user/repo.git",
 			want:      ForgeGitLab,
-			wantErr:   false,
 		},
 		{
 			name:      "custom gitlab instance",
 			remoteURL: "https://my-gitlab.com/user/repo.git",
 			want:      ForgeUnknown,
-			wantErr:   false,
 		},
 		{
 			name:      "unknown forge",
 			remoteURL: "https://example.com/user/repo.git",
 			want:      ForgeUnknown,
-			wantErr:   false,
 		},
 		{
 			name:      "SSH without .git suffix",
 			remoteURL: "git@github.com:user/repo",
 			want:      ForgeGitHub,
-			wantErr:   false,
+		},
+		{
+			name:      "invalid SSH URL format",
+			remoteURL: "git@github.com",
+			want:      ForgeUnknown,
+			wantErr:   "invalid SSH URL format",
+		},
+		{
+			name:      "invalid URL",
+			remoteURL: "://invalid-url",
+			want:      ForgeUnknown,
+			wantErr:   "invalid URL",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := IdentifyForge(tt.remoteURL)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("IdentifyForge() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Errorf("IdentifyForge() expected error containing %q, got nil", tt.wantErr)
+					return
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("IdentifyForge() error = %v, want error containing %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("IdentifyForge() unexpected error: %v", err)
 				return
 			}
 			if got != tt.want {

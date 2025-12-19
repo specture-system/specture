@@ -1,6 +1,7 @@
 package prompt
 
 import (
+	"io"
 	"strings"
 	"testing"
 )
@@ -8,54 +9,70 @@ import (
 func TestConfirm(t *testing.T) {
 	tests := []struct {
 		name    string
-		input   string
+		input   io.Reader
 		message string
 		want    bool
-		wantErr bool
+		wantErr string // empty string means no error expected
 	}{
 		{
 			name:    "yes response",
-			input:   "yes\n",
+			input:   strings.NewReader("yes\n"),
 			message: "Continue?",
 			want:    true,
-			wantErr: false,
+			wantErr: "",
 		},
 		{
 			name:    "y response",
-			input:   "y\n",
+			input:   strings.NewReader("y\n"),
 			message: "Continue?",
 			want:    true,
-			wantErr: false,
+			wantErr: "",
 		},
 		{
 			name:    "no response",
-			input:   "no\n",
+			input:   strings.NewReader("no\n"),
 			message: "Continue?",
 			want:    false,
-			wantErr: false,
+			wantErr: "",
 		},
 		{
 			name:    "n response",
-			input:   "n\n",
+			input:   strings.NewReader("n\n"),
 			message: "Continue?",
 			want:    false,
-			wantErr: false,
+			wantErr: "",
 		},
 		{
 			name:    "invalid response with retry",
-			input:   "invalid\nyes\n",
+			input:   strings.NewReader("invalid\nyes\n"),
 			message: "Continue?",
 			want:    true,
-			wantErr: false,
+			wantErr: "",
+		},
+		{
+			name:    "EOF input",
+			input:   strings.NewReader(""),
+			message: "Continue?",
+			want:    false,
+			wantErr: "failed to read input",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader := strings.NewReader(tt.input)
-			got, err := confirm(tt.message, reader)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Confirm() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := confirm(tt.message, tt.input)
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Errorf("Confirm() expected error, got nil")
+					return
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("Confirm() error = %v, want error containing %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("Confirm() unexpected error = %v", err)
 				return
 			}
 			if got != tt.want {
@@ -68,40 +85,56 @@ func TestConfirm(t *testing.T) {
 func TestPromptString(t *testing.T) {
 	tests := []struct {
 		name    string
-		input   string
+		input   io.Reader
 		prompt  string
 		want    string
-		wantErr bool
+		wantErr string // empty string means no error expected
 	}{
 		{
 			name:    "simple input",
-			input:   "hello\n",
+			input:   strings.NewReader("hello\n"),
 			prompt:  "Name: ",
 			want:    "hello",
-			wantErr: false,
+			wantErr: "",
 		},
 		{
 			name:    "input with spaces",
-			input:   "hello world\n",
+			input:   strings.NewReader("hello world\n"),
 			prompt:  "Message: ",
 			want:    "hello world",
-			wantErr: false,
+			wantErr: "",
 		},
 		{
 			name:    "empty input",
-			input:   "\n",
+			input:   strings.NewReader("\n"),
 			prompt:  "Optional: ",
 			want:    "",
-			wantErr: false,
+			wantErr: "",
+		},
+		{
+			name:    "EOF input",
+			input:   strings.NewReader(""),
+			prompt:  "Name: ",
+			want:    "",
+			wantErr: "failed to read input",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader := strings.NewReader(tt.input)
-			got, err := promptString(tt.prompt, reader)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("PromptString() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := promptString(tt.prompt, tt.input)
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Errorf("PromptString() expected error, got nil")
+					return
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("PromptString() error = %v, want error containing %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("PromptString() unexpected error = %v", err)
 				return
 			}
 			if got != tt.want {
@@ -114,44 +147,61 @@ func TestPromptString(t *testing.T) {
 func TestConfirmWithDefault(t *testing.T) {
 	tests := []struct {
 		name    string
-		input   string
+		input   io.Reader
 		message string
 		defVal  bool
 		want    bool
-		wantErr bool
+		wantErr string // empty string means no error expected
 	}{
 		{
 			name:    "yes response overrides default",
-			input:   "yes\n",
+			input:   strings.NewReader("yes\n"),
 			message: "Continue?",
 			defVal:  false,
 			want:    true,
-			wantErr: false,
+			wantErr: "",
 		},
 		{
 			name:    "empty input uses default true",
-			input:   "\n",
+			input:   strings.NewReader("\n"),
 			message: "Continue?",
 			defVal:  true,
 			want:    true,
-			wantErr: false,
+			wantErr: "",
 		},
 		{
 			name:    "empty input uses default false",
-			input:   "\n",
+			input:   strings.NewReader("\n"),
 			message: "Continue?",
 			defVal:  false,
 			want:    false,
-			wantErr: false,
+			wantErr: "",
+		},
+		{
+			name:    "EOF input",
+			input:   strings.NewReader(""),
+			message: "Continue?",
+			defVal:  true,
+			want:    false,
+			wantErr: "failed to read input",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader := strings.NewReader(tt.input)
-			got, err := confirmWithDefault(tt.message, tt.defVal, reader)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ConfirmWithDefault() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := confirmWithDefault(tt.message, tt.defVal, tt.input)
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Errorf("ConfirmWithDefault() expected error, got nil")
+					return
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("ConfirmWithDefault() error = %v, want error containing %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("ConfirmWithDefault() unexpected error = %v", err)
 				return
 			}
 			if got != tt.want {

@@ -180,69 +180,90 @@ It should be possible to validate one specific spec or all the specs.
 
 - [ ] Initialize Go module and project structure
 - [ ] Set up Cobra CLI framework
+- [ ] Set up testing infrastructure (framework, helpers, test fixtures)
 - [ ] Configure Makefile for local development builds
-- [ ] Set up basic testing infrastructure
 
 ### Core Infrastructure
 
 - [ ] Implement git repository detection (using os/exec)
+- [ ] Write unit tests for git repository detection
 - [ ] Implement uncommitted changes check (using os/exec)
+- [ ] Write unit tests for uncommitted changes check
 - [ ] Implement git remote detection and forge identification (GitLab vs others)
+- [ ] Write unit tests for forge identification
 - [ ] Create utility for terminology detection ("merge request" vs "pull request")
+- [ ] Write unit tests for terminology detection
 - [ ] Create file system utilities (safe read/write, directory creation)
+- [ ] Write unit tests for file system utilities
 - [ ] Implement user prompt/confirmation system
+- [ ] Write unit tests for prompt system (with mocked input)
 - [ ] Create text/template-based markdown file generation utilities
+- [ ] Write unit tests for template utilities
 
 ### Setup Command (`specture setup`)
 
 - [ ] Implement basic command structure and aliases (`setup`, `update`)
 - [ ] Add git repository validation (exit if not a git repo)
 - [ ] Add uncommitted changes check (exit if dirty working tree)
+- [ ] Write integration tests for setup command preconditions
 - [ ] Implement forge detection logic
 - [ ] Add `--dry-run` flag support
+- [ ] Write tests for dry-run mode (no file modifications)
 - [ ] Create `specs/` directory generation
 - [ ] Create `specs/README.md` template with forge-appropriate terminology
 - [ ] Implement `specs/README.md` generation/update logic
+- [ ] Write integration tests for setup command file generation
 - [ ] Implement `AGENTS.md` detection and update prompt
 - [ ] Implement `CLAUDE.md` detection and update prompt
+- [ ] Write tests for AGENTS.md/CLAUDE.md detection
 - [ ] Add protection against overwriting existing spec files
+- [ ] Write tests for overwrite protection
 - [ ] Implement user confirmation flow before making changes
 - [ ] Add comprehensive error handling and user-friendly messages
+- [ ] Write integration tests for complete setup workflow
 
 ### New Spec Command (`specture new`)
 
 - [ ] Implement basic command structure and alias (`new`, `n`)
 - [ ] Create spec file template with YAML frontmatter (using text/template)
+- [ ] Write tests for spec template generation
 - [ ] Implement automatic spec numbering (find next available number)
+- [ ] Write tests for spec numbering logic
 - [ ] Implement branch creation with appropriate naming (using git CLI via os/exec)
+- [ ] Write tests for branch creation (with test git repos)
 - [ ] Add user prompt for spec title/description
 - [ ] Implement file creation from template
+- [ ] Write integration tests for complete new spec workflow
 - [ ] Implement editor detection and opening (respect $EDITOR)
 - [ ] Add error handling for edge cases (no git, existing file, etc.)
+- [ ] Write tests for error handling scenarios
 
 ### Validate Command (`specture validate`)
 
 - [ ] Implement basic command structure and alias (`validate`, `v`)
 - [ ] Implement goldmark-based spec parser with frontmatter extension
+- [ ] Write tests for spec parsing (valid and invalid specs)
 - [ ] Add frontmatter validation (required fields present)
+- [ ] Write tests for frontmatter validation
 - [ ] Add status field validation (draft/approved/in-progress/completed/rejected)
+- [ ] Write tests for status validation
 - [ ] Implement description section validation (using goldmark AST)
+- [ ] Write tests for description validation
 - [ ] Implement task list detection and validation (using goldmark AST)
+- [ ] Write tests for task list validation
 - [ ] Add single-spec validation mode (by file path or number)
 - [ ] Add all-specs validation mode
+- [ ] Write integration tests for both validation modes
 - [ ] Implement clear, actionable error messages for validation failures
 - [ ] Add summary output (X of Y specs valid)
+- [ ] Write tests for error messages and summary output
 
-### Testing & Documentation
+### Documentation & Cross-Platform Testing
 
-- [ ] Write unit tests for core utilities
-- [ ] Write integration tests for `setup` command
-- [ ] Write integration tests for `new` command
-- [ ] Write integration tests for `validate` command
-- [ ] Test dry-run mode thoroughly
 - [ ] Create CLI usage documentation
 - [ ] Add command-line help text for all commands
 - [ ] Test on different repository configurations (GitLab, GitHub, no remote)
+- [ ] Test on different platforms (Linux, macOS, Windows if available)
 
 ### Distribution & Deployment
 

@@ -174,6 +174,20 @@ It should be possible to validate one specific spec or all the specs.
   - Gets tedious with frequent releases
   - More error-prone
 
+### Development Task Runner
+
+- Chosen: just (justfile)
+  - Clean, modern syntax (no Make's quirks)
+  - Designed specifically for running commands (not dependency management)
+  - Better error messages than Make
+  - Cross-platform support
+  - Easy to read and maintain
+- Considered: Makefile
+  - More ubiquitous (installed everywhere)
+  - Complex syntax with tabs/spaces issues
+  - Designed for build dependencies, not task running
+  - Less intuitive for simple command aliases
+
 ## Task List
 
 ### Project Setup
@@ -181,7 +195,7 @@ It should be possible to validate one specific spec or all the specs.
 - [ ] Initialize Go module and project structure
 - [ ] Set up Cobra CLI framework
 - [ ] Set up testing infrastructure (framework, helpers, test fixtures)
-- [ ] Configure Makefile for local development builds
+- [ ] Configure justfile for local development commands
 
 ### Core Infrastructure
 

@@ -7,15 +7,15 @@ default:
 
 # Build the CLI binary
 build:
-  go build -o specture .
+  CGO_ENABLED=0 go build -o specture .
 
 # Run tests
 test:
-  go test -v ./...
+  CGO_ENABLED=0 go test -v ./...
 
 # Run tests with coverage
 coverage:
-  go test -v -coverprofile=coverage.out ./...
+  CGO_ENABLED=0 go test -v -coverprofile=coverage.out ./...
   go tool cover -html=coverage.out
 
 # Format code
@@ -24,7 +24,7 @@ fmt:
 
 # Lint code with go vet
 lint:
-  go vet ./...
+  CGO_ENABLED=0 go vet ./...
 
 # Tidy dependencies
 tidy:
@@ -32,11 +32,11 @@ tidy:
 
 # Run the CLI with arguments (usage: just run setup --help)
 run *args:
-  go run . {{args}}
+  CGO_ENABLED=0 go run . {{args}}
 
 # Install the CLI locally
 install:
-  go install .
+  CGO_ENABLED=0 go install .
 
 # Clean build artifacts
 clean:

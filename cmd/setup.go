@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/specture-system/specture/internal/git"
+	"github.com/specture-system/specture/internal/setup"
 	"github.com/spf13/cobra"
 )
 
@@ -23,41 +23,24 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 			return fmt.Errorf("failed to get current directory: %w", err)
 		}
 
-		// Check if this is a git repository
-		if err := git.IsGitRepository(cwd); err != nil {
-			return fmt.Errorf("not a git repository")
-		}
-
-		// Check for uncommitted changes
-		hasChanges, err := git.HasUncommittedChanges(cwd)
+		// Create setup context
+		ctx, err := setup.NewContext(cwd)
 		if err != nil {
-			return fmt.Errorf("failed to check git status: %w", err)
-		}
-		if hasChanges {
-			return fmt.Errorf("working tree has uncommitted changes")
+			return err
 		}
 
-		// Detect forge
-		remoteURL, err := git.GetRemoteURL(cwd, "origin")
+		// Get dry-run flag
+		dryRun, err := cmd.Flags().GetBool("dry-run")
 		if err != nil {
-			// No remote configured, prompt user
-			cmd.Println("No 'origin' remote configured. Using default (pull request) terminology.")
-		} else if remoteURL == "" {
-			// No remotes at all
-			cmd.Println("No git remotes configured. Using default (pull request) terminology.")
+			return fmt.Errorf("failed to get dry-run flag: %w", err)
 		}
 
-		var forge git.Forge
-		if remoteURL != "" {
-			forge, err = git.IdentifyForge(remoteURL)
-			if err != nil {
-				cmd.Printf("Warning: Could not identify forge from remote URL: %v\n", err)
-			}
+		// Create specs directory
+		if err := ctx.CreateSpecsDirectory(dryRun); err != nil {
+			return err
 		}
 
-		terminology := git.GetTerminology(forge)
-		cmd.Printf("Detected forge: %s (%s)\n", forge, terminology)
-
+		cmd.Printf("Detected forge: %s (%s)\n", ctx.Forge, ctx.Terminology)
 		cmd.Println("Setup would initialize the Specture System here")
 		return nil
 	},

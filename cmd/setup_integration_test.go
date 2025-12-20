@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -61,60 +60,6 @@ func TestSetupCommand_CompleteWorkflow_DryRun(t *testing.T) {
 	}
 	if !testhelpers.Contains(output, "Create specs/ directory") {
 		t.Errorf("output should list what will be created, got: %s", output)
-	}
-}
-
-func TestSetupCommand_ExistingSpecFiles_Error(t *testing.T) {
-	// Create a temporary git repository with existing spec files
-	tmpDir := t.TempDir()
-	testhelpers.InitGitRepo(t, tmpDir)
-
-	// Create specs directory with an existing spec file
-	specsDir := filepath.Join(tmpDir, "specs")
-	if err := os.MkdirAll(specsDir, 0755); err != nil {
-		t.Fatalf("failed to create specs dir: %v", err)
-	}
-
-	testhelpers.WriteFile(t, specsDir, "000-mvp.md", "# MVP Spec")
-
-	// Commit the file to make working tree clean
-	gitCmd := exec.Command("git", "add", "specs/")
-	gitCmd.Dir = tmpDir
-	if err := gitCmd.Run(); err != nil {
-		t.Fatalf("failed to add specs: %v", err)
-	}
-
-	gitCmd = exec.Command("git", "commit", "-m", "add spec")
-	gitCmd.Dir = tmpDir
-	if err := gitCmd.Run(); err != nil {
-		t.Fatalf("failed to commit: %v", err)
-	}
-
-	// Change to the repository
-	originalWd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get current working directory: %v", err)
-	}
-	t.Cleanup(func() {
-		os.Chdir(originalWd)
-	})
-
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("failed to change directory: %v", err)
-	}
-
-	// Run setup command
-	out := &bytes.Buffer{}
-	cmd := setupCmd
-	cmd.SetOut(out)
-	cmd.SetErr(out)
-
-	err = cmd.RunE(cmd, []string{})
-	if err == nil {
-		t.Fatal("expected error when existing spec files found, got nil")
-	}
-	if !testhelpers.Contains(err.Error(), "cannot be overwritten") {
-		t.Errorf("error should mention spec file protection, got: %v", err)
 	}
 }
 

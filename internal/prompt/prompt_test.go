@@ -196,3 +196,68 @@ func TestConfirmWithDefault(t *testing.T) {
 		})
 	}
 }
+
+func TestShowTemplate(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   io.Reader
+		message string
+		want    bool // true if confirmed (non-empty result)
+		wantErr string
+	}{
+		{
+			name:    "yes response confirms",
+			input:   strings.NewReader("yes\n"),
+			message: "Update file?",
+			want:    true,
+		},
+		{
+			name:    "y response confirms",
+			input:   strings.NewReader("y\n"),
+			message: "Update file?",
+			want:    true,
+		},
+		{
+			name:    "no response declines",
+			input:   strings.NewReader("no\n"),
+			message: "Update file?",
+			want:    false,
+		},
+		{
+			name:    "n response declines",
+			input:   strings.NewReader("n\n"),
+			message: "Update file?",
+			want:    false,
+		},
+		{
+			name:    "EOF input",
+			input:   strings.NewReader(""),
+			message: "Update file?",
+			wantErr: "failed to read input",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := showTemplate(tt.message, tt.input)
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Errorf("ShowTemplate() expected error, got nil")
+					return
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("ShowTemplate() error = %v, want error containing %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("ShowTemplate() unexpected error = %v", err)
+				return
+			}
+			confirmed := got != ""
+			if confirmed != tt.want {
+				t.Errorf("ShowTemplate() confirmed = %v, want %v", confirmed, tt.want)
+			}
+		})
+	}
+}

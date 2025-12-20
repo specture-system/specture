@@ -101,6 +101,25 @@ Use `just` to run development tasks. See `justfile` for available recipes. Commo
 - **Commits**: Use conventional commits (feat:, fix:, test:, refactor:, etc.)
 - **File organization**: Core functions at top, helper functions at bottom
 
+### Helper Functions and Code Organization
+
+When adding functionality:
+
+1. **Check for existing helpers first**: Before writing new utility functions, search the codebase for similar functionality. Look in `internal/` packages for utilities that might already exist or could be extended.
+
+2. **Place helpers in the correct packages**:
+   - `internal/prompt/`: User interaction utilities (confirmations, prompts, template display)
+   - `internal/fs/`: File system operations
+   - `internal/git/`: Git repository operations
+   - `internal/setup/`: Setup command logic
+   - `cmd/`: Only CLI command definitions and command-specific orchestration
+
+   **Do NOT** put reusable helper functions in `cmd/` files—they belong in `internal/` packages.
+
+3. **Extract and generalize**: If writing a function in a command file that could be useful elsewhere (e.g., showing a template to a user), move it to the appropriate `internal/` package with unit tests.
+
+4. **Write tests alongside helpers**: All utility functions in `internal/` packages must have corresponding unit tests.
+
 ## CLI Tools (in development)
 
 - `specture setup`: Initialize Specture in a repo
@@ -112,6 +131,7 @@ Use `just` to run development tasks. See `justfile` for available recipes. Commo
 Spec files under `specs/` are long-term design documents. Follow this strict workflow:
 
 1. **Ask for confirmation before editing any spec file**. State the exact file path and change summary. Example:
+
    ```
    I plan to update `specs/001-new-data-format` to change the 'Blank entries representation' section. Reply 'yes' to apply.
    ```
@@ -125,6 +145,7 @@ This ensures specs remain authoritative design documents and changes are intenti
 ## GitHub Workflow
 
 **Creating issues and PRs:**
+
 ```bash
 # View issue details
 gh issue view <number>
@@ -134,6 +155,7 @@ gh pr create --title "feat: add new feature" --body "Description of changes"
 ```
 
 **PR Title Format**: PRs are squashed on merge to main, so PR titles become commit messages. Use conventional commit format:
+
 - `feat:` for features
 - `fix:` for bug fixes
 - `refactor:` for refactoring

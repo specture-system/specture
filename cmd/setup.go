@@ -9,20 +9,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// promptAndShowTemplate prompts user to update a file and displays the template if approved.
-func promptAndShowTemplate(cmd *cobra.Command, filename, promptText string, template string) error {
-	ok, err := prompt.Confirm(promptText)
-	if err != nil {
-		return fmt.Errorf("failed to get %s confirmation: %w", filename, err)
-	}
-	if ok {
-		cmd.Println("Copy the following into your " + filename + " file:")
-		cmd.Println()
-		cmd.Println(template)
-	}
-	return nil
-}
-
 var setupCmd = &cobra.Command{
 	Use:     "setup",
 	Aliases: []string{"update"},
@@ -48,11 +34,6 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 		dryRun, err := cmd.Flags().GetBool("dry-run")
 		if err != nil {
 			return fmt.Errorf("failed to get dry-run flag: %w", err)
-		}
-
-		// Check for existing spec files (protection against accidental overwrites)
-		if err := ctx.CheckExistingSpecFiles(); err != nil {
-			return err
 		}
 
 		// Show summary of what will happen
@@ -97,19 +78,27 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 		if !dryRun {
 			if hasAgents {
 				cmd.Println()
-				if err := promptAndShowTemplate(cmd, "AGENTS.md",
-					"Update AGENTS.md with Specture System information?",
-					setup.AgentPromptTemplate); err != nil {
-					return err
+				confirmed, err := prompt.ShowTemplate("Update AGENTS.md with Specture System information?")
+				if err != nil {
+					return fmt.Errorf("failed to get AGENTS.md confirmation: %w", err)
+				}
+				if confirmed != "" {
+					cmd.Println("Copy the following into your AGENTS.md file:")
+					cmd.Println()
+					cmd.Println(setup.AgentPromptTemplate)
 				}
 			}
 
 			if hasClaude {
 				cmd.Println()
-				if err := promptAndShowTemplate(cmd, "CLAUDE.md",
-					"Update CLAUDE.md with Specture System information?",
-					setup.ClaudePromptTemplate); err != nil {
-					return err
+				confirmed, err := prompt.ShowTemplate("Update CLAUDE.md with Specture System information?")
+				if err != nil {
+					return fmt.Errorf("failed to get CLAUDE.md confirmation: %w", err)
+				}
+				if confirmed != "" {
+					cmd.Println("Copy the following into your CLAUDE.md file:")
+					cmd.Println()
+					cmd.Println(setup.ClaudePromptTemplate)
 				}
 			}
 		}

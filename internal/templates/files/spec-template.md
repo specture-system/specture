@@ -6,8 +6,6 @@ creation_date: {{.CreationDate}}
 
 # {{.Title}}
 
-## Description
-
 Describe the proposed change clearly. Include:
 
 - What is being proposed

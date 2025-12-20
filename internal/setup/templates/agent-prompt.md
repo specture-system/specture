@@ -16,13 +16,14 @@ The specs/ directory also contains README.md with complete guidelines on how the
 
 Be sure to prompt the user for explicit permission before editing the design in any spec file.
 
-When implementing a spec, follow this workflow:
+When implementing a spec, follow this workflow for each task:
 
-1. Complete a task or group of related tasks
-2. Update the spec file by changing `- [ ]` to `- [x]` for completed items
-3. Commit the spec update with a message like `spec: mark task X as complete`
-4. Push the changes frequently
+1. Complete a single task from the task list
+2. Commit the implementation with a conventional commit message (e.g., `feat: implement feature X` or `test: add tests for feature Y`)
+3. Update the spec file by changing `- [ ]` to `- [x]` for that task
+4. Commit the spec update with message `spec: mark task as complete`
+5. Push the changes
 
-This keeps the spec file as a living document that tracks implementation progress.
+This keeps the spec file as a living document that tracks implementation progress, with each task corresponding to one commit.
 
 ---

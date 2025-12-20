@@ -100,12 +100,12 @@ func TestGetTerminology(t *testing.T) {
 		want  string
 	}{
 		{
-			name:  "github terminology",
+			name:  "github contribution type",
 			forge: ForgeGitHub,
 			want:  "pull request",
 		},
 		{
-			name:  "gitlab terminology",
+			name:  "gitlab contribution type",
 			forge: ForgeGitLab,
 			want:  "merge request",
 		},

@@ -286,6 +286,8 @@ It should be possible to validate one specific spec or all the specs.
 - [ ] Create installation instructions
 - [ ] Create release process documentation (git tag workflow)
 
+**Note**: Versioning (version command, version extraction from git tags) should be implemented as part of the full release system setup, not separately. Create a new spec when ready to tackle this as a cohesive unit with the release workflow.
+
 ### Cross-Platform Testing
 
 - [ ] Test on different repository configurations (GitLab, GitHub, no remote)

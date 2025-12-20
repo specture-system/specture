@@ -288,8 +288,7 @@ It should be possible to validate one specific spec or all the specs.
 - [ ] Configure GoReleaser for multi-platform builds (Linux, macOS, Windows)
 - [ ] Set up GitHub Actions workflow for automated releases with GoReleaser
 - [ ] Create installation instructions
-- [ ] Document release process: create git tag → update flake.nix version → run GoReleaser
-- [ ] Automate flake.nix version updates in release workflow (or document manual step)
+- [ ] Document release process: update flake.nix version → commit → create git tag → run GoReleaser
 - [ ] Create release process documentation with complete workflow steps
 
 ### Cross-Platform Testing

@@ -249,7 +249,7 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Add user prompt for spec title/description
 - [x] Implement file creation from template
 - [x] Implement editor detection and opening (respect $EDITOR)
-- [ ] Write tests for branch creation (with test git repos)
+- [x] Write tests for branch creation (with test git repos)
 - [ ] Write integration tests for complete new spec workflow
 - [ ] Write tests for error handling scenarios
 - [ ] Add error handling for edge cases (no git, existing file, etc.)

@@ -141,7 +141,7 @@ Use descriptive, kebab-case filenames with a numeric prefix:
 
 - **Be clear, not clever**: Write for future readers who may not have context
 - **Document alternatives**: Even rejected options are valuable to record
-- **Link to discussions**: Reference {{.ContributionType}} discussions, issues, or other specs
+- **Link to discussions**: Reference {{.ContributionType}} comments, issues, or other specs
 - **Focus on "why"**: The code shows "how", the spec should explain "why"
 
 ### Approved

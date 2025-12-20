@@ -240,17 +240,17 @@ It should be possible to validate one specific spec or all the specs.
 
 ### New Spec Command (`specture new`)
 
-- [ ] Implement basic command structure and alias (`new`, `n`)
-- [ ] Write tests for spec template generation
-- [ ] Create spec file template with YAML frontmatter (using text/template)
-- [ ] Write tests for spec numbering logic
-- [ ] Implement automatic spec numbering (find next available number)
+- [x] Implement basic command structure and alias (`new`, `n`)
+- [x] Write tests for spec template generation
+- [x] Create spec file template with YAML frontmatter (using text/template)
+- [x] Write tests for spec numbering logic
+- [x] Implement automatic spec numbering (find next available number)
+- [x] Implement branch creation with appropriate naming (using git CLI via os/exec)
+- [x] Add user prompt for spec title/description
+- [x] Implement file creation from template
+- [x] Implement editor detection and opening (respect $EDITOR)
 - [ ] Write tests for branch creation (with test git repos)
-- [ ] Implement branch creation with appropriate naming (using git CLI via os/exec)
-- [ ] Add user prompt for spec title/description
 - [ ] Write integration tests for complete new spec workflow
-- [ ] Implement file creation from template
-- [ ] Implement editor detection and opening (respect $EDITOR)
 - [ ] Write tests for error handling scenarios
 - [ ] Add error handling for edge cases (no git, existing file, etc.)
 

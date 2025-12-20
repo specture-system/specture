@@ -3,9 +3,11 @@ package setup
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/specture-system/specture/internal/fs"
 	"github.com/specture-system/specture/internal/git"
+	"github.com/specture-system/specture/internal/template"
 )
 
 // Context holds the setup context for the current repository.
@@ -66,6 +68,29 @@ func (c *Context) CreateSpecsDirectory(dryRun bool) error {
 
 	if err := fs.EnsureDir(specsDir); err != nil {
 		return fmt.Errorf("failed to create specs directory: %w", err)
+	}
+
+	return nil
+}
+
+// CreateSpecsReadme generates the specs/README.md file with forge-appropriate terminology.
+func (c *Context) CreateSpecsReadme(dryRun bool) error {
+	readmePath := filepath.Join(c.WorkDir, "specs", "README.md")
+
+	// Render template with context
+	content, err := template.RenderTemplate(SpecsReadmeTemplate, c)
+	if err != nil {
+		return fmt.Errorf("failed to render specs README template: %w", err)
+	}
+
+	if dryRun {
+		fmt.Printf("[dry-run] Would create file: %s\n", readmePath)
+		return nil
+	}
+
+	// Use WriteFile directly to overwrite if necessary (specs/README.md should always be updated)
+	if err := os.WriteFile(readmePath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write specs README: %w", err)
 	}
 
 	return nil

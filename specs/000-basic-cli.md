@@ -227,8 +227,8 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Add `--dry-run` flag support
 - [x] Write integration tests for setup command file generation
 - [x] Create `specs/` directory generation
-- [ ] Create `specs/README.md` template with forge-appropriate terminology
-- [ ] Implement `specs/README.md` generation/update logic
+- [x] Create `specs/README.md` template with forge-appropriate terminology
+- [x] Implement `specs/README.md` generation/update logic
 - [ ] Write tests for AGENTS.md/CLAUDE.md detection
 - [ ] Implement `AGENTS.md` detection and update prompt
 - [ ] Implement `CLAUDE.md` detection and update prompt

@@ -40,8 +40,13 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 			return err
 		}
 
+		// Create specs/README.md
+		if err := ctx.CreateSpecsReadme(dryRun); err != nil {
+			return err
+		}
+
 		cmd.Printf("Detected forge: %s (%s)\n", ctx.Forge, ctx.Terminology)
-		cmd.Println("Setup would initialize the Specture System here")
+		cmd.Println("Initialized Specture System in this repository")
 		return nil
 	},
 }

@@ -1,6 +1,7 @@
 package testhelpers
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -65,4 +66,9 @@ func InitGitRepo(t *testing.T, dir string) {
 			t.Fatalf("failed to configure git: %v", err)
 		}
 	}
+}
+
+// Contains checks if a string contains a substring.
+func Contains(s, substr string) bool {
+	return bytes.Contains([]byte(s), []byte(substr))
 }

@@ -76,7 +76,7 @@ func (f Forge) String() string {
 	}
 }
 
-// GetTerminology returns the appropriate terminology for the forge.
+// GetTerminology returns the appropriate contribution type for the forge.
 // Returns "merge request" for GitLab, "pull request" for others.
 func GetTerminology(forge Forge) string {
 	if forge == ForgeGitLab {

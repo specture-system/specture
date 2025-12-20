@@ -154,7 +154,7 @@ func TestSetupCommand_ForgeDetection_NoRemote(t *testing.T) {
 		t.Fatalf("expected no error with no remote, got: %v", err)
 	}
 
-	// Check output mentions default terminology
+	// Check output mentions default contribution type
 	output := out.String()
 	if !strings.Contains(output, "pull request") {
 		t.Errorf("expected output to mention 'pull request' (default), got: %s", output)

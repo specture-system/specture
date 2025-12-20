@@ -43,13 +43,13 @@ func NewContext(cwd string) (*Context, error) {
 
 	// Detect forge
 	// If the repository has no remote or remote URL detection fails, forge remains Unknown.
-	// This is intentional: we gracefully default to "pull request" terminology rather than
+	// This is intentional: we gracefully default to "pull request" as the contribution type rather than
 	// prompting the user. This keeps setup non-interactive and suitable for automation.
 	var forge git.Forge
 	remoteURL, err := git.GetRemoteURL(cwd, "origin")
 	if err == nil && remoteURL != "" {
 		// IdentifyForge returns Unknown if URL doesn't match known forges; that's OK.
-		// We'll use generic terminology in that case.
+		// We'll use a default contribution type in that case.
 		forge, _ = git.IdentifyForge(remoteURL)
 	}
 

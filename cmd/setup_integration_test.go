@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/specture-system/specture/internal/testhelpers"
@@ -55,10 +56,10 @@ func TestSetupCommand_CompleteWorkflow_DryRun(t *testing.T) {
 
 	// Verify output contains setup summary
 	output := out.String()
-	if !testhelpers.Contains(output, "Detected forge") {
+	if !strings.Contains(output, "Detected forge") {
 		t.Errorf("output should contain forge detection, got: %s", output)
 	}
-	if !testhelpers.Contains(output, "Create specs/ directory") {
+	if !strings.Contains(output, "Create specs/ directory") {
 		t.Errorf("output should list what will be created, got: %s", output)
 	}
 }
@@ -99,13 +100,13 @@ func TestSetupCommand_OutputSummary(t *testing.T) {
 
 	// Verify output contains expected summary items
 	output := out.String()
-	if !testhelpers.Contains(output, "Setup will:") {
+	if !strings.Contains(output, "Setup will:") {
 		t.Errorf("output should contain 'Setup will:' summary, got: %s", output)
 	}
-	if !testhelpers.Contains(output, "Create specs/ directory") {
+	if !strings.Contains(output, "Create specs/ directory") {
 		t.Errorf("output should list specs directory creation, got: %s", output)
 	}
-	if !testhelpers.Contains(output, "Create specs/README.md") {
+	if !strings.Contains(output, "Create specs/README.md") {
 		t.Errorf("output should list README.md creation, got: %s", output)
 	}
 }

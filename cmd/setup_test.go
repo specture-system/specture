@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/specture-system/specture/internal/testhelpers"
@@ -155,7 +156,7 @@ func TestSetupCommand_ForgeDetection_NoRemote(t *testing.T) {
 
 	// Check output mentions default terminology
 	output := out.String()
-	if !testhelpers.Contains(output, "pull request") {
+	if !strings.Contains(output, "pull request") {
 		t.Errorf("expected output to mention 'pull request' (default), got: %s", output)
 	}
 }

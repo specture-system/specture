@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/specture-system/specture/internal/testhelpers"
@@ -129,10 +130,10 @@ func TestCreateSpecsReadme(t *testing.T) {
 
 	// Check content contains expected patterns
 	content := testhelpers.ReadFile(t, readmePath)
-	if !testhelpers.Contains(content, "Spec Guidelines") {
+	if !strings.Contains(content, "Spec Guidelines") {
 		t.Error("specs README should contain 'Spec Guidelines'")
 	}
-	if !testhelpers.Contains(content, "pull request") {
+	if !strings.Contains(content, "pull request") {
 		t.Error("specs README should contain terminology")
 	}
 }

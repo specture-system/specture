@@ -16,6 +16,13 @@ The specs/ directory also contains README.md with complete guidelines on how the
 
 Be sure to prompt the user for explicit permission before editing the design in any spec file.
 
-When implementing a spec, check off each item in the task list as you go.
+When implementing a spec, follow this workflow:
+
+1. Complete a task or group of related tasks
+2. Update the spec file by changing `- [ ]` to `- [x]` for completed items
+3. Commit the spec update with a message like `spec: mark task X as complete`
+4. Push the changes frequently
+
+This keeps the spec file as a living document that tracks implementation progress.
 
 ---

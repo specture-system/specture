@@ -286,10 +286,15 @@ It should be possible to validate one specific spec or all the specs.
 - [ ] Write tests for version display
 - [ ] Add `--version` flag to root command
 - [ ] Configure GoReleaser for multi-platform builds (Linux, macOS, Windows)
-- [ ] Set up GitHub Actions workflow for automated releases with GoReleaser
+- [ ] Create manually-triggered GitHub Actions workflow for releases
+- [ ] Workflow accepts version input parameter
+- [ ] Workflow updates flake.nix with version
+- [ ] Workflow commits changes with conventional commit message
+- [ ] Workflow creates annotated git tag matching version
+- [ ] Workflow runs GoReleaser for cross-platform builds
+- [ ] Workflow creates GitHub release with artifacts
 - [ ] Create installation instructions
-- [ ] Document release process: update flake.nix version → commit → create git tag → run GoReleaser
-- [ ] Create release process documentation with complete workflow steps
+- [ ] Document how to trigger release workflow (GitHub UI or CLI)
 
 ### Cross-Platform Testing
 

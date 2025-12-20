@@ -81,7 +81,7 @@ The pre-commit hook is **required** and automatically runs before every commit. 
 - Runs linting with `go vet`
 - Runs the full test suite
 
-If any checks fail, the commit is blocked and you must fix the issues before retrying. If code formatting changes are needed, `go fmt` will modify the files automatically—stage and commit again.
+**You do not need to manually run these checks.** The pre-commit hook runs them automatically when you attempt to commit. If any checks fail, the commit is blocked and you must fix the issues. If code formatting changes are needed, `go fmt` will modify the files automatically—simply stage the changes and attempt to commit again.
 
 ## Build/Test Commands
 

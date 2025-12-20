@@ -43,11 +43,11 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 		cmd.Println("  • Create specs/README.md with Specture System guidelines")
 
 		// Check for existing AGENTS.md and CLAUDE.md
-		hasAgents, hasClaude := ctx.FindExistingFiles()
-		if hasAgents {
+		hasAgentsFile, hasClaudeFile := ctx.FindExistingFiles()
+		if hasAgentsFile {
 			cmd.Println("  • Show update prompt for AGENTS.md")
 		}
-		if hasClaude {
+		if hasClaudeFile {
 			cmd.Println("  • Show update prompt for CLAUDE.md")
 		}
 
@@ -76,39 +76,15 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 
 		// Handle AGENTS.md and CLAUDE.md update prompts (skip in dry-run mode)
 		if !dryRun {
-			if hasAgents {
-				cmd.Println()
-				confirmed, err := prompt.Confirm("Update AGENTS.md with Specture System information?")
-				if err != nil {
-					return fmt.Errorf("failed to get AGENTS.md confirmation: %w", err)
-				}
-				if confirmed {
-					cmd.Println()
-					cmd.Println("Start a new session with your AI agent and prompt it with the following:")
-					cmd.Println()
-					renderedTemplate, err := setup.RenderAgentPromptTemplate(false)
-					if err != nil {
-						return fmt.Errorf("failed to render agent prompt template: %w", err)
-					}
-					cmd.Println(prompt.Yellow(renderedTemplate))
+			if hasAgentsFile {
+				if err := promptForAiAgentFileUpdate(cmd, "AGENTS.md", false); err != nil {
+					return err
 				}
 			}
 
-			if hasClaude {
-				cmd.Println()
-				confirmed, err := prompt.Confirm("Update CLAUDE.md with Specture System information?")
-				if err != nil {
-					return fmt.Errorf("failed to get CLAUDE.md confirmation: %w", err)
-				}
-				if confirmed {
-					cmd.Println()
-					cmd.Println("Start a new session with your AI agent and prompt it with the following:")
-					cmd.Println()
-					renderedTemplate, err := setup.RenderAgentPromptTemplate(true)
-					if err != nil {
-						return fmt.Errorf("failed to render agent prompt template: %w", err)
-					}
-					cmd.Println(prompt.Yellow(renderedTemplate))
+			if hasClaudeFile {
+				if err := promptForAiAgentFileUpdate(cmd, "CLAUDE.md", true); err != nil {
+					return err
 				}
 			}
 		}
@@ -116,6 +92,29 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 		cmd.Println("\nInitialized Specture System in this repository")
 		return nil
 	},
+}
+
+func promptForAiAgentFileUpdate(cmd *cobra.Command, filename string, isClaudeFile bool) error {
+	cmd.Println()
+	confirmed, err := prompt.Confirm(fmt.Sprintf("Update %s with Specture System information?", filename))
+	if err != nil {
+		return fmt.Errorf("failed to get %s confirmation: %w", filename, err)
+	}
+
+	if confirmed {
+		cmd.Println()
+		cmd.Println("Start a new session with your AI agent and prompt it with the following:")
+		cmd.Println()
+
+		renderedTemplate, err := setup.RenderAgentPromptTemplate(isClaudeFile)
+		if err != nil {
+			return fmt.Errorf("failed to render agent prompt template: %w", err)
+		}
+
+		cmd.Println(prompt.Yellow(renderedTemplate))
+	}
+
+	return nil
 }
 
 func init() {

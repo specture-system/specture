@@ -230,13 +230,13 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Create `specs/README.md` template with forge-appropriate terminology
 - [x] Implement `specs/README.md` generation/update logic
 - [x] Write tests for AGENTS.md/CLAUDE.md detection
-- [ ] Implement `AGENTS.md` detection and update prompt
-- [ ] Implement `CLAUDE.md` detection and update prompt
+- [x] Implement `AGENTS.md` detection and update prompt
+- [x] Implement `CLAUDE.md` detection and update prompt
 - [x] Write tests for overwrite protection
-- [ ] Add protection against overwriting existing spec files
-- [ ] Write integration tests for complete setup workflow
-- [ ] Implement user confirmation flow before making changes
-- [ ] Add comprehensive error handling and user-friendly messages
+- [x] Add protection against overwriting existing spec files
+- [x] Write integration tests for complete setup workflow
+- [x] Implement user confirmation flow before making changes
+- [x] Add comprehensive error handling and user-friendly messages
 
 ### New Spec Command (`specture new`)
 

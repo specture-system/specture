@@ -9,6 +9,10 @@ import (
 	"github.com/specture-system/specture/internal/testhelpers"
 )
 
+// Note: These tests intentionally do not use t.Parallel() because setupCmd is a
+// global Cobra command that maintains mutable state (SetOut/SetErr calls).
+// Parallel execution would cause tests to interfere with each other.
+
 func TestSetupCommand_NotGitRepo(t *testing.T) {
 	// Create a temporary directory that is not a git repo
 	tmpDir := t.TempDir()
@@ -103,7 +107,11 @@ func TestSetupCommand_ValidGitRepo_CleanWorkingTree(t *testing.T) {
 	cmd := setupCmd
 	cmd.SetOut(out)
 	cmd.SetErr(out)
-	cmd.SetArgs([]string{"--dry-run"})
+
+	// Parse and set the flag directly
+	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
+		t.Fatalf("failed to set dry-run flag: %v", err)
+	}
 
 	err = cmd.RunE(cmd, []string{})
 	if err != nil {
@@ -129,11 +137,16 @@ func TestSetupCommand_ForgeDetection_NoRemote(t *testing.T) {
 		t.Fatalf("failed to change directory: %v", err)
 	}
 
-	// Run setup command
+	// Run setup command with dry-run flag
 	out := &bytes.Buffer{}
 	cmd := setupCmd
 	cmd.SetOut(out)
 	cmd.SetErr(out)
+
+	// Parse and set the flag directly
+	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
+		t.Fatalf("failed to set dry-run flag: %v", err)
+	}
 
 	err = cmd.RunE(cmd, []string{})
 	if err != nil {
@@ -142,7 +155,7 @@ func TestSetupCommand_ForgeDetection_NoRemote(t *testing.T) {
 
 	// Check output mentions default terminology
 	output := out.String()
-	if !bytes.Contains(out.Bytes(), []byte("pull request")) {
+	if !testhelpers.Contains(output, "pull request") {
 		t.Errorf("expected output to mention 'pull request' (default), got: %s", output)
 	}
 }

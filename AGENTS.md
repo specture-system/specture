@@ -77,11 +77,19 @@ This runs `just check` (formatting, linting, tests) before every commit.
 
 ## Build/Test Commands
 
+**Always use `just` recipes for development tasks.** Do NOT run `go` commands directly.
+
 Use `just` to run development tasks. See `justfile` for available recipes. Common commands:
 
 - `just build`: Build the CLI binary
 - `just test`: Run tests
 - `just check`: Format, lint, and test (runs automatically on commit)
+- `just fmt`: Format code
+- `just lint`: Run linters
+- `just install`: Install the CLI locally
+- `just clean`: Clean build artifacts
+
+**Important**: The project requires `CGO_ENABLED=0` for builds, which is configured in the `justfile`. Running `go` commands directly without this flag will fail in the Nix environment.
 
 ## Code Style
 

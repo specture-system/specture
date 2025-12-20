@@ -276,15 +276,74 @@ func TestFindExistingSpecFiles_WithSpecs(t *testing.T) {
 		t.Fatalf("expected no error, got: %v", err)
 	}
 
-	// Should find all .md files (README.md, 000-mvp.md, 001-feature.md)
-	if len(specFiles) != 3 {
-		t.Errorf("expected 3 spec files, got %d: %v", len(specFiles), specFiles)
+	// Should find only user spec files (000-mvp.md, 001-feature.md), NOT README.md
+	if len(specFiles) != 2 {
+		t.Errorf("expected 2 spec files (excluding README.md), got %d: %v", len(specFiles), specFiles)
 	}
 
-	// Should not include notes.txt
+	// Should not include notes.txt or README.md
 	for _, file := range specFiles {
 		if file == "notes.txt" {
 			t.Error("should not include non-markdown files")
 		}
+		if file == "README.md" {
+			t.Error("should not include README.md (always safe to overwrite)")
+		}
+	}
+}
+
+func TestCheckExistingSpecFiles_NoSpecs(t *testing.T) {
+	tmpDir := t.TempDir()
+	testhelpers.InitGitRepo(t, tmpDir)
+
+	ctx, err := NewContext(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to create context: %v", err)
+	}
+
+	// Should return no error when no spec files exist
+	err = ctx.CheckExistingSpecFiles()
+	if err != nil {
+		t.Errorf("expected no error when no spec files exist, got: %v", err)
+	}
+}
+
+func TestCheckExistingSpecFiles_WithSpecs(t *testing.T) {
+	tmpDir := t.TempDir()
+	testhelpers.InitGitRepo(t, tmpDir)
+
+	// Create specs directory with a user spec file
+	specsDir := filepath.Join(tmpDir, "specs")
+	if err := os.MkdirAll(specsDir, 0755); err != nil {
+		t.Fatalf("failed to create specs dir: %v", err)
+	}
+
+	testhelpers.WriteFile(t, specsDir, "000-mvp.md", "# MVP")
+
+	// Commit the file
+	cmd := exec.Command("git", "add", "specs/")
+	cmd.Dir = tmpDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to add specs: %v", err)
+	}
+
+	cmd = exec.Command("git", "commit", "-m", "add specs")
+	cmd.Dir = tmpDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	ctx, err := NewContext(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to create context: %v", err)
+	}
+
+	// Should return error when spec files exist
+	err = ctx.CheckExistingSpecFiles()
+	if err == nil {
+		t.Error("expected error when spec files exist, got nil")
+	}
+	if err.Error() != "cannot initialize: found existing spec files ([000-mvp.md]). Specs cannot be overwritten. Run 'specture setup' in a fresh repo or delete these files first." {
+		t.Errorf("unexpected error message: %v", err)
 	}
 }

@@ -1,5 +1,25 @@
 package setup
 
+const AgentPromptTemplate = `This project uses the Specture System. Read specs/README.md to learn about how the system works, then update your prompt with basic information about the system.
+
+Here's a template to include in your agent prompt:
+
+---
+
+This project uses the Specture System for managing specifications and design documents. When the user asks about planned features, architectural decisions, or implementation details, refer to the specs/ directory in the repository. Each spec file (specs/NNN-name.md) contains:
+
+- Design rationale and decisions
+- Task lists for implementation
+- Requirements and acceptance criteria
+
+The specs/ directory also contains README.md with complete guidelines on how the spec system works.
+
+---`
+
+const ClaudePromptTemplate = `This project uses the Specture System. Read specs/README.md to learn about how the system works, then update your prompt with basic information about the system.
+
+(See AGENTS.md for the full template to include in your prompt)`
+
 const SpecsReadmeTemplate = `# Spec Guidelines
 
 > This project uses the [Specture System](https://github.com/specture-system/specture), and this document outlines how it works. As the Specture System is improved and updated, this file will also be updated.

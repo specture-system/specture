@@ -42,9 +42,14 @@ func NewContext(cwd string) (*Context, error) {
 	}
 
 	// Detect forge
+	// If the repository has no remote or remote URL detection fails, forge remains Unknown.
+	// This is intentional: we gracefully default to "pull request" terminology rather than
+	// prompting the user. This keeps setup non-interactive and suitable for automation.
 	var forge git.Forge
 	remoteURL, err := git.GetRemoteURL(cwd, "origin")
 	if err == nil && remoteURL != "" {
+		// IdentifyForge returns Unknown if URL doesn't match known forges; that's OK.
+		// We'll use generic terminology in that case.
 		forge, _ = git.IdentifyForge(remoteURL)
 	}
 
@@ -59,7 +64,7 @@ func NewContext(cwd string) (*Context, error) {
 
 // CreateSpecsDirectory creates the specs/ directory in the current repository.
 func (c *Context) CreateSpecsDirectory(dryRun bool) error {
-	specsDir := fmt.Sprintf("%s/specs", c.WorkDir)
+	specsDir := filepath.Join(c.WorkDir, "specs")
 
 	if dryRun {
 		fmt.Printf("[dry-run] Would create directory: %s\n", specsDir)
@@ -108,10 +113,11 @@ func (c *Context) FindExistingFiles() (hasAgentsFile, hasClaudeFile bool) {
 		hasClaudeFile = true
 	}
 
-	return
+	return hasAgentsFile, hasClaudeFile
 }
 
-// FindExistingSpecFiles finds existing spec files (*.md) in the specs/ directory.
+// FindExistingSpecFiles finds existing spec files (*.md) in the specs/ directory,
+// excluding README.md which is always safe to overwrite.
 func (c *Context) FindExistingSpecFiles() ([]string, error) {
 	specsDir := filepath.Join(c.WorkDir, "specs")
 	if _, err := os.Stat(specsDir); err != nil {
@@ -129,10 +135,26 @@ func (c *Context) FindExistingSpecFiles() ([]string, error) {
 
 	var specFiles []string
 	for _, entry := range entries {
-		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".md" {
+		// Skip directories and README.md (always safe to overwrite)
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".md" && entry.Name() != "README.md" {
 			specFiles = append(specFiles, entry.Name())
 		}
 	}
 
 	return specFiles, nil
+}
+
+// CheckExistingSpecFiles checks if there are user-created spec files that would be
+// overwritten. Returns an error if any exist (user protection).
+func (c *Context) CheckExistingSpecFiles() error {
+	specFiles, err := c.FindExistingSpecFiles()
+	if err != nil {
+		return err
+	}
+
+	if len(specFiles) > 0 {
+		return fmt.Errorf("cannot initialize: found existing spec files (%v). Specs cannot be overwritten. Run 'specture setup' in a fresh repo or delete these files first.", specFiles)
+	}
+
+	return nil
 }

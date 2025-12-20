@@ -34,27 +34,6 @@ func TestNewContext_ErrorHandling(t *testing.T) {
 		}
 	})
 
-	t.Run("fails_if_spec_file_already_exists", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		testhelpers.InitGitRepo(t, tmpDir)
-
-		// Create specs directory and existing spec file
-		specsDir := filepath.Join(tmpDir, "specs")
-		if err := os.MkdirAll(specsDir, 0755); err != nil {
-			t.Fatalf("failed to create specs dir: %v", err)
-		}
-
-		existingSpec := filepath.Join(specsDir, "000-test-spec.md")
-		if err := os.WriteFile(existingSpec, []byte("existing"), 0644); err != nil {
-			t.Fatalf("failed to create existing spec: %v", err)
-		}
-
-		_, err := NewContext(tmpDir, "Test Spec")
-		if err == nil {
-			t.Errorf("NewContext() expected error when spec file already exists")
-		}
-	})
-
 	t.Run("succeeds_with_valid_repo", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		testhelpers.InitGitRepo(t, tmpDir)

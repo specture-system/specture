@@ -109,3 +109,69 @@ func TestSetupCommand_DryRunPreviewsAllActions(t *testing.T) {
 		}
 	}
 }
+
+func TestSetupCommand_CreatesFilesWithCorrectContent(t *testing.T) {
+	tmpDir := setupTestContext(t)
+
+	// Setup stdin to automatically answer "yes" to confirmation
+	origStdin := os.Stdin
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create pipe: %v", err)
+	}
+	defer r.Close()
+
+	if _, err := w.WriteString("yes\n"); err != nil {
+		t.Fatalf("failed to write to pipe: %v", err)
+	}
+	w.Close()
+
+	os.Stdin = r
+	t.Cleanup(func() {
+		os.Stdin = origStdin
+	})
+
+	// Run setup without dry-run (reset flag from previous tests)
+	out := &bytes.Buffer{}
+	cmd := setupCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	// Reset dry-run flag to false (it might be set to true from previous test)
+	if err := cmd.Flags().Set("dry-run", "false"); err != nil {
+		t.Fatalf("failed to reset dry-run flag: %v", err)
+	}
+
+	if err := cmd.RunE(cmd, []string{}); err != nil {
+		t.Fatalf("setup command failed: %v", err)
+	}
+
+	// Verify specs directory was created
+	specsDir := filepath.Join(tmpDir, "specs")
+	if info, err := os.Stat(specsDir); err != nil || !info.IsDir() {
+		t.Errorf("specs directory should be created, got error: %v", err)
+	}
+
+	// Verify specs/README.md was created
+	readmePath := filepath.Join(tmpDir, "specs", "README.md")
+	content, err := os.ReadFile(readmePath)
+	if err != nil {
+		t.Errorf("specs/README.md should be created, got error: %v", err)
+	}
+
+	// Verify README content contains expected sections
+	contentStr := string(content)
+	expectedContent := []string{
+		"Spec Guidelines",
+		"Spec Scope",
+		"Spec File Structure",
+		"Workflow",
+		"pull request", // ContributionType should be rendered
+	}
+
+	for _, expected := range expectedContent {
+		if !strings.Contains(contentStr, expected) {
+			t.Errorf("README.md should contain %q, full content:\n%s", expected, contentStr)
+		}
+	}
+}

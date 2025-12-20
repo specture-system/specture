@@ -238,17 +238,6 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Implement user confirmation flow before making changes
 - [x] Add comprehensive error handling and user-friendly messages
 
-### Versioning
-
-- [ ] Write tests for version extraction from git tags
-- [ ] Implement version extraction in flake.nix (read from git tags at build time)
-- [ ] Implement version display in main.go (via build flags or git tag detection)
-- [ ] Implement `specture version` command (displays current version)
-- [ ] Add version flag to root command (`specture --version`)
-- [ ] Write tests for version command output
-- [ ] Document release workflow (create git tag, build, release)
-- [ ] Add version to binary metadata (can be queried with `specture version`)
-
 ### New Spec Command (`specture new`)
 
 - [ ] Implement basic command structure and alias (`new`, `n`)

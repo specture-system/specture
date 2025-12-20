@@ -53,7 +53,7 @@ func NewContext(cwd string) (*Context, error) {
 		forge, _ = git.IdentifyForge(remoteURL)
 	}
 
-	contributionType := git.GetTerminology(forge)
+	contributionType := git.GetContributionType(forge)
 
 	return &Context{
 		WorkDir:          cwd,

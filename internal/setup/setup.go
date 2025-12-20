@@ -82,8 +82,13 @@ func (c *Context) CreateSpecsDirectory(dryRun bool) error {
 func (c *Context) CreateSpecsReadme(dryRun bool) error {
 	readmePath := filepath.Join(c.WorkDir, "specs", "README.md")
 
-	// Render template with context
-	content, err := template.RenderTemplate(SpecsReadmeTemplate, c)
+	// Load and render template with context
+	tmpl, err := GetSpecsReadmeTemplate()
+	if err != nil {
+		return fmt.Errorf("failed to load specs README template: %w", err)
+	}
+
+	content, err := template.RenderTemplate(tmpl, c)
 	if err != nil {
 		return fmt.Errorf("failed to render specs README template: %w", err)
 	}
@@ -118,5 +123,9 @@ func (c *Context) FindExistingFiles() (hasAgentsFile, hasClaudeFile bool) {
 
 // RenderAgentPromptTemplate renders the agent prompt template with context.
 func RenderAgentPromptTemplate(isClaudeFile bool) (string, error) {
-	return template.RenderTemplate(AgentPromptTemplate, map[string]bool{"IsClaudeFile": isClaudeFile})
+	tmpl, err := GetAgentPromptTemplate()
+	if err != nil {
+		return "", fmt.Errorf("failed to load agent prompt template: %w", err)
+	}
+	return template.RenderTemplate(tmpl, map[string]bool{"IsClaudeFile": isClaudeFile})
 }

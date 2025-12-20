@@ -10,7 +10,9 @@ If you have Nix installed, run:
 nix shell .#default
 ```
 
-This drops you into a shell with all dependencies pre-installed, including Go, Git, just, and pre-commit. After making changes, rebuild the CLI with `just build` to test them, then run `./specture` to test your changes.
+This builds the specture binary and drops you into a shell with all dependencies pre-installed, including Go, Git, just, and pre-commit. After making changes, rebuild the CLI with `just build` to test them, then run `./specture` to test your changes.
+
+(Note: `nix shell .` alone provides only the dev tools without building the binary.)
 
 ### Without Nix
 

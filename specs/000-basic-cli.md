@@ -218,10 +218,10 @@ It should be possible to validate one specific spec or all the specs.
 
 ### Setup Command (`specture setup`)
 
-- [ ] Implement basic command structure and aliases (`setup`, `update`)
-- [ ] Write integration tests for setup command preconditions
-- [ ] Add git repository validation (exit if not a git repo)
-- [ ] Add uncommitted changes check (exit if dirty working tree)
+- [x] Implement basic command structure and aliases (`setup`, `update`)
+- [x] Write integration tests for setup command preconditions
+- [x] Add git repository validation (exit if not a git repo)
+- [x] Add uncommitted changes check (exit if dirty working tree)
 - [ ] Implement forge detection logic
 - [ ] Write tests for dry-run mode (no file modifications)
 - [ ] Add `--dry-run` flag support

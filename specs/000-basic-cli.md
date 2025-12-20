@@ -229,9 +229,9 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Create `specs/` directory generation
 - [x] Create `specs/README.md` template with forge-appropriate terminology
 - [x] Implement `specs/README.md` generation/update logic
-- [ ] Write tests for AGENTS.md/CLAUDE.md detection
-- [ ] Implement `AGENTS.md` detection and update prompt
-- [ ] Implement `CLAUDE.md` detection and update prompt
+- [x] Write tests for AGENTS.md/CLAUDE.md detection
+- [x] Implement `AGENTS.md` detection and update prompt
+- [x] Implement `CLAUDE.md` detection and update prompt
 - [ ] Write tests for overwrite protection
 - [ ] Add protection against overwriting existing spec files
 - [ ] Write integration tests for complete setup workflow

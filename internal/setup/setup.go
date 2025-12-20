@@ -95,3 +95,18 @@ func (c *Context) CreateSpecsReadme(dryRun bool) error {
 
 	return nil
 }
+
+// FindExistingFiles finds AGENTS.md and CLAUDE.md files in the repository.
+func (c *Context) FindExistingFiles() (hasAgentsFile, hasClaudeFile bool) {
+	agentsPath := filepath.Join(c.WorkDir, "AGENTS.md")
+	claudePath := filepath.Join(c.WorkDir, "CLAUDE.md")
+
+	if _, err := os.Stat(agentsPath); err == nil {
+		hasAgentsFile = true
+	}
+	if _, err := os.Stat(claudePath); err == nil {
+		hasClaudeFile = true
+	}
+
+	return
+}

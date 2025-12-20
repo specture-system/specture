@@ -2,6 +2,7 @@ package setup
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -159,5 +160,62 @@ func TestCreateSpecsReadme_DryRun(t *testing.T) {
 	readmePath := filepath.Join(tmpDir, "specs", "README.md")
 	if _, err := os.Stat(readmePath); err == nil {
 		t.Error("specs README should not be created in dry-run mode")
+	}
+}
+
+func TestFindExistingFiles_NoFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	testhelpers.InitGitRepo(t, tmpDir)
+
+	ctx, err := NewContext(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to create context: %v", err)
+	}
+
+	hasAgents, hasClaude := ctx.FindExistingFiles()
+	if hasAgents {
+		t.Error("expected no AGENTS.md file")
+	}
+	if hasClaude {
+		t.Error("expected no CLAUDE.md file")
+	}
+}
+
+func TestFindExistingFiles_WithFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	testhelpers.InitGitRepo(t, tmpDir)
+
+	// Create and commit AGENTS.md and CLAUDE.md files
+	testhelpers.WriteFile(t, tmpDir, "AGENTS.md", "# Agents")
+	testhelpers.WriteFile(t, tmpDir, "CLAUDE.md", "# Claude")
+
+	// Commit the files so working tree is clean
+	// We'll use a direct approach for simplicity
+	files := []string{"AGENTS.md", "CLAUDE.md"}
+	for _, file := range files {
+		cmd := exec.Command("git", "add", file)
+		cmd.Dir = tmpDir
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("failed to add %s: %v", file, err)
+		}
+	}
+
+	cmd := exec.Command("git", "commit", "-m", "test files")
+	cmd.Dir = tmpDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	ctx, err := NewContext(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to create context: %v", err)
+	}
+
+	hasAgents, hasClaude := ctx.FindExistingFiles()
+	if !hasAgents {
+		t.Error("expected AGENTS.md file to be found")
+	}
+	if !hasClaude {
+		t.Error("expected CLAUDE.md file to be found")
 	}
 }

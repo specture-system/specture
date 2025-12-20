@@ -110,3 +110,39 @@ func TestSetupCommand_ValidGitRepo_CleanWorkingTree(t *testing.T) {
 		t.Fatalf("expected no error with clean repo and dry-run flag, got: %v", err)
 	}
 }
+
+func TestSetupCommand_ForgeDetection_NoRemote(t *testing.T) {
+	// Create a temporary clean git repository with no remotes
+	tmpDir := t.TempDir()
+	testhelpers.InitGitRepo(t, tmpDir)
+
+	// Change to the repository
+	originalWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current working directory: %v", err)
+	}
+	t.Cleanup(func() {
+		os.Chdir(originalWd)
+	})
+
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("failed to change directory: %v", err)
+	}
+
+	// Run setup command
+	out := &bytes.Buffer{}
+	cmd := setupCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	err = cmd.RunE(cmd, []string{})
+	if err != nil {
+		t.Fatalf("expected no error with no remote, got: %v", err)
+	}
+
+	// Check output mentions default terminology
+	output := out.String()
+	if !bytes.Contains(out.Bytes(), []byte("pull request")) {
+		t.Errorf("expected output to mention 'pull request' (default), got: %s", output)
+	}
+}

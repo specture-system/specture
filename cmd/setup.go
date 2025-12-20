@@ -37,6 +37,27 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 			return fmt.Errorf("working tree has uncommitted changes")
 		}
 
+		// Detect forge
+		remoteURL, err := git.GetRemoteURL(cwd, "origin")
+		if err != nil {
+			// No remote configured, prompt user
+			cmd.Println("No 'origin' remote configured. Using default (pull request) terminology.")
+		} else if remoteURL == "" {
+			// No remotes at all
+			cmd.Println("No git remotes configured. Using default (pull request) terminology.")
+		}
+
+		var forge git.Forge
+		if remoteURL != "" {
+			forge, err = git.IdentifyForge(remoteURL)
+			if err != nil {
+				cmd.Printf("Warning: Could not identify forge from remote URL: %v\n", err)
+			}
+		}
+
+		terminology := git.GetTerminology(forge)
+		cmd.Printf("Detected forge: %s (%s)\n", forge, terminology)
+
 		cmd.Println("Setup would initialize the Specture System here")
 		return nil
 	},

@@ -222,9 +222,9 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Write integration tests for setup command preconditions
 - [x] Add git repository validation (exit if not a git repo)
 - [x] Add uncommitted changes check (exit if dirty working tree)
-- [ ] Implement forge detection logic
-- [ ] Write tests for dry-run mode (no file modifications)
-- [ ] Add `--dry-run` flag support
+- [x] Implement forge detection logic
+- [x] Write tests for dry-run mode (no file modifications)
+- [x] Add `--dry-run` flag support
 - [ ] Write integration tests for setup command file generation
 - [ ] Create `specs/` directory generation
 - [ ] Create `specs/README.md` template with forge-appropriate terminology

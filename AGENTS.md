@@ -73,7 +73,15 @@ pip install pre-commit
 pre-commit install
 ```
 
-This runs `just check` (formatting, linting, tests) before every commit.
+### Pre-commit Hook
+
+The pre-commit hook is **required** and automatically runs before every commit. It executes `just check`, which:
+
+- Formats code with `go fmt`
+- Runs linting with `go vet`
+- Runs the full test suite
+
+If any checks fail, the commit is blocked and you must fix the issues before retrying. If code formatting changes are needed, `go fmt` will modify the files automatically—stage and commit again.
 
 ## Build/Test Commands
 

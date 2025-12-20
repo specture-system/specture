@@ -14,6 +14,9 @@ coverage.html
 # Dependency directories
 vendor/
 
+# Nix build output
+result
+
 # IDE
 .vscode/
 .idea/

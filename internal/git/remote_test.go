@@ -93,19 +93,19 @@ func TestGetRemoteURL(t *testing.T) {
 	}
 }
 
-func TestGetTerminology(t *testing.T) {
+func TestGetContributionType(t *testing.T) {
 	tests := []struct {
 		name  string
 		forge Forge
 		want  string
 	}{
 		{
-			name:  "github terminology",
+			name:  "github contribution type",
 			forge: ForgeGitHub,
 			want:  "pull request",
 		},
 		{
-			name:  "gitlab terminology",
+			name:  "gitlab contribution type",
 			forge: ForgeGitLab,
 			want:  "merge request",
 		},
@@ -118,9 +118,9 @@ func TestGetTerminology(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := GetTerminology(tt.forge)
+			got := GetContributionType(tt.forge)
 			if got != tt.want {
-				t.Errorf("GetTerminology() = %q, want %q", got, tt.want)
+				t.Errorf("GetContributionType() = %q, want %q", got, tt.want)
 			}
 		})
 	}

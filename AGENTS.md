@@ -1,70 +1,41 @@
 # AGENTS.md
 
-## Overview
+## Specture System
 
-Specture is a spec-driven software architecture system. It provides a lightweight, document-driven approach to project planning where specs are markdown files in the `specs/` directory.
+This project uses the Specture System for managing specifications and design documents. When you ask about planned features, architectural decisions, or implementation details, refer to the specs/ directory in the repository. Each spec file (specs/NNN-name.md) contains:
 
-**For detailed information about the Specture System, see `specs/README.md`.**
+- Design rationale and decisions
+- Task lists for implementation
+- Requirements and acceptance criteria
 
-## Directory Structure
+The specs/ directory also contains README.md with complete guidelines on how the spec system works.
+
+**Important**: Before editing the design in any spec file, prompt the user for explicit permission.
+
+When implementing a spec, check off each item in the task list as you go.
+
+### Key Concepts
+
+- **Specs as living documents**: Specs are continually improved during design and implementation, but left static after completion
+- **Scope**: Specs cover planned changes—new features, major refactors, redesigns, tooling improvements. Use the issue tracker for bugs
+- **Status workflow**: draft → approved → in-progress → completed (or rejected)
+- **Precedence**: Higher-numbered specs take precedence when conflicts arise
+- **Task organization**: Tasks are grouped into logical sections (e.g., Foundation, Core Implementation, Polish and Documentation)
+
+### Directory Structure
 
 - **`specs/`**: Markdown spec files for planned changes (features, refactors, improvements)
 - **`specs/README.md`**: Complete spec guidelines, workflow, and best practices
+- **`cmd/`**: CLI command definitions and command-specific orchestration
+- **`internal/prompt/`**: User interaction utilities (confirmations, prompts, template display)
+- **`internal/fs/`**: File system operations
+- **`internal/git/`**: Git repository operations
+- **`internal/setup/`**: Setup command logic
 - **`AGENTS.md`**: This file, for agentic coding tools
 
-## Core Concepts
+## Development Environment
 
-### What Are Specs?
-
-Specs are design documents describing planned changes: new features, major refactors, redesigns, and tooling improvements. They are inspired by PEP (Python Enhancement Proposal) and BIP (Bitcoin Improvement Proposal) systems.
-
-- **NOT for bugs**: Use the issue tracker for bugs (cases where software doesn't match spec descriptions)
-- **Scope**: Can range from large (traditional epic size) to small (minor UI improvements)
-- **Coherent units**: Split specs for independent changes; combine for shared design decisions
-
-### Spec Structure
-
-All specs follow this format:
-
-1. **YAML Frontmatter**: Metadata (status, author, dates)
-2. **Title (H1)**: Clear, descriptive name
-3. **Description**: Overview of what's being proposed, why, and the problem it solves
-4. **Design Decisions** (optional): Rationale for major design choices
-5. **Task List**: Detailed, actionable implementation tasks grouped into sections
-
-### Spec Lifecycle
-
-Each spec has a status field that tracks its state:
-
-- **`draft`**: Being written and refined
-- **`approved`**: Ready for implementation
-- **`in-progress`**: Implementation underway
-- **`completed`**: All tasks finished
-- **`rejected`**: Reviewed but not approved
-
-### File Naming
-
-Use kebab-case filenames with numeric prefix:
-
-- `000-mvp.md`
-- `001-add-authentication-system.md`
-- `013-refactor-database-layer.md`
-
-### Precedence System
-
-Higher-numbered specs take precedence over lower-numbered specs. If two specs conflict, the higher number wins. This avoids the need to retroactively update completed specs.
-
-### Workflow Guidelines
-
-1. **Check spec status** before starting work—only implement specs marked `approved` or `in-progress`
-2. **Update task lists** as you complete tasks in a spec
-3. **Don't update completed specs** (except for typos/factual corrections)—create a new spec if requirements change
-4. **Document your work** in the task list; the spec becomes the historical record
-5. **Refer to design decisions** in the spec when making implementation choices
-
-See `specs/README.md` for detailed guidelines on spec workflow, best practices, and design decision documentation.
-
-## Development Setup
+### Setup
 
 Before starting work, ensure pre-commit hooks are installed:
 
@@ -73,17 +44,31 @@ pip install pre-commit
 pre-commit install
 ```
 
-This runs `just check` (formatting, linting, tests) before every commit.
+The pre-commit hook is **required** and automatically runs before every commit. It executes `just check`, which:
 
-## Build/Test Commands
+- Formats code with `go fmt`
+- Runs linting with `go vet`
+- Runs the full test suite
+
+**You do not need to manually run these checks.** The pre-commit hook runs them automatically when you attempt to commit. If any checks fail, the commit is blocked and you must fix the issues. If code formatting changes are needed, `go fmt` will modify the files automatically—simply stage the changes and attempt to commit again.
+
+### Build and Test Commands
+
+**Always use `just` recipes for development tasks.** Do NOT run `go` commands directly.
 
 Use `just` to run development tasks. See `justfile` for available recipes. Common commands:
 
 - `just build`: Build the CLI binary
 - `just test`: Run tests
 - `just check`: Format, lint, and test (runs automatically on commit)
+- `just fmt`: Format code
+- `just lint`: Run linters
+- `just install`: Install the CLI locally
+- `just clean`: Clean build artifacts
 
-## Code Style
+**Important**: The project requires `CGO_ENABLED=0` for builds, which is configured in the `justfile`. Running `go` commands directly without this flag will fail in the Nix environment.
+
+## Code Style and Organization
 
 - **Language**: Go
 - **Naming**: Kebab-case with numeric prefix for specs and files
@@ -93,30 +78,29 @@ Use `just` to run development tasks. See `justfile` for available recipes. Commo
 - **Commits**: Use conventional commits (feat:, fix:, test:, refactor:, etc.)
 - **File organization**: Core functions at top, helper functions at bottom
 
-## CLI Tools (in development)
+### Helper Functions and Code Organization
 
-- `specture setup`: Initialize Specture in a repo
-- `specture new`: Create new spec with template
-- `specture validate`: Validate spec files
+When adding functionality:
 
-## Spec Editing Safety
+1. **Check for existing helpers first**: Before writing new utility functions, search the codebase for similar functionality. Look in `internal/` packages for utilities that might already exist or could be extended.
 
-Spec files under `specs/` are long-term design documents. Follow this strict workflow:
+2. **Place helpers in the correct packages**:
+   - `internal/prompt/`: User interaction utilities (confirmations, prompts, template display)
+   - `internal/fs/`: File system operations
+   - `internal/git/`: Git repository operations
+   - `internal/setup/`: Setup command logic
+   - `cmd/`: Only CLI command definitions and command-specific orchestration
 
-1. **Ask for confirmation before editing any spec file**. State the exact file path and change summary. Example:
-   ```
-   I plan to update `specs/001-new-data-format` to change the 'Blank entries representation' section. Reply 'yes' to apply.
-   ```
+   **Do NOT** put reusable helper functions in `cmd/` files—they belong in `internal/` packages.
 
-2. **After receiving approval**, stage files and present a one-line commit message for explicit confirmation before committing.
+3. **Extract and generalize**: If writing a function in a command file that could be useful elsewhere (e.g., showing a template to a user), move it to the appropriate `internal/` package with unit tests.
 
-3. **Do not commit spec changes without explicit user approval**. If uncertain whether something is a transient implementation choice or long-term spec decision, ask the user.
-
-This ensures specs remain authoritative design documents and changes are intentional.
+4. **Write tests alongside helpers**: All utility functions in `internal/` packages must have corresponding unit tests.
 
 ## GitHub Workflow
 
 **Creating issues and PRs:**
+
 ```bash
 # View issue details
 gh issue view <number>
@@ -126,6 +110,7 @@ gh pr create --title "feat: add new feature" --body "Description of changes"
 ```
 
 **PR Title Format**: PRs are squashed on merge to main, so PR titles become commit messages. Use conventional commit format:
+
 - `feat:` for features
 - `fix:` for bug fixes
 - `refactor:` for refactoring

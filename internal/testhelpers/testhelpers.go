@@ -2,6 +2,7 @@ package testhelpers
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -41,4 +42,27 @@ func ReadFile(t *testing.T, path string) string {
 		t.Fatalf("failed to read file: %v", err)
 	}
 	return string(content)
+}
+
+// InitGitRepo initializes a git repository in the given directory.
+func InitGitRepo(t *testing.T, dir string) {
+	t.Helper()
+	cmd := exec.Command("git", "init")
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to initialize git repo: %v", err)
+	}
+
+	// Configure git user for commits
+	configCmds := [][]string{
+		{"git", "config", "user.email", "test@example.com"},
+		{"git", "config", "user.name", "Test User"},
+	}
+	for _, configCmd := range configCmds {
+		cmd := exec.Command(configCmd[0], configCmd[1:]...)
+		cmd.Dir = dir
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("failed to configure git: %v", err)
+		}
+	}
 }

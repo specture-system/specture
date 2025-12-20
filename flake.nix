@@ -11,7 +11,7 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         pname = "specture";
-        version = "0.1.0";
+        version = "0.0.0";
       in
       {
         packages.default = pkgs.buildGoModule {

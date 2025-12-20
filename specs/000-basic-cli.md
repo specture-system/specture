@@ -218,25 +218,25 @@ It should be possible to validate one specific spec or all the specs.
 
 ### Setup Command (`specture setup`)
 
-- [ ] Implement basic command structure and aliases (`setup`, `update`)
-- [ ] Write integration tests for setup command preconditions
-- [ ] Add git repository validation (exit if not a git repo)
-- [ ] Add uncommitted changes check (exit if dirty working tree)
-- [ ] Implement forge detection logic
-- [ ] Write tests for dry-run mode (no file modifications)
-- [ ] Add `--dry-run` flag support
-- [ ] Write integration tests for setup command file generation
-- [ ] Create `specs/` directory generation
-- [ ] Create `specs/README.md` template with forge-appropriate terminology
-- [ ] Implement `specs/README.md` generation/update logic
-- [ ] Write tests for AGENTS.md/CLAUDE.md detection
-- [ ] Implement `AGENTS.md` detection and update prompt
-- [ ] Implement `CLAUDE.md` detection and update prompt
-- [ ] Write tests for overwrite protection
-- [ ] Add protection against overwriting existing spec files
-- [ ] Write integration tests for complete setup workflow
-- [ ] Implement user confirmation flow before making changes
-- [ ] Add comprehensive error handling and user-friendly messages
+- [x] Implement basic command structure and aliases (`setup`, `update`)
+- [x] Write integration tests for setup command preconditions
+- [x] Add git repository validation (exit if not a git repo)
+- [x] Add uncommitted changes check (exit if dirty working tree)
+- [x] Implement forge detection logic
+- [x] Write tests for dry-run mode (no file modifications)
+- [x] Add `--dry-run` flag support
+- [x] Write integration tests for setup command file generation
+- [x] Create `specs/` directory generation
+- [x] Create `specs/README.md` template with forge-appropriate terminology
+- [x] Implement `specs/README.md` generation/update logic
+- [x] Write tests for AGENTS.md/CLAUDE.md detection
+- [x] Implement `AGENTS.md` detection and update prompt
+- [x] Implement `CLAUDE.md` detection and update prompt
+- [x] Write tests for overwrite protection
+- [x] Add protection against overwriting existing spec files
+- [x] Write integration tests for complete setup workflow
+- [x] Implement user confirmation flow before making changes
+- [x] Add comprehensive error handling and user-friendly messages
 
 ### New Spec Command (`specture new`)
 
@@ -281,10 +281,21 @@ It should be possible to validate one specific spec or all the specs.
 
 ### Distribution & Deployment
 
+- [ ] Configure GoReleaser to inject version via ldflags at build time
+- [ ] Implement version display in main.go (read injected build flag, with fallback for local builds)
+- [ ] Write tests for version display
+- [ ] Add `--version` flag to root command
 - [ ] Configure GoReleaser for multi-platform builds (Linux, macOS, Windows)
-- [ ] Set up GitHub Actions workflow for automated releases with GoReleaser
+- [ ] Create manually-triggered GitHub Actions workflow for releases
+- [ ] Workflow accepts version input parameter
+- [ ] Workflow updates flake.nix with version
+- [ ] Workflow updates vendorHash in flake.nix
+- [ ] Workflow commits changes with conventional commit message
+- [ ] Workflow creates annotated git tag matching version
+- [ ] Workflow runs GoReleaser for cross-platform builds
+- [ ] Workflow creates GitHub release with artifacts
 - [ ] Create installation instructions
-- [ ] Create release process documentation (git tag workflow)
+- [ ] Document how to trigger release workflow (GitHub UI or CLI)
 
 ### Cross-Platform Testing
 

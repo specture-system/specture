@@ -44,7 +44,7 @@ func TestRenderTemplate(t *testing.T) {
 			want: "Pull Request",
 		},
 		{
-			name: "forge terminology conditional",
+			name: "forge contribution type conditional",
 			tpl:  "When you're ready, open a {{if .IsGitLab}}merge request{{else}}pull request{{end}}.",
 			data: map[string]bool{"IsGitLab": false},
 			want: "When you're ready, open a pull request.",

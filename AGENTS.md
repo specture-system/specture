@@ -12,7 +12,14 @@ The specs/ directory also contains README.md with complete guidelines on how the
 
 **Important**: Before editing the design in any spec file, prompt the user for explicit permission.
 
-When implementing a spec, check off each item in the task list as you go.
+When implementing a spec, follow this workflow for each task:
+
+1. Complete a single task from the task list
+2. Update the spec file by changing `- [ ]` to `- [x]` for that task
+3. Commit both the implementation and spec update together with a conventional commit message (e.g., `feat: implement feature X`)
+4. Push the changes
+
+This keeps the spec file as a living document that tracks implementation progress, with each task corresponding to one commit.
 
 ### Key Concepts
 

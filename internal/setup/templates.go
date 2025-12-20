@@ -16,10 +16,6 @@ The specs/ directory also contains README.md with complete guidelines on how the
 
 ---`
 
-const ClaudePromptTemplate = `This project uses the Specture System. Read specs/README.md to learn about how the system works, then update your prompt with basic information about the system.
-
-(See AGENTS.md for the full template to include in your prompt)`
-
 const SpecsReadmeTemplate = `# Spec Guidelines
 
 > This project uses the [Specture System](https://github.com/specture-system/specture), and this document outlines how it works. As the Specture System is improved and updated, this file will also be updated.

@@ -98,7 +98,7 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 				if confirmed {
 					cmd.Println("Copy the following into your CLAUDE.md file:")
 					cmd.Println()
-					cmd.Println(setup.ClaudePromptTemplate)
+					cmd.Println(setup.AgentPromptTemplate)
 				}
 			}
 		}

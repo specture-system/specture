@@ -1,7 +1,9 @@
 ---
-status: draft
+status: in-progress
 author: Addison Emig
 creation_date: 2025-12-18
+approved_by: Addison Emig
+approval_date: 2025-12-19
 ---
 
 # Implement Basic CLI
@@ -199,20 +201,20 @@ It should be possible to validate one specific spec or all the specs.
 
 ### Core Infrastructure
 
-- [ ] Write unit tests for git repository detection
-- [ ] Implement git repository detection (using os/exec)
-- [ ] Write unit tests for uncommitted changes check
-- [ ] Implement uncommitted changes check (using os/exec)
-- [ ] Write unit tests for forge identification
-- [ ] Implement git remote detection and forge identification (GitLab vs others)
-- [ ] Write unit tests for terminology detection
-- [ ] Create utility for terminology detection ("merge request" vs "pull request")
-- [ ] Write unit tests for file system utilities
-- [ ] Create file system utilities (safe read/write, directory creation)
-- [ ] Write unit tests for prompt system (with mocked input)
-- [ ] Implement user prompt/confirmation system
-- [ ] Write unit tests for template utilities
-- [ ] Create text/template-based markdown file generation utilities
+- [x] Write unit tests for git repository detection
+- [x] Implement git repository detection (using os/exec)
+- [x] Write unit tests for uncommitted changes check
+- [x] Implement uncommitted changes check (using os/exec)
+- [x] Write unit tests for forge identification
+- [x] Implement git remote detection and forge identification (GitLab vs others)
+- [x] Write unit tests for terminology detection
+- [x] Create utility for terminology detection ("merge request" vs "pull request")
+- [x] Write unit tests for file system utilities
+- [x] Create file system utilities (safe read/write, directory creation)
+- [x] Write unit tests for prompt system (with mocked input)
+- [x] Implement user prompt/confirmation system
+- [x] Write unit tests for template utilities
+- [x] Create text/template-based markdown file generation utilities
 
 ### Setup Command (`specture setup`)
 

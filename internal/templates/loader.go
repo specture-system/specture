@@ -8,29 +8,26 @@ import (
 //go:embed files/*.md
 var templateFiles embed.FS
 
-// GetSpecTemplate returns the spec file template.
-func GetSpecTemplate() (string, error) {
-	content, err := templateFiles.ReadFile("files/spec-template.md")
+// readTemplate reads and returns a template file from the embedded filesystem.
+func readTemplate(filename, description string) (string, error) {
+	content, err := templateFiles.ReadFile("files/" + filename)
 	if err != nil {
-		return "", fmt.Errorf("failed to read spec template: %w", err)
+		return "", fmt.Errorf("failed to read %s: %w", description, err)
 	}
 	return string(content), nil
+}
+
+// GetSpecTemplate returns the spec file template.
+func GetSpecTemplate() (string, error) {
+	return readTemplate("spec-template.md", "spec template")
 }
 
 // GetAgentPromptTemplate returns the agent prompt template.
 func GetAgentPromptTemplate() (string, error) {
-	content, err := templateFiles.ReadFile("files/agent-prompt.md")
-	if err != nil {
-		return "", fmt.Errorf("failed to read agent prompt template: %w", err)
-	}
-	return string(content), nil
+	return readTemplate("agent-prompt.md", "agent prompt template")
 }
 
 // GetSpecsReadmeTemplate returns the specs README template.
 func GetSpecsReadmeTemplate() (string, error) {
-	content, err := templateFiles.ReadFile("files/specs-readme.md")
-	if err != nil {
-		return "", fmt.Errorf("failed to read specs readme template: %w", err)
-	}
-	return string(content), nil
+	return readTemplate("specs-readme.md", "specs readme template")
 }

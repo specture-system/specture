@@ -23,8 +23,8 @@ func TestNewContext_ValidRepo(t *testing.T) {
 		t.Errorf("expected WorkDir %s, got %s", tmpDir, ctx.WorkDir)
 	}
 
-	if ctx.Terminology == "" {
-		t.Error("expected Terminology to be set")
+	if ctx.ContributionType == "" {
+		t.Error("expected ContributionType to be set")
 	}
 }
 
@@ -134,7 +134,7 @@ func TestCreateSpecsReadme(t *testing.T) {
 		t.Error("specs README should contain 'Spec Guidelines'")
 	}
 	if !strings.Contains(content, "pull request") {
-		t.Error("specs README should contain terminology")
+		t.Error("specs README should contain contribution type")
 	}
 }
 

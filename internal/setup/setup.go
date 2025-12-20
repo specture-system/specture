@@ -12,9 +12,9 @@ import (
 
 // Context holds the setup context for the current repository.
 type Context struct {
-	WorkDir     string    // Current working directory
-	Forge       git.Forge // Detected git forge
-	Terminology string    // "pull request" or "merge request"
+	WorkDir          string    // Current working directory
+	Forge            git.Forge // Detected git forge
+	ContributionType string    // "pull request" or "merge request"
 }
 
 // NewContext creates a new setup context for the current directory.
@@ -53,12 +53,12 @@ func NewContext(cwd string) (*Context, error) {
 		forge, _ = git.IdentifyForge(remoteURL)
 	}
 
-	terminology := git.GetTerminology(forge)
+	contributionType := git.GetTerminology(forge)
 
 	return &Context{
-		WorkDir:     cwd,
-		Forge:       forge,
-		Terminology: terminology,
+		WorkDir:          cwd,
+		Forge:            forge,
+		ContributionType: contributionType,
 	}, nil
 }
 
@@ -78,7 +78,7 @@ func (c *Context) CreateSpecsDirectory(dryRun bool) error {
 	return nil
 }
 
-// CreateSpecsReadme generates the specs/README.md file with forge-appropriate terminology.
+// CreateSpecsReadme generates the specs/README.md file with forge-appropriate contribution type.
 func (c *Context) CreateSpecsReadme(dryRun bool) error {
 	readmePath := filepath.Join(c.WorkDir, "specs", "README.md")
 

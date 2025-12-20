@@ -37,7 +37,7 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 		}
 
 		// Show summary of what will happen
-		cmd.Printf("Detected forge: %s (%s)\n", ctx.Forge, ctx.Terminology)
+		cmd.Printf("Detected forge: %s (%s)\n", ctx.Forge, ctx.ContributionType)
 		cmd.Println("\nSetup will:")
 		cmd.Println("  • Create specs/ directory")
 		cmd.Println("  • Create specs/README.md with Specture System guidelines")

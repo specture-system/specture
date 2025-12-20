@@ -219,3 +219,72 @@ func TestFindExistingFiles_WithFiles(t *testing.T) {
 		t.Error("expected CLAUDE.md file to be found")
 	}
 }
+
+func TestFindExistingSpecFiles_NoSpecs(t *testing.T) {
+	tmpDir := t.TempDir()
+	testhelpers.InitGitRepo(t, tmpDir)
+
+	ctx, err := NewContext(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to create context: %v", err)
+	}
+
+	specFiles, err := ctx.FindExistingSpecFiles()
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if len(specFiles) != 0 {
+		t.Errorf("expected no spec files, got %d", len(specFiles))
+	}
+}
+
+func TestFindExistingSpecFiles_WithSpecs(t *testing.T) {
+	tmpDir := t.TempDir()
+	testhelpers.InitGitRepo(t, tmpDir)
+
+	// Create specs directory with some files
+	specsDir := filepath.Join(tmpDir, "specs")
+	if err := os.MkdirAll(specsDir, 0755); err != nil {
+		t.Fatalf("failed to create specs dir: %v", err)
+	}
+
+	testhelpers.WriteFile(t, specsDir, "000-mvp.md", "# MVP")
+	testhelpers.WriteFile(t, specsDir, "001-feature.md", "# Feature")
+	testhelpers.WriteFile(t, specsDir, "README.md", "# Readme")
+	testhelpers.WriteFile(t, specsDir, "notes.txt", "notes")
+
+	// Commit all files
+	cmd := exec.Command("git", "add", "specs/")
+	cmd.Dir = tmpDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to add specs: %v", err)
+	}
+
+	cmd = exec.Command("git", "commit", "-m", "add specs")
+	cmd.Dir = tmpDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	ctx, err := NewContext(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to create context: %v", err)
+	}
+
+	specFiles, err := ctx.FindExistingSpecFiles()
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	// Should find all .md files (README.md, 000-mvp.md, 001-feature.md)
+	if len(specFiles) != 3 {
+		t.Errorf("expected 3 spec files, got %d: %v", len(specFiles), specFiles)
+	}
+
+	// Should not include notes.txt
+	for _, file := range specFiles {
+		if file == "notes.txt" {
+			t.Error("should not include non-markdown files")
+		}
+	}
+}

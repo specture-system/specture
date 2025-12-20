@@ -110,3 +110,29 @@ func (c *Context) FindExistingFiles() (hasAgentsFile, hasClaudeFile bool) {
 
 	return
 }
+
+// FindExistingSpecFiles finds existing spec files (*.md) in the specs/ directory.
+func (c *Context) FindExistingSpecFiles() ([]string, error) {
+	specsDir := filepath.Join(c.WorkDir, "specs")
+	if _, err := os.Stat(specsDir); err != nil {
+		if os.IsNotExist(err) {
+			// specs directory doesn't exist yet, so no spec files
+			return []string{}, nil
+		}
+		return nil, fmt.Errorf("failed to check specs directory: %w", err)
+	}
+
+	entries, err := os.ReadDir(specsDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read specs directory: %w", err)
+	}
+
+	var specFiles []string
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".md" {
+			specFiles = append(specFiles, entry.Name())
+		}
+	}
+
+	return specFiles, nil
+}

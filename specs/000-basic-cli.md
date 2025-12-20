@@ -232,8 +232,8 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Write tests for AGENTS.md/CLAUDE.md detection
 - [x] Implement `AGENTS.md` detection and update prompt
 - [x] Implement `CLAUDE.md` detection and update prompt
-- [ ] Write tests for overwrite protection
-- [ ] Add protection against overwriting existing spec files
+- [x] Write tests for overwrite protection
+- [x] Add protection against overwriting existing spec files
 - [ ] Write integration tests for complete setup workflow
 - [ ] Implement user confirmation flow before making changes
 - [ ] Add comprehensive error handling and user-friendly messages

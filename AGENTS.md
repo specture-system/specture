@@ -22,19 +22,20 @@ When implementing a spec, check off each item in the task list as you go.
 - **Precedence**: Higher-numbered specs take precedence when conflicts arise
 - **Task organization**: Tasks are grouped into logical sections (e.g., Foundation, Core Implementation, Polish and Documentation)
 
-## Overview
-
-Specture is a spec-driven software architecture system. It provides a lightweight, document-driven approach to project planning where specs are markdown files in the `specs/` directory.
-
-**For detailed information about the Specture System, see `specs/README.md`.**
-
-## Directory Structure
+### Directory Structure
 
 - **`specs/`**: Markdown spec files for planned changes (features, refactors, improvements)
 - **`specs/README.md`**: Complete spec guidelines, workflow, and best practices
+- **`cmd/`**: CLI command definitions and command-specific orchestration
+- **`internal/prompt/`**: User interaction utilities (confirmations, prompts, template display)
+- **`internal/fs/`**: File system operations
+- **`internal/git/`**: Git repository operations
+- **`internal/setup/`**: Setup command logic
 - **`AGENTS.md`**: This file, for agentic coding tools
 
-## Development Setup
+## Development Environment
+
+### Setup
 
 Before starting work, ensure pre-commit hooks are installed:
 
@@ -42,8 +43,6 @@ Before starting work, ensure pre-commit hooks are installed:
 pip install pre-commit
 pre-commit install
 ```
-
-### Pre-commit Hook
 
 The pre-commit hook is **required** and automatically runs before every commit. It executes `just check`, which:
 
@@ -53,7 +52,7 @@ The pre-commit hook is **required** and automatically runs before every commit. 
 
 **You do not need to manually run these checks.** The pre-commit hook runs them automatically when you attempt to commit. If any checks fail, the commit is blocked and you must fix the issues. If code formatting changes are needed, `go fmt` will modify the files automatically—simply stage the changes and attempt to commit again.
 
-## Build/Test Commands
+### Build and Test Commands
 
 **Always use `just` recipes for development tasks.** Do NOT run `go` commands directly.
 
@@ -69,7 +68,7 @@ Use `just` to run development tasks. See `justfile` for available recipes. Commo
 
 **Important**: The project requires `CGO_ENABLED=0` for builds, which is configured in the `justfile`. Running `go` commands directly without this flag will fail in the Nix environment.
 
-## Code Style
+## Code Style and Organization
 
 - **Language**: Go
 - **Naming**: Kebab-case with numeric prefix for specs and files
@@ -97,12 +96,6 @@ When adding functionality:
 3. **Extract and generalize**: If writing a function in a command file that could be useful elsewhere (e.g., showing a template to a user), move it to the appropriate `internal/` package with unit tests.
 
 4. **Write tests alongside helpers**: All utility functions in `internal/` packages must have corresponding unit tests.
-
-## CLI Tools (in development)
-
-- `specture setup`: Initialize Specture in a repo
-- `specture new`: Create new spec with template
-- `specture validate`: Validate spec files
 
 ## GitHub Workflow
 

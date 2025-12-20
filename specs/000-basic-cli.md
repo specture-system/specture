@@ -284,7 +284,6 @@ It should be possible to validate one specific spec or all the specs.
 - [ ] Configure GoReleaser to inject version via ldflags at build time
 - [ ] Implement version display in main.go (read injected build flag, with fallback for local builds)
 - [ ] Write tests for version display
-- [ ] Implement `specture version` command (displays current version)
 - [ ] Add `--version` flag to root command
 - [ ] Configure GoReleaser for multi-platform builds (Linux, macOS, Windows)
 - [ ] Set up GitHub Actions workflow for automated releases with GoReleaser

@@ -1,8 +1,8 @@
 package setup
 
-const AgentPromptTemplate = `This project uses the Specture System. Read specs/README.md to learn about how the system works, then update your prompt with basic information about the system.
+const AgentPromptTemplate = `This project uses the Specture System. Read specs/README.md to learn about how the system works, then update your agent configuration with basic information about the system.
 
-Below is a template to include in your agent prompt. Modify as required for this project.
+Below is a template to include in {{if .IsClaudeFile}}CLAUDE.md{{else}}AGENTS.md{{end}}. Modify as required for this project.
 
 ---
 

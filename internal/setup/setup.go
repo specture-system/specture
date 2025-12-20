@@ -115,3 +115,8 @@ func (c *Context) FindExistingFiles() (hasAgentsFile, hasClaudeFile bool) {
 
 	return hasAgentsFile, hasClaudeFile
 }
+
+// RenderAgentPromptTemplate renders the agent prompt template with context.
+func RenderAgentPromptTemplate(isClaudeFile bool) (string, error) {
+	return template.RenderTemplate(AgentPromptTemplate, map[string]bool{"IsClaudeFile": isClaudeFile})
+}

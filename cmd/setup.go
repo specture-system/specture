@@ -83,9 +83,14 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 					return fmt.Errorf("failed to get AGENTS.md confirmation: %w", err)
 				}
 				if confirmed {
-					cmd.Println("Copy the following into your AGENTS.md file:")
 					cmd.Println()
-					cmd.Println(setup.AgentPromptTemplate)
+					cmd.Println("Start a new session with your AI agent and prompt it with the following:")
+					cmd.Println()
+					renderedTemplate, err := setup.RenderAgentPromptTemplate(false)
+					if err != nil {
+						return fmt.Errorf("failed to render agent prompt template: %w", err)
+					}
+					cmd.Println(prompt.Yellow(renderedTemplate))
 				}
 			}
 
@@ -96,9 +101,14 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 					return fmt.Errorf("failed to get CLAUDE.md confirmation: %w", err)
 				}
 				if confirmed {
-					cmd.Println("Copy the following into your CLAUDE.md file:")
 					cmd.Println()
-					cmd.Println(setup.AgentPromptTemplate)
+					cmd.Println("Start a new session with your AI agent and prompt it with the following:")
+					cmd.Println()
+					renderedTemplate, err := setup.RenderAgentPromptTemplate(true)
+					if err != nil {
+						return fmt.Errorf("failed to render agent prompt template: %w", err)
+					}
+					cmd.Println(prompt.Yellow(renderedTemplate))
 				}
 			}
 		}

@@ -250,9 +250,9 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Implement file creation from template
 - [x] Implement editor detection and opening (respect $EDITOR)
 - [x] Write tests for branch creation (with test git repos)
+- [x] Write tests for error handling scenarios
+- [x] Add error handling for edge cases (no git, existing file, etc.)
 - [ ] Write integration tests for complete new spec workflow
-- [ ] Write tests for error handling scenarios
-- [ ] Add error handling for edge cases (no git, existing file, etc.)
 
 ### Validate Command (`specture validate`)
 

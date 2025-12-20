@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/specture-system/specture/internal/template"
+	"github.com/specture-system/specture/internal/templates"
 )
 
 // SpecData holds the template data for a new spec.
@@ -79,18 +80,9 @@ func FindNextSpecNumber(specsDir string) (int, error) {
 	return numbers[len(numbers)-1] + 1, nil
 }
 
-// GetSpecTemplate returns the spec file template.
-func GetSpecTemplate() (string, error) {
-	content, err := templateFiles.ReadFile("templates/spec-template.md")
-	if err != nil {
-		return "", err
-	}
-	return string(content), nil
-}
-
 // RenderSpec renders a spec file from the template with the given data.
 func RenderSpec(title, author string) (string, error) {
-	tmpl, err := GetSpecTemplate()
+	tmpl, err := templates.GetSpecTemplate()
 	if err != nil {
 		return "", err
 	}

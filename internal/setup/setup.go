@@ -8,6 +8,7 @@ import (
 	"github.com/specture-system/specture/internal/fs"
 	"github.com/specture-system/specture/internal/git"
 	"github.com/specture-system/specture/internal/template"
+	"github.com/specture-system/specture/internal/templates"
 )
 
 // Context holds the setup context for the current repository.
@@ -83,7 +84,7 @@ func (c *Context) CreateSpecsReadme(dryRun bool) error {
 	readmePath := filepath.Join(c.WorkDir, "specs", "README.md")
 
 	// Load and render template with context
-	tmpl, err := GetSpecsReadmeTemplate()
+	tmpl, err := templates.GetSpecsReadmeTemplate()
 	if err != nil {
 		return fmt.Errorf("failed to load specs README template: %w", err)
 	}
@@ -123,7 +124,7 @@ func (c *Context) FindExistingFiles() (hasAgentsFile, hasClaudeFile bool) {
 
 // RenderAgentPromptTemplate renders the agent prompt template with context.
 func RenderAgentPromptTemplate(isClaudeFile bool) (string, error) {
-	tmpl, err := GetAgentPromptTemplate()
+	tmpl, err := templates.GetAgentPromptTemplate()
 	if err != nil {
 		return "", fmt.Errorf("failed to load agent prompt template: %w", err)
 	}

@@ -15,8 +15,7 @@ coverage.html
 vendor/
 
 # Nix build output
-result/
-result-*
+result
 
 # IDE
 .vscode/

@@ -289,7 +289,7 @@ It should be possible to validate one specific spec or all the specs.
 - [ ] Create manually-triggered GitHub Actions workflow for releases
 - [ ] Workflow accepts version input parameter
 - [ ] Workflow updates flake.nix with version
-- [ ] Workflow updates vendorHash in flake.nix if go.mod changed (or document manual step)
+- [ ] Workflow updates vendorHash in flake.nix
 - [ ] Workflow commits changes with conventional commit message
 - [ ] Workflow creates annotated git tag matching version
 - [ ] Workflow runs GoReleaser for cross-platform builds

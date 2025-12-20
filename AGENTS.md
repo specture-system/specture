@@ -1,5 +1,27 @@
 # AGENTS.md
 
+## Specture System
+
+This project uses the Specture System for managing specifications and design documents. When you ask about planned features, architectural decisions, or implementation details, refer to the specs/ directory in the repository. Each spec file (specs/NNN-name.md) contains:
+
+- Design rationale and decisions
+- Task lists for implementation
+- Requirements and acceptance criteria
+
+The specs/ directory also contains README.md with complete guidelines on how the spec system works.
+
+**Important**: Before editing the design in any spec file, prompt the user for explicit permission.
+
+When implementing a spec, check off each item in the task list as you go.
+
+### Key Concepts
+
+- **Specs as living documents**: Specs are continually improved during design and implementation, but left static after completion
+- **Scope**: Specs cover planned changes—new features, major refactors, redesigns, tooling improvements. Use the issue tracker for bugs
+- **Status workflow**: draft → approved → in-progress → completed (or rejected)
+- **Precedence**: Higher-numbered specs take precedence when conflicts arise
+- **Task organization**: Tasks are grouped into logical sections (e.g., Foundation, Core Implementation, Polish and Documentation)
+
 ## Overview
 
 Specture is a spec-driven software architecture system. It provides a lightweight, document-driven approach to project planning where specs are markdown files in the `specs/` directory.

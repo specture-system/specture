@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/specture-system/specture/internal/fs"
-	"github.com/specture-system/specture/internal/git"
+	gitpkg "github.com/specture-system/specture/internal/git"
 )
 
 // Context holds information needed to create a new spec.
@@ -25,12 +25,12 @@ type Context struct {
 // It validates that the current directory is a git repository and returns an error if not.
 func NewContext(workDir, title string) (*Context, error) {
 	// Validate git repository
-	if err := git.IsGitRepository(workDir); err != nil {
+	if err := gitpkg.IsGitRepository(workDir); err != nil {
 		return nil, err
 	}
 
 	// Check for uncommitted changes
-	hasDirty, err := git.HasUncommittedChanges(workDir)
+	hasDirty, err := gitpkg.HasUncommittedChanges(workDir)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func NewContext(workDir, title string) (*Context, error) {
 	}
 
 	// Get author from git config
-	author, err := GetAuthor(workDir)
+	author, err := gitpkg.GetAuthor(workDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git author: %w", err)
 	}
@@ -100,7 +100,7 @@ func (c *Context) CreateSpec(dryRun bool) error {
 	}
 
 	// Create branch
-	if err := CreateBranch(c.WorkDir, c.BranchName); err != nil {
+	if err := gitpkg.CreateBranch(c.WorkDir, c.BranchName); err != nil {
 		// Clean up the file if branch creation fails
 		os.Remove(c.FilePath)
 		return err

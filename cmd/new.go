@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/specture-system/specture/internal/git"
 	"github.com/specture-system/specture/internal/new"
 	"github.com/specture-system/specture/internal/prompt"
 	"github.com/spf13/cobra"
@@ -89,7 +90,7 @@ creates a branch for the spec, and opens the file in your editor.`,
 
 		// Commit
 		commitMsg := fmt.Sprintf("spec: add spec %03d (%s)", ctx.Number, ctx.Title)
-		if err := new.CommitChanges(cwd, commitMsg, ctx.FilePath); err != nil {
+		if err := git.CommitChanges(cwd, commitMsg, ctx.FilePath); err != nil {
 			return err
 		}
 
@@ -107,7 +108,7 @@ creates a branch for the spec, and opens the file in your editor.`,
 		}
 
 		// Push
-		if err := new.PushChanges(cwd, ctx.BranchName); err != nil {
+		if err := git.PushBranch(cwd, "origin", ctx.BranchName); err != nil {
 			return err
 		}
 

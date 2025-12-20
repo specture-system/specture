@@ -281,12 +281,17 @@ It should be possible to validate one specific spec or all the specs.
 
 ### Distribution & Deployment
 
+- [ ] Configure GoReleaser to inject version via ldflags at build time
+- [ ] Implement version display in main.go (read injected build flag, with fallback for local builds)
+- [ ] Write tests for version display
+- [ ] Implement `specture version` command (displays current version)
+- [ ] Add `--version` flag to root command
 - [ ] Configure GoReleaser for multi-platform builds (Linux, macOS, Windows)
 - [ ] Set up GitHub Actions workflow for automated releases with GoReleaser
 - [ ] Create installation instructions
-- [ ] Create release process documentation (git tag workflow)
-
-**Note**: Versioning (version command, version extraction from git tags) should be implemented as part of the full release system setup, not separately. Create a new spec when ready to tackle this as a cohesive unit with the release workflow.
+- [ ] Document release process: create git tag → update flake.nix version → run GoReleaser
+- [ ] Automate flake.nix version updates in release workflow (or document manual step)
+- [ ] Create release process documentation with complete workflow steps
 
 ### Cross-Platform Testing
 

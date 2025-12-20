@@ -13,12 +13,6 @@ func Confirm(message string) (bool, error) {
 	return confirm(message, os.Stdin)
 }
 
-// ShowTemplate prompts the user to confirm, then outputs the template if approved.
-// If confirmed, returns the template text; otherwise returns empty string.
-func ShowTemplate(message string) (string, error) {
-	return showTemplate(message, os.Stdin)
-}
-
 // ConfirmWithDefault prompts with a default answer if user just presses enter.
 func ConfirmWithDefault(message string, defaultValue bool) (bool, error) {
 	return confirmWithDefault(message, defaultValue, os.Stdin)
@@ -85,15 +79,4 @@ func promptString(prompt string, reader io.Reader) (string, error) {
 		return "", fmt.Errorf("failed to read input")
 	}
 	return strings.TrimSpace(scanner.Text()), nil
-}
-
-func showTemplate(message string, reader io.Reader) (string, error) {
-	ok, err := confirm(message, reader)
-	if err != nil {
-		return "", err
-	}
-	if ok {
-		return "confirm", nil
-	}
-	return "", nil
 }

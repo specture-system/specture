@@ -78,11 +78,11 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 		if !dryRun {
 			if hasAgents {
 				cmd.Println()
-				confirmed, err := prompt.ShowTemplate("Update AGENTS.md with Specture System information?")
+				confirmed, err := prompt.Confirm("Update AGENTS.md with Specture System information?")
 				if err != nil {
 					return fmt.Errorf("failed to get AGENTS.md confirmation: %w", err)
 				}
-				if confirmed != "" {
+				if confirmed {
 					cmd.Println("Copy the following into your AGENTS.md file:")
 					cmd.Println()
 					cmd.Println(setup.AgentPromptTemplate)
@@ -91,11 +91,11 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 
 			if hasClaude {
 				cmd.Println()
-				confirmed, err := prompt.ShowTemplate("Update CLAUDE.md with Specture System information?")
+				confirmed, err := prompt.Confirm("Update CLAUDE.md with Specture System information?")
 				if err != nil {
 					return fmt.Errorf("failed to get CLAUDE.md confirmation: %w", err)
 				}
-				if confirmed != "" {
+				if confirmed {
 					cmd.Println("Copy the following into your CLAUDE.md file:")
 					cmd.Println()
 					cmd.Println(setup.ClaudePromptTemplate)

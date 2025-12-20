@@ -14,12 +14,12 @@ import (
 // global Cobra command that maintains mutable state (SetOut/SetErr calls).
 // Parallel execution would cause tests to interfere with each other.
 
-func TestSetupCommand_CompleteWorkflow_DryRun(t *testing.T) {
-	// Create a temporary clean git repository
+// setupTestContext prepares a temporary git repository and changes to it.
+// It returns the directory path and registers cleanup.
+func setupTestContext(t *testing.T) string {
 	tmpDir := t.TempDir()
 	testhelpers.InitGitRepo(t, tmpDir)
 
-	// Change to the repository
 	originalWd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("failed to get current working directory: %v", err)
@@ -32,21 +32,30 @@ func TestSetupCommand_CompleteWorkflow_DryRun(t *testing.T) {
 		t.Fatalf("failed to change directory: %v", err)
 	}
 
-	// Run setup command with dry-run flag
+	return tmpDir
+}
+
+// runSetupCommand runs the setup command with dry-run flag and returns output.
+func runSetupCommand(t *testing.T) string {
 	out := &bytes.Buffer{}
 	cmd := setupCmd
 	cmd.SetOut(out)
 	cmd.SetErr(out)
 
-	// Parse and set the flag directly
 	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
 		t.Fatalf("failed to set dry-run flag: %v", err)
 	}
 
-	err = cmd.RunE(cmd, []string{})
-	if err != nil {
+	if err := cmd.RunE(cmd, []string{}); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
+
+	return out.String()
+}
+
+func TestSetupCommand_CompleteWorkflow_DryRun(t *testing.T) {
+	tmpDir := setupTestContext(t)
+	output := runSetupCommand(t)
 
 	// Verify specs directory was NOT created (dry-run mode)
 	specsDir := filepath.Join(tmpDir, "specs")
@@ -55,7 +64,6 @@ func TestSetupCommand_CompleteWorkflow_DryRun(t *testing.T) {
 	}
 
 	// Verify output contains setup summary
-	output := out.String()
 	if !strings.Contains(output, "Detected forge") {
 		t.Errorf("output should contain forge detection, got: %s", output)
 	}
@@ -65,41 +73,10 @@ func TestSetupCommand_CompleteWorkflow_DryRun(t *testing.T) {
 }
 
 func TestSetupCommand_OutputSummary(t *testing.T) {
-	// Create a temporary clean git repository
-	tmpDir := t.TempDir()
-	testhelpers.InitGitRepo(t, tmpDir)
-
-	// Change to the repository
-	originalWd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get current working directory: %v", err)
-	}
-	t.Cleanup(func() {
-		os.Chdir(originalWd)
-	})
-
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("failed to change directory: %v", err)
-	}
-
-	// Run setup command with dry-run flag (avoids user confirmation)
-	out := &bytes.Buffer{}
-	cmd := setupCmd
-	cmd.SetOut(out)
-	cmd.SetErr(out)
-
-	// Parse and set the flag directly
-	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
-		t.Fatalf("failed to set dry-run flag: %v", err)
-	}
-
-	err = cmd.RunE(cmd, []string{})
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
+	setupTestContext(t)
+	output := runSetupCommand(t)
 
 	// Verify output contains expected summary items
-	output := out.String()
 	if !strings.Contains(output, "Setup will:") {
 		t.Errorf("output should contain 'Setup will:' summary, got: %s", output)
 	}

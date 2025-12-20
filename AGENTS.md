@@ -26,8 +26,9 @@ This keeps the spec file as a living document that tracks implementation progres
 - **Specs as living documents**: Specs are continually improved during design and implementation, but left static after completion
 - **Scope**: Specs cover planned changes—new features, major refactors, redesigns, tooling improvements. Use the issue tracker for bugs
 - **Status workflow**: draft → approved → in-progress → completed (or rejected)
-- **Precedence**: Higher-numbered specs take precedence when conflicts arise
+- **Precedence**: Higher-numbered specs take precedence when conflicts arise. Once a spec is completed, treat it as historical record; don't retroactively update it (fix only typos/factual errors)
 - **Task organization**: Tasks are grouped into logical sections (e.g., Foundation, Core Implementation, Polish and Documentation)
+- **File naming**: Numeric prefix with kebab-case (e.g., `000-mvp.md`, `013-refactor-database.md`). Higher numbers have higher precedence
 
 ### Directory Structure
 

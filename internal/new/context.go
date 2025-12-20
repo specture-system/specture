@@ -68,6 +68,11 @@ func NewContext(workDir, title string) (*Context, error) {
 	fileName := fmt.Sprintf("%03d-%s.md", number, kebabTitle)
 	filePath := filepath.Join(specsDir, fileName)
 
+	// Check if spec file already exists (defensive check)
+	if _, err := os.Stat(filePath); err == nil {
+		return nil, fmt.Errorf("spec file already exists: %s", filePath)
+	}
+
 	return &Context{
 		WorkDir:    workDir,
 		SpecsDir:   specsDir,

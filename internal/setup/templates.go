@@ -156,22 +156,22 @@ Use descriptive, kebab-case filenames with a numeric prefix:
 1. Create a new spec file with frontmatter status set to ` + "`draft`" + `
 2. Write the spec with required sections: Title, Description, and Task List. Include Design Decisions if there are meaningful choices to document
 3. Keep the spec updated as you refine the proposal
-4. Open {{.Terminology}} requests to share and refine the spec with the team
+4. Open {{.Terminology}}s to share and refine the spec with the team
 5. The spec may go through multiple iterations while still in draft status as it evolves
 
 #### Tips
 
 - **Be clear, not clever**: Write for future readers who may not have context
 - **Document alternatives**: Even rejected options are valuable to record
-- **Link to discussions**: Reference {{.Terminology}} comments, issues, or other specs
+- **Link to discussions**: Reference {{.Terminology}} discussions, issues, or other specs
 - **Focus on "why"**: The code shows "how", the spec should explain "why"
 
 ### Approved
 
 It is up to the project maintainers to determine when they are ready to merge a spec with the status set to ` + "`approved`" + `. The requirements for what defines an approved spec will vary by project.
 
-1. Once the team agrees the spec is ready for implementation, update status to ` + "`approved`" + ` in a {{.Terminology}} request
-2. Merge the {{.Terminology}} request with the updated status
+1. Once the team agrees the spec is ready for implementation, update status to ` + "`approved`" + ` in a {{.Terminology}}
+2. Merge the {{.Terminology}} with the updated status
 3. Implementation can now begin
 
 ### In-Progress

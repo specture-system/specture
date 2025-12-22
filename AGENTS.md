@@ -105,6 +105,30 @@ When adding functionality:
 
 4. **Write tests alongside helpers**: All utility functions in `internal/` packages must have corresponding unit tests.
 
+## Testing
+
+- **Test coverage**: Write tests for all public functions in `internal/` packages. Test files live next to implementation files with `_test.go` suffix.
+- **Table-driven tests**: Use table-driven tests for testing multiple input/output scenarios:
+  ```go
+  tests := []struct {
+      name     string
+      input    string
+      expected string
+  }{
+      {"case 1", "input1", "expected1"},
+      {"case 2", "input2", "expected2"},
+  }
+  for _, tt := range tests {
+      t.Run(tt.name, func(t *testing.T) {
+          // test logic
+      })
+  }
+  ```
+- **Edge cases**: Test edge cases (empty input, missing files, errors, etc.) in separate test runs, not just happy paths.
+- **Helper functions**: Create test helper functions (e.g., `InitGitRepo`) in `internal/testhelpers/` to reduce duplication across tests.
+- **Mocking**: For file and git operations, use temporary directories (`t.TempDir()`) in tests rather than mocking.
+- **Test naming**: Test function names follow pattern `Test<Function><Scenario>` (e.g., `TestCleanup`, `TestCreateBranch`). Use `t.Run()` subtests with descriptive names for different cases.
+
 ## GitHub Workflow
 
 **Creating issues and PRs:**

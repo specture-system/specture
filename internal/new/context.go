@@ -3,6 +3,7 @@ package new
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -10,8 +11,8 @@ import (
 	gitpkg "github.com/specture-system/specture/internal/git"
 )
 
-// Context holds information needed to create a new spec.
-type Context struct {
+// NewCommandContext holds information needed to create a new spec.
+type NewCommandContext struct {
 	WorkDir    string
 	SpecsDir   string
 	Title      string
@@ -22,9 +23,9 @@ type Context struct {
 	FilePath   string
 }
 
-// NewContext creates a new Context for spec creation.
+// NewContext creates a new NewCommandContext for spec creation.
 // It validates that the current directory is a git repository and returns an error if not.
-func NewContext(workDir, title string) (*Context, error) {
+func NewContext(workDir, title string) (*NewCommandContext, error) {
 	// Validate git repository
 	if err := gitpkg.IsGitRepository(workDir); err != nil {
 		return nil, err
@@ -70,7 +71,7 @@ func NewContext(workDir, title string) (*Context, error) {
 	fileName := fmt.Sprintf("%03d-%s.md", number, slug)
 	filePath := filepath.Join(specsDir, fileName)
 
-	return &Context{
+	return &NewCommandContext{
 		WorkDir:    workDir,
 		SpecsDir:   specsDir,
 		Title:      title,
@@ -83,7 +84,7 @@ func NewContext(workDir, title string) (*Context, error) {
 }
 
 // CreateSpec creates the spec file and opens it in the editor.
-func (c *Context) CreateSpec(dryRun bool) error {
+func (c *NewCommandContext) CreateSpec(dryRun bool) error {
 	// Render spec from template
 	content, err := RenderSpec(c.Title, c.Author)
 	if err != nil {
@@ -106,6 +107,40 @@ func (c *Context) CreateSpec(dryRun bool) error {
 		// Clean up the file if branch creation fails
 		os.Remove(c.FilePath)
 		return err
+	}
+
+	return nil
+}
+
+// Cleanup removes the spec file and deletes the branch, reverting to the previous branch.
+// This is called if the editor exits with a non-zero code (user cancellation).
+func (c *NewCommandContext) Cleanup() error {
+	// Remove the spec file
+	if err := os.Remove(c.FilePath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove spec file: %w", err)
+	}
+
+	// Delete the branch by checking out main/master and deleting the branch
+	// Try main first, then master
+	for _, targetBranch := range []string{"main", "master"} {
+		checkoutCmd := exec.Command("git", "checkout", targetBranch)
+		checkoutCmd.Dir = c.WorkDir
+		if err := checkoutCmd.Run(); err == nil {
+			// Successfully checked out, now delete the branch
+			deleteCmd := exec.Command("git", "branch", "-D", c.BranchName)
+			deleteCmd.Dir = c.WorkDir
+			if err := deleteCmd.Run(); err != nil {
+				return fmt.Errorf("failed to delete branch: %w", err)
+			}
+			return nil
+		}
+	}
+
+	// If we can't find main or master, just try to delete the branch anyway
+	deleteCmd := exec.Command("git", "branch", "-D", c.BranchName)
+	deleteCmd.Dir = c.WorkDir
+	if err := deleteCmd.Run(); err != nil {
+		return fmt.Errorf("failed to delete branch: %w", err)
 	}
 
 	return nil

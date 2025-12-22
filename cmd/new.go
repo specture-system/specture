@@ -73,7 +73,13 @@ creates a branch for the spec, and opens the file in your editor.`,
 
 		// Open in editor
 		if err := new.OpenEditor(ctx.FilePath); err != nil {
-			return err
+			// Editor exited with error, clean up
+			cmd.Printf("\nCancelling spec creation...\n")
+			if cleanupErr := ctx.Cleanup(); cleanupErr != nil {
+				return fmt.Errorf("spec creation cancelled, but cleanup failed: %w", cleanupErr)
+			}
+			cmd.Println("Spec and branch removed.")
+			return nil
 		}
 
 		cmd.Printf("\nSpec created in branch %s. Commit and push when ready.\n", ctx.BranchName)

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/specture-system/specture/internal/git"
 	"github.com/specture-system/specture/internal/new"
 	"github.com/specture-system/specture/internal/prompt"
 	"github.com/spf13/cobra"
@@ -77,42 +76,7 @@ creates a branch for the spec, and opens the file in your editor.`,
 			return err
 		}
 
-		// Confirm before committing
-		cmd.Println()
-		ok, err = prompt.Confirm("Commit the changes?")
-		if err != nil {
-			return fmt.Errorf("failed to get commit confirmation: %w", err)
-		}
-		if !ok {
-			cmd.Println("Changes not committed.")
-			return nil
-		}
-
-		// Commit
-		commitMsg := fmt.Sprintf("spec: add spec %03d (%s)", ctx.Number, ctx.Title)
-		if err := git.CommitChanges(cwd, commitMsg, ctx.FilePath); err != nil {
-			return err
-		}
-
-		cmd.Println("Changes committed.")
-
-		// Confirm before pushing
-		cmd.Println()
-		ok, err = prompt.Confirm("Push to origin?")
-		if err != nil {
-			return fmt.Errorf("failed to get push confirmation: %w", err)
-		}
-		if !ok {
-			cmd.Println("Changes not pushed.")
-			return nil
-		}
-
-		// Push
-		if err := git.PushBranch(cwd, "origin", ctx.BranchName); err != nil {
-			return err
-		}
-
-		cmd.Println("Changes pushed to origin.")
+		cmd.Printf("\nSpec created in branch %s. Commit and push when ready.\n", ctx.BranchName)
 		return nil
 	},
 }

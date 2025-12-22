@@ -46,28 +46,3 @@ func TestCreateBranch(t *testing.T) {
 		}
 	})
 }
-
-func TestPushBranch(t *testing.T) {
-	t.Run("fails_without_remote", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		testhelpers.InitGitRepo(t, tmpDir)
-
-		// Create initial commit
-		cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
-		cmd.Dir = tmpDir
-		if err := cmd.Run(); err != nil {
-			t.Fatalf("failed to create initial commit: %v", err)
-		}
-
-		// Create branch
-		if err := CreateBranch(tmpDir, "test-branch"); err != nil {
-			t.Fatalf("failed to create branch: %v", err)
-		}
-
-		// Try to push without remote
-		err := PushBranch(tmpDir, "origin", "test-branch")
-		if err == nil {
-			t.Errorf("PushBranch() expected error when remote doesn't exist")
-		}
-	})
-}

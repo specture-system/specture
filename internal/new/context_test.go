@@ -2,6 +2,7 @@ package new
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"testing"
@@ -39,6 +40,13 @@ func TestNewContext_ErrorHandling(t *testing.T) {
 	t.Run("succeeds_with_valid_repo", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		testhelpers.InitGitRepo(t, tmpDir)
+
+		// Create initial commit so there's a branch to check out
+		cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
+		cmd.Dir = tmpDir
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("failed to create initial commit: %v", err)
+		}
 
 		ctx, err := NewContext(tmpDir, "My First Spec")
 		if err != nil {

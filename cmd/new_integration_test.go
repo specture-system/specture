@@ -21,6 +21,13 @@ func newTestContext(t *testing.T) string {
 	tmpDir := t.TempDir()
 	testhelpers.InitGitRepo(t, tmpDir)
 
+	// Create initial commit so there's a branch to check out
+	cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
+	cmd.Dir = tmpDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to create initial commit: %v", err)
+	}
+
 	originalWd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("failed to get current working directory: %v", err)

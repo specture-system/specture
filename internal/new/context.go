@@ -13,14 +13,15 @@ import (
 
 // NewCommandContext holds information needed to create a new spec.
 type NewCommandContext struct {
-	WorkDir    string
-	SpecsDir   string
-	Title      string
-	Author     string
-	Number     int
-	BranchName string
-	FileName   string
-	FilePath   string
+	WorkDir        string
+	SpecsDir       string
+	Title          string
+	Author         string
+	Number         int
+	BranchName     string
+	FileName       string
+	FilePath       string
+	OriginalBranch string
 }
 
 // NewContext creates a new NewCommandContext for spec creation.
@@ -60,6 +61,12 @@ func NewContext(workDir, title string) (*NewCommandContext, error) {
 		return nil, fmt.Errorf("failed to find next spec number: %w", err)
 	}
 
+	// Get current branch
+	currentBranch, err := gitpkg.GetCurrentBranch(workDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current branch: %w", err)
+	}
+
 	// Convert title to slug
 	slug := ToSlug(title)
 
@@ -72,14 +79,15 @@ func NewContext(workDir, title string) (*NewCommandContext, error) {
 	filePath := filepath.Join(specsDir, fileName)
 
 	return &NewCommandContext{
-		WorkDir:    workDir,
-		SpecsDir:   specsDir,
-		Title:      title,
-		Author:     author,
-		Number:     number,
-		BranchName: branchName,
-		FileName:   fileName,
-		FilePath:   filePath,
+		WorkDir:        workDir,
+		SpecsDir:       specsDir,
+		Title:          title,
+		Author:         author,
+		Number:         number,
+		BranchName:     branchName,
+		FileName:       fileName,
+		FilePath:       filePath,
+		OriginalBranch: currentBranch,
 	}, nil
 }
 
@@ -112,7 +120,7 @@ func (c *NewCommandContext) CreateSpec(dryRun bool) error {
 	return nil
 }
 
-// Cleanup removes the spec file and deletes the branch, reverting to the previous branch.
+// Cleanup removes the spec file and deletes the branch, reverting to the original branch.
 // This is called if the editor exits with a non-zero code (user cancellation).
 func (c *NewCommandContext) Cleanup() error {
 	// Remove the spec file
@@ -120,23 +128,14 @@ func (c *NewCommandContext) Cleanup() error {
 		return fmt.Errorf("failed to remove spec file: %w", err)
 	}
 
-	// Delete the branch by checking out main/master and deleting the branch
-	// Try main first, then master
-	for _, targetBranch := range []string{"main", "master"} {
-		checkoutCmd := exec.Command("git", "checkout", targetBranch)
-		checkoutCmd.Dir = c.WorkDir
-		if err := checkoutCmd.Run(); err == nil {
-			// Successfully checked out, now delete the branch
-			deleteCmd := exec.Command("git", "branch", "-D", c.BranchName)
-			deleteCmd.Dir = c.WorkDir
-			if err := deleteCmd.Run(); err != nil {
-				return fmt.Errorf("failed to delete branch: %w", err)
-			}
-			return nil
-		}
+	// Checkout back to original branch
+	checkoutCmd := exec.Command("git", "checkout", c.OriginalBranch)
+	checkoutCmd.Dir = c.WorkDir
+	if err := checkoutCmd.Run(); err != nil {
+		return fmt.Errorf("failed to checkout original branch: %w", err)
 	}
 
-	// If we can't find main or master, just try to delete the branch anyway
+	// Delete the spec branch
 	deleteCmd := exec.Command("git", "branch", "-D", c.BranchName)
 	deleteCmd.Dir = c.WorkDir
 	if err := deleteCmd.Run(); err != nil {

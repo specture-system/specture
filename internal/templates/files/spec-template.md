@@ -19,17 +19,17 @@ Optional section to document the design process. For each major decision, includ
 
 ## Task List
 
-### Foundation
+### TBD
 
-- [ ] Task 1
-- [ ] Task 2
+- [ ] TBD
+- [ ] TBD
 
-### Core Implementation
+### TBD
 
-- [ ] Task 1
-- [ ] Task 2
+- [ ] TBD
+- [ ] TBD
 
-### Polish and Documentation
+### TBD
 
-- [ ] Task 1
-- [ ] Task 2
+- [ ] TBD
+- [ ] TBD

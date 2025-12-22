@@ -3,7 +3,9 @@ package new
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
+	"time"
 
 	"github.com/specture-system/specture/internal/testhelpers"
 )
@@ -49,8 +51,12 @@ func TestNewContext_ErrorHandling(t *testing.T) {
 		if ctx.FileName != "000-my-first-spec.md" {
 			t.Errorf("NewContext() filename = %q, want %q", ctx.FileName, "000-my-first-spec.md")
 		}
-		if ctx.BranchName != "spec/000-my-first-spec" {
-			t.Errorf("NewContext() branch = %q, want %q", ctx.BranchName, "spec/000-my-first-spec")
+
+		// Branch name should include date suffix (YYYY-MM-DD)
+		today := time.Now().Format("2006-01-02")
+		expectedBranchPattern := "spec/000-my-first-spec-" + regexp.QuoteMeta(today)
+		if !regexp.MustCompile(expectedBranchPattern).MatchString(ctx.BranchName) {
+			t.Errorf("NewContext() branch = %q, want pattern %q", ctx.BranchName, expectedBranchPattern)
 		}
 	})
 }

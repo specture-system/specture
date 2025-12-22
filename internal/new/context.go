@@ -59,15 +59,15 @@ func NewContext(workDir, title string) (*Context, error) {
 		return nil, fmt.Errorf("failed to find next spec number: %w", err)
 	}
 
-	// Convert title to kebab-case
-	kebabTitle := ToKebabCase(title)
+	// Convert title to slug
+	slug := ToSlug(title)
 
 	// Create branch name with date suffix
 	date := time.Now().Format("2006-01-02")
-	branchName := fmt.Sprintf("spec/%03d-%s-%s", number, kebabTitle, date)
+	branchName := fmt.Sprintf("spec/%03d-%s-%s", number, slug, date)
 
 	// Create file name and path
-	fileName := fmt.Sprintf("%03d-%s.md", number, kebabTitle)
+	fileName := fmt.Sprintf("%03d-%s.md", number, slug)
 	filePath := filepath.Join(specsDir, fileName)
 
 	return &Context{

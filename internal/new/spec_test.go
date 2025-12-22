@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestToKebabCase(t *testing.T) {
+func TestToSlug(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected string
@@ -30,9 +30,9 @@ func TestToKebabCase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			result := ToKebabCase(tt.input)
+			result := ToSlug(tt.input)
 			if result != tt.expected {
-				t.Errorf("ToKebabCase(%q) = %q, want %q", tt.input, result, tt.expected)
+				t.Errorf("ToSlug(%q) = %q, want %q", tt.input, result, tt.expected)
 			}
 		})
 	}
@@ -131,4 +131,3 @@ func TestRenderSpec(t *testing.T) {
 		}
 	})
 }
-

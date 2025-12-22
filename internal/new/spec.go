@@ -20,8 +20,8 @@ type SpecData struct {
 	CreationDate string
 }
 
-// ToKebabCase converts a string to kebab-case.
-func ToKebabCase(s string) string {
+// ToSlug converts a string to a URL-safe slug (kebab-case with special characters removed).
+func ToSlug(s string) string {
 	// Convert to lowercase
 	s = strings.ToLower(s)
 

@@ -134,4 +134,104 @@ func TestCleanup(t *testing.T) {
 			t.Errorf("spec branch should be deleted after cleanup")
 		}
 	})
+
+	t.Run("handles_missing_file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		testhelpers.InitGitRepo(t, tmpDir)
+
+		// Create initial commit
+		cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
+		cmd.Dir = tmpDir
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("failed to create initial commit: %v", err)
+		}
+
+		// Create context
+		ctx, err := NewContext(tmpDir, "Test Spec")
+		if err != nil {
+			t.Fatalf("NewContext() error = %v", err)
+		}
+
+		// Create branch but not file
+		createBranchCmd := exec.Command("git", "checkout", "-b", ctx.BranchName)
+		createBranchCmd.Dir = tmpDir
+		if err := createBranchCmd.Run(); err != nil {
+			t.Fatalf("failed to create branch: %v", err)
+		}
+
+		// Cleanup should succeed even without the file
+		if err := ctx.Cleanup(); err != nil {
+			t.Fatalf("Cleanup() should succeed when file doesn't exist, got error: %v", err)
+		}
+
+		// Verify branch is deleted
+		checkBranchCmd := exec.Command("git", "rev-parse", "--verify", ctx.BranchName)
+		checkBranchCmd.Dir = tmpDir
+		if err := checkBranchCmd.Run(); err == nil {
+			t.Errorf("spec branch should be deleted after cleanup")
+		}
+	})
+
+	t.Run("returns_to_original_branch_when_on_different_branch", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		testhelpers.InitGitRepo(t, tmpDir)
+
+		// Create initial commit
+		cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
+		cmd.Dir = tmpDir
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("failed to create initial commit: %v", err)
+		}
+
+		// Create and checkout a different branch
+		otherBranchCmd := exec.Command("git", "checkout", "-b", "feature-branch")
+		otherBranchCmd.Dir = tmpDir
+		if err := otherBranchCmd.Run(); err != nil {
+			t.Fatalf("failed to create other branch: %v", err)
+		}
+
+		// Create context while on feature-branch
+		ctx, err := NewContext(tmpDir, "Test Spec")
+		if err != nil {
+			t.Fatalf("NewContext() error = %v", err)
+		}
+
+		// Verify we're tracking the feature-branch as original
+		if ctx.OriginalBranch != "feature-branch" {
+			t.Errorf("OriginalBranch should be 'feature-branch', got %q", ctx.OriginalBranch)
+		}
+
+		// Create spec file and branch
+		if err := os.WriteFile(ctx.FilePath, []byte("test"), 0644); err != nil {
+			t.Fatalf("failed to create spec file: %v", err)
+		}
+
+		createBranchCmd := exec.Command("git", "checkout", "-b", ctx.BranchName)
+		createBranchCmd.Dir = tmpDir
+		if err := createBranchCmd.Run(); err != nil {
+			t.Fatalf("failed to create branch: %v", err)
+		}
+
+		// Verify we're on spec branch
+		currentBranchCmd := exec.Command("git", "branch", "--show-current")
+		currentBranchCmd.Dir = tmpDir
+		output, _ := currentBranchCmd.Output()
+		if strings.TrimSpace(string(output)) != ctx.BranchName {
+			t.Errorf("should be on spec branch before cleanup")
+		}
+
+		// Cleanup
+		if err := ctx.Cleanup(); err != nil {
+			t.Fatalf("Cleanup() error = %v", err)
+		}
+
+		// Verify we're back on feature-branch
+		currentBranchCmd = exec.Command("git", "branch", "--show-current")
+		currentBranchCmd.Dir = tmpDir
+		output, _ = currentBranchCmd.Output()
+		currentBranch := strings.TrimSpace(string(output))
+		if currentBranch != "feature-branch" {
+			t.Errorf("should be back on feature-branch after cleanup, got %q", currentBranch)
+		}
+	})
 }

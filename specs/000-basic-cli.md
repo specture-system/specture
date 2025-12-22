@@ -252,7 +252,7 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Write tests for branch creation (with test git repos)
 - [x] Write tests for error handling scenarios
 - [x] Add error handling for edge cases (no git, existing file, etc.)
-- [ ] Write integration tests for complete new spec workflow
+- [x] Write integration tests for complete new spec workflow
 
 ### Validate Command (`specture validate`)
 

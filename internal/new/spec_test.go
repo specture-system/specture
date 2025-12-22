@@ -3,6 +3,7 @@ package new
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -108,13 +109,13 @@ func TestRenderSpec(t *testing.T) {
 		}
 
 		// Check that the template was rendered with the values
-		if !contains(result, "# Test Feature") {
+		if !strings.Contains(result, "# Test Feature") {
 			t.Errorf("rendered spec doesn't contain title")
 		}
-		if !contains(result, "author: Test Author") {
+		if !strings.Contains(result, "author: Test Author") {
 			t.Errorf("rendered spec doesn't contain author")
 		}
-		if !contains(result, "status: draft") {
+		if !strings.Contains(result, "status: draft") {
 			t.Errorf("rendered spec doesn't contain status")
 		}
 	})
@@ -125,18 +126,9 @@ func TestRenderSpec(t *testing.T) {
 			t.Fatalf("RenderSpec() error = %v", err)
 		}
 
-		if !contains(result, "creation_date:") {
+		if !strings.Contains(result, "creation_date:") {
 			t.Errorf("rendered spec doesn't contain creation_date")
 		}
 	})
 }
 
-// Helper function to check if a string contains a substring
-func contains(s, substring string) bool {
-	for i := 0; i < len(s)-len(substring)+1; i++ {
-		if s[i:i+len(substring)] == substring {
-			return true
-		}
-	}
-	return false
-}

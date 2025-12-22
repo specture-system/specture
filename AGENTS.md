@@ -12,15 +12,23 @@ The specs/ directory also contains README.md with complete guidelines on how the
 
 **Important**: Before editing the design in any spec file, prompt the user for explicit permission.
 
-When implementing a spec, check off each item in the task list as you go.
+When implementing a spec, follow this workflow for each task:
+
+1. Complete a single task from the task list
+2. Update the spec file by changing `- [ ]` to `- [x]` for that task
+3. Commit both the implementation and spec update together with a conventional commit message (e.g., `feat: implement feature X`)
+4. Push the changes
+
+This keeps the spec file as a living document that tracks implementation progress, with each task corresponding to one commit.
 
 ### Key Concepts
 
 - **Specs as living documents**: Specs are continually improved during design and implementation, but left static after completion
 - **Scope**: Specs cover planned changes—new features, major refactors, redesigns, tooling improvements. Use the issue tracker for bugs
 - **Status workflow**: draft → approved → in-progress → completed (or rejected)
-- **Precedence**: Higher-numbered specs take precedence when conflicts arise
+- **Precedence**: Higher-numbered specs take precedence when conflicts arise. Once a spec is completed, treat it as historical record; don't retroactively update it (fix only typos/factual errors)
 - **Task organization**: Tasks are grouped into logical sections (e.g., Foundation, Core Implementation, Polish and Documentation)
+- **File naming**: Numeric prefix with kebab-case (e.g., `000-mvp.md`, `013-refactor-database.md`). Higher numbers have higher precedence
 
 ### Directory Structure
 
@@ -96,6 +104,30 @@ When adding functionality:
 3. **Extract and generalize**: If writing a function in a command file that could be useful elsewhere (e.g., showing a template to a user), move it to the appropriate `internal/` package with unit tests.
 
 4. **Write tests alongside helpers**: All utility functions in `internal/` packages must have corresponding unit tests.
+
+## Testing
+
+- **Test coverage**: Write tests for all public functions in `internal/` packages. Test files live next to implementation files with `_test.go` suffix.
+- **Table-driven tests**: Use table-driven tests for testing multiple input/output scenarios:
+  ```go
+  tests := []struct {
+      name     string
+      input    string
+      expected string
+  }{
+      {"case 1", "input1", "expected1"},
+      {"case 2", "input2", "expected2"},
+  }
+  for _, tt := range tests {
+      t.Run(tt.name, func(t *testing.T) {
+          // test logic
+      })
+  }
+  ```
+- **Edge cases**: Test edge cases (empty input, missing files, errors, etc.) in separate test runs, not just happy paths.
+- **Helper functions**: Create test helper functions (e.g., `InitGitRepo`) in `internal/testhelpers/` to reduce duplication across tests.
+- **Mocking**: For file and git operations, use temporary directories (`t.TempDir()`) in tests rather than mocking.
+- **Test naming**: Test function names follow pattern `Test<Function><Scenario>` (e.g., `TestCleanup`, `TestCreateBranch`). Use `t.Run()` subtests with descriptive names for different cases.
 
 ## GitHub Workflow
 

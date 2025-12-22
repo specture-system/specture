@@ -8,17 +8,18 @@ import (
 	"github.com/specture-system/specture/internal/fs"
 	"github.com/specture-system/specture/internal/git"
 	"github.com/specture-system/specture/internal/template"
+	"github.com/specture-system/specture/internal/templates"
 )
 
-// Context holds the setup context for the current repository.
-type Context struct {
+// SetupCommandContext holds the setup context for the current repository.
+type SetupCommandContext struct {
 	WorkDir          string    // Current working directory
 	Forge            git.Forge // Detected git forge
 	ContributionType string    // "pull request" or "merge request"
 }
 
 // NewContext creates a new setup context for the current directory.
-func NewContext(cwd string) (*Context, error) {
+func NewContext(cwd string) (*SetupCommandContext, error) {
 	if cwd == "" {
 		var err error
 		cwd, err = os.Getwd()
@@ -55,7 +56,7 @@ func NewContext(cwd string) (*Context, error) {
 
 	contributionType := git.GetContributionType(forge)
 
-	return &Context{
+	return &SetupCommandContext{
 		WorkDir:          cwd,
 		Forge:            forge,
 		ContributionType: contributionType,
@@ -63,7 +64,7 @@ func NewContext(cwd string) (*Context, error) {
 }
 
 // CreateSpecsDirectory creates the specs/ directory in the current repository.
-func (c *Context) CreateSpecsDirectory(dryRun bool) error {
+func (c *SetupCommandContext) CreateSpecsDirectory(dryRun bool) error {
 	specsDir := filepath.Join(c.WorkDir, "specs")
 
 	if dryRun {
@@ -79,11 +80,11 @@ func (c *Context) CreateSpecsDirectory(dryRun bool) error {
 }
 
 // CreateSpecsReadme generates the specs/README.md file with forge-appropriate contribution type.
-func (c *Context) CreateSpecsReadme(dryRun bool) error {
+func (c *SetupCommandContext) CreateSpecsReadme(dryRun bool) error {
 	readmePath := filepath.Join(c.WorkDir, "specs", "README.md")
 
 	// Load and render template with context
-	tmpl, err := GetSpecsReadmeTemplate()
+	tmpl, err := templates.GetSpecsReadmeTemplate()
 	if err != nil {
 		return fmt.Errorf("failed to load specs README template: %w", err)
 	}
@@ -107,7 +108,7 @@ func (c *Context) CreateSpecsReadme(dryRun bool) error {
 }
 
 // FindExistingFiles finds AGENTS.md and CLAUDE.md files in the repository.
-func (c *Context) FindExistingFiles() (hasAgentsFile, hasClaudeFile bool) {
+func (c *SetupCommandContext) FindExistingFiles() (hasAgentsFile, hasClaudeFile bool) {
 	agentsPath := filepath.Join(c.WorkDir, "AGENTS.md")
 	claudePath := filepath.Join(c.WorkDir, "CLAUDE.md")
 
@@ -123,7 +124,7 @@ func (c *Context) FindExistingFiles() (hasAgentsFile, hasClaudeFile bool) {
 
 // RenderAgentPromptTemplate renders the agent prompt template with context.
 func RenderAgentPromptTemplate(isClaudeFile bool) (string, error) {
-	tmpl, err := GetAgentPromptTemplate()
+	tmpl, err := templates.GetAgentPromptTemplate()
 	if err != nil {
 		return "", fmt.Errorf("failed to load agent prompt template: %w", err)
 	}

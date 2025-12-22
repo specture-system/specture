@@ -66,6 +66,12 @@ creates a branch for the spec, and opens the file in your editor.`,
 
 		// Create spec file and branch
 		if err := ctx.CreateSpec(dryRun); err != nil {
+			// Clean up if spec creation fails (defensive, since CreateSpec does internal cleanup)
+			if cleanupErr := ctx.Cleanup(); cleanupErr != nil {
+				cmd.Printf("Spec creation failed: %v\n", err)
+				cmd.Printf("Cleanup also failed: %v\n", cleanupErr)
+				return err
+			}
 			return err
 		}
 

@@ -267,12 +267,12 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Implement description section validation (using goldmark AST)
 - [x] Write tests for task list validation
 - [x] Implement task list detection and validation (using goldmark AST)
-- [ ] Write integration tests for both validation modes
-- [ ] Add single-spec validation mode (by file path or number)
-- [ ] Add all-specs validation mode
-- [ ] Write tests for error messages and summary output
-- [ ] Implement clear, actionable error messages for validation failures
-- [ ] Add summary output (X of Y specs valid)
+- [x] Write integration tests for both validation modes
+- [x] Add single-spec validation mode (by file path or number)
+- [x] Add all-specs validation mode
+- [x] Write tests for error messages and summary output
+- [x] Implement clear, actionable error messages for validation failures
+- [x] Add summary output (X of Y specs valid)
 
 ### Documentation
 

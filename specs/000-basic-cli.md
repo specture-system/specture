@@ -256,17 +256,17 @@ It should be possible to validate one specific spec or all the specs.
 
 ### Validate Command (`specture validate`)
 
-- [ ] Implement basic command structure and alias (`validate`, `v`)
-- [ ] Write tests for spec parsing (valid and invalid specs)
-- [ ] Implement goldmark-based spec parser with frontmatter extension
-- [ ] Write tests for frontmatter validation
-- [ ] Add frontmatter validation (required fields present)
-- [ ] Write tests for status validation
-- [ ] Add status field validation (draft/approved/in-progress/completed/rejected)
-- [ ] Write tests for description validation
-- [ ] Implement description section validation (using goldmark AST)
-- [ ] Write tests for task list validation
-- [ ] Implement task list detection and validation (using goldmark AST)
+- [x] Implement basic command structure and alias (`validate`, `v`)
+- [x] Write tests for spec parsing (valid and invalid specs)
+- [x] Implement goldmark-based spec parser with frontmatter extension
+- [x] Write tests for frontmatter validation
+- [x] Add frontmatter validation (required fields present)
+- [x] Write tests for status validation
+- [x] Add status field validation (draft/approved/in-progress/completed/rejected)
+- [x] Write tests for description validation
+- [x] Implement description section validation (using goldmark AST)
+- [x] Write tests for task list validation
+- [x] Implement task list detection and validation (using goldmark AST)
 - [ ] Write integration tests for both validation modes
 - [ ] Add single-spec validation mode (by file path or number)
 - [ ] Add all-specs validation mode

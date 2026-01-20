@@ -9,9 +9,8 @@ creation_date: 2026-01-20
 Some common questions come up while using Specture to implement a spec:
 
 - What's the current spec?
-- What's next for the current spec?
-- Finding what's next for a spec.
-- Checking how much progress has been made on a spec.
+- What's next for this spec?
+- How much progress have we made for this spec?
 
 We should add a `status` command to allow quickly answering these questions without requiring the user to directly read any of the spec files.
 

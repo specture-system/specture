@@ -10,52 +10,24 @@ This system is inspired by the [PEP](https://peps.python.org/) (Python Enhanceme
 
 ## Non-interactive CLI Usage
 
-This section documents the automation-friendly CLI patterns recommended for agents and scripts. Put these examples in `specs/README.md` so agents that consult the repository can find them.
+```bash
+# Create spec with title (skips prompts)
+specture new --title "Feature name"
 
-- Create a new spec by providing the title via flag (skips title prompt and confirmation):
+# Pipe full body (requires --title, skips editor)
+cat spec.md | specture new --title "Feature name"
 
-  ```bash
-  specture new --title "Add search indexing"
-  ```
+# Single-line stdin treated as title
+echo "Feature name" | specture new
 
-- Create a new spec from piped content (provide the title flag when piping the full body):
+# Non-interactive setup
+specture setup --yes
+specture setup --update-agents --yes  # force AGENTS.md update
 
-  ```bash
-  cat spec-body.md | specture new --title "Automated Spec from AI"
-  ```
-
-  Notes:
-  - When piping a full spec body, `--title` is required.
-  - Piping a body implies `--no-editor` (the editor will not be opened).
-
-- Provide a title via a single-line stdin (useful for simple scripting):
-
-  ```bash
-  echo "Quick Title" | specture new
-  ```
-
-  The single-line stdin will be treated as the title.
-
-- Setup a repository non-interactively (skip confirmation):
-
-  ```bash
-  specture setup --yes
-  ```
-
-- Request AGENTS.md update even if the file doesn't exist:
-
-  ```bash
-  specture setup --update-agents --yes
-  ```
-
-- Preview changes without modifying files:
-
-  ```bash
-  specture new --title "Preview" --dry-run
-  specture setup --dry-run
-  ```
-
-For more details, consult the `specture` CLI help for each command (`specture new --help`, `specture setup --help`).
+# Preview without writing
+specture new --title "Feature name" --dry-run
+specture setup --dry-run
+```
 
 ## Spec Scope
 

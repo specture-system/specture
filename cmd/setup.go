@@ -15,8 +15,18 @@ var setupCmd = &cobra.Command{
 	Short:   "Initialize the Specture System in a repository",
 	Long: `Setup initializes the Specture System in the current git repository.
 
-It creates the specs/ directory and specs/README.md with guidelines,
-and optionally updates AGENTS.md and CLAUDE.md.`,
+It creates the ` + "`specs/`" + ` directory and ` + "`specs/README.md`" + ` with Specture System guidelines.
+
+Non-interactive usage:
+  - Use ` + "`--yes`" + ` (or ` + "`-y`" + `) to skip the interactive confirmation when running non-interactively.
+  - Use ` + "`--update-agents`" + ` or ` + "`--update-claude`" + ` to force showing the respective update prompts even if the files are not present.
+  - Use ` + "`--no-update-agents`" + ` or ` + "`--no-update-claude`" + ` to explicitly skip those prompts.
+
+Examples:
+  - ` + "`specture setup --yes`" + ` (non-interactive setup)
+  - ` + "`specture setup --update-agents --yes`" + ` (request AGENTS.md update without prompting for file existence)
+
+Note: Run with ` + "`--dry-run`" + ` to preview changes without modifying files.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get current working directory
 		cwd, err := os.Getwd()

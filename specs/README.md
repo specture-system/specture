@@ -17,9 +17,6 @@ specture new --title "Feature name"
 # Pipe full body (requires --title, skips editor)
 cat spec.md | specture new --title "Feature name"
 
-# Single-line stdin treated as title
-echo "Feature name" | specture new
-
 # Non-interactive setup
 specture setup --yes
 specture setup --update-agents --yes  # force AGENTS.md update

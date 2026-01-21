@@ -93,9 +93,9 @@ Describing the various nuances is essential for the best CLI user experience.
 - [x] Update `specture setup` help text with new flags and behaviors
   - [x] Document that `--yes` is required to skip confirmation prompt
   - [x] Document that `--update-agents` / `--update-claude` trigger update prompt even when files aren't detected
-- [ ] Update `specture new` help text with new flags and behaviors
-  - [ ] Document that `--title` is required when piping content to stdin
-  - [ ] Document that `--no-editor` is automatically implied when content is piped to stdin
-  - [ ] Document that confirmation is skipped when `--title` is provided
+- [x] Update `specture new` help text with new flags and behaviors
+  - [x] Document that `--title` is required when piping content to stdin
+  - [x] Document that `--no-editor` is automatically implied when content is piped to stdin
+  - [x] Document that confirmation is skipped when `--title` is provided
 - [ ] Add non-interactive usage examples to CLI documentation
 - [ ] Update `internal/templates/files/agent-prompt.md`

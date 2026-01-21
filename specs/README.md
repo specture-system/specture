@@ -24,6 +24,11 @@ specture setup --update-agents --yes  # force AGENTS.md update
 # Preview without writing
 specture new --title "Feature name" --dry-run
 specture setup --dry-run
+
+# Learn more about available flags
+specture --help
+specture new --help
+specture setup --help
 ```
 
 ## Spec Scope

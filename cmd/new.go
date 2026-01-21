@@ -16,7 +16,23 @@ var newCmd = &cobra.Command{
 	Aliases: []string{"n"},
 	Short:   "Create a new spec",
 	Long: `New creates a new spec file with the proper numbering,
-creates a branch for the spec, and opens the file in your editor.`,
+creates a branch for the spec, and opens the file in your editor.
+
+Non-interactive usage:
+  - Provide the spec title via --title (or -t) to skip the title prompt and confirmation.
+  - Pipe full spec content to stdin to create a spec programmatically. Example:
+
+      cat content.md | specture new --title "My Spec"
+
+    - When piping a full spec body, you must provide --title.
+    - Piping content implies --no-editor (the editor will not be opened).
+  - If stdin contains a single non-empty line, it will be treated as the title (interactive title input).
+
+Examples:
+  - specture new --title "My Spec"  (non-interactive title)
+  - cat spec-body.md | specture new --title "My Spec"  (create from piped body)
+
+Note: Use --dry-run to preview what will be created without modifying files.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get current working directory
 		cwd, err := os.Getwd()

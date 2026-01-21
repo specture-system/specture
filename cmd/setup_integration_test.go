@@ -47,7 +47,9 @@ func runSetupCommand(t *testing.T, dryRun bool) string {
 	cmd.Flags().Set("dry-run", "false")
 	cmd.Flags().Set("yes", "false")
 	cmd.Flags().Set("update-agents", "false")
+	cmd.Flags().Set("no-update-agents", "false")
 	cmd.Flags().Set("update-claude", "false")
+	cmd.Flags().Set("no-update-claude", "false")
 
 	if dryRun {
 		if err := cmd.Flags().Set("dry-run", "true"); err != nil {
@@ -201,7 +203,9 @@ func TestSetupCommand_UpdateAgentsFlag_WithoutFile(t *testing.T) {
 	cmd.Flags().Set("dry-run", "false")
 	cmd.Flags().Set("yes", "false")
 	cmd.Flags().Set("update-agents", "false")
+	cmd.Flags().Set("no-update-agents", "false")
 	cmd.Flags().Set("update-claude", "false")
+	cmd.Flags().Set("no-update-claude", "false")
 
 	cmd.Flags().Set("dry-run", "true")
 	cmd.Flags().Set("update-agents", "true")
@@ -245,7 +249,9 @@ func TestSetupCommand_UpdateAgentsFlag_WithFile(t *testing.T) {
 	cmd.Flags().Set("dry-run", "false")
 	cmd.Flags().Set("yes", "false")
 	cmd.Flags().Set("update-agents", "false")
+	cmd.Flags().Set("no-update-agents", "false")
 	cmd.Flags().Set("update-claude", "false")
+	cmd.Flags().Set("no-update-claude", "false")
 
 	cmd.Flags().Set("dry-run", "true")
 	cmd.Flags().Set("update-agents", "true")
@@ -259,5 +265,51 @@ func TestSetupCommand_UpdateAgentsFlag_WithFile(t *testing.T) {
 	output := out.String()
 	if !strings.Contains(output, "Show update prompt for AGENTS.md") {
 		t.Errorf("output should indicate AGENTS.md will be prompted for update, got: %s", output)
+	}
+}
+
+func TestSetupCommand_NoUpdateAgentsFlag_SkipsPrompt(t *testing.T) {
+	tmpDir := setupTestContext(t)
+
+	// Create AGENTS.md file
+	agentsPath := filepath.Join(tmpDir, "AGENTS.md")
+	if err := os.WriteFile(agentsPath, []byte("existing agents file"), 0644); err != nil {
+		t.Fatalf("failed to create AGENTS.md: %v", err)
+	}
+
+	// Commit the file so working tree is clean
+	if err := testhelpers.RunGitCommand(tmpDir, []string{"add", agentsPath}); err != nil {
+		t.Fatalf("failed to stage AGENTS.md: %v", err)
+	}
+	if err := testhelpers.RunGitCommand(tmpDir, []string{"commit", "-m", "Add AGENTS.md"}); err != nil {
+		t.Fatalf("failed to commit AGENTS.md: %v", err)
+	}
+
+	// Run setup with --no-update-agents flag in dry-run mode
+	out := &bytes.Buffer{}
+	cmd := setupCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	// Reset all flags to their defaults
+	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("yes", "false")
+	cmd.Flags().Set("update-agents", "false")
+	cmd.Flags().Set("no-update-agents", "false")
+	cmd.Flags().Set("update-claude", "false")
+	cmd.Flags().Set("no-update-claude", "false")
+
+	cmd.Flags().Set("dry-run", "true")
+	cmd.Flags().Set("no-update-agents", "true")
+
+	err := cmd.RunE(cmd, []string{})
+	if err != nil {
+		t.Fatalf("setup command failed: %v", err)
+	}
+
+	// Verify output does NOT mention AGENTS.md will be updated
+	output := out.String()
+	if strings.Contains(output, "Show update prompt for AGENTS.md") {
+		t.Errorf("output should NOT indicate AGENTS.md will be prompted for update, got: %s", output)
 	}
 }

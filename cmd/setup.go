@@ -47,17 +47,28 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 		if err != nil {
 			return fmt.Errorf("failed to get update-agents flag: %w", err)
 		}
+		noUpdateAgents, err := cmd.Flags().GetBool("no-update-agents")
+		if err != nil {
+			return fmt.Errorf("failed to get no-update-agents flag: %w", err)
+		}
 		updateClaude, err := cmd.Flags().GetBool("update-claude")
 		if err != nil {
 			return fmt.Errorf("failed to get update-claude flag: %w", err)
 		}
+		noUpdateClaude, err := cmd.Flags().GetBool("no-update-claude")
+		if err != nil {
+			return fmt.Errorf("failed to get no-update-claude flag: %w", err)
+		}
 
 		// Check for existing AGENTS.md and CLAUDE.md
 		hasAgentsFile, hasClaudeFile := ctx.FindExistingFiles()
-		if hasAgentsFile || updateAgents {
+		shouldPromptAgents := (hasAgentsFile || updateAgents) && !noUpdateAgents
+		shouldPromptClaude := (hasClaudeFile || updateClaude) && !noUpdateClaude
+
+		if shouldPromptAgents {
 			cmd.Println("  • Show update prompt for AGENTS.md")
 		}
-		if hasClaudeFile || updateClaude {
+		if shouldPromptClaude {
 			cmd.Println("  • Show update prompt for CLAUDE.md")
 		}
 
@@ -92,13 +103,13 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 
 		// Handle AGENTS.md and CLAUDE.md update prompts (skip in dry-run mode)
 		if !dryRun {
-			if hasAgentsFile || updateAgents {
+			if shouldPromptAgents {
 				if err := promptForAiAgentFileUpdate(cmd, "AGENTS.md", false); err != nil {
 					return err
 				}
 			}
 
-			if hasClaudeFile || updateClaude {
+			if shouldPromptClaude {
 				if err := promptForAiAgentFileUpdate(cmd, "CLAUDE.md", true); err != nil {
 					return err
 				}
@@ -137,5 +148,7 @@ func init() {
 	setupCmd.Flags().Bool("dry-run", false, "Preview changes without modifying files")
 	setupCmd.Flags().BoolP("yes", "y", false, "Skip confirmation prompt")
 	setupCmd.Flags().Bool("update-agents", false, "Show update prompt for AGENTS.md (even if file doesn't exist)")
+	setupCmd.Flags().Bool("no-update-agents", false, "Skip AGENTS.md update prompt")
 	setupCmd.Flags().Bool("update-claude", false, "Show update prompt for CLAUDE.md (even if file doesn't exist)")
+	setupCmd.Flags().Bool("no-update-claude", false, "Skip CLAUDE.md update prompt")
 }

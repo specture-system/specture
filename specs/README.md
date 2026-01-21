@@ -8,7 +8,24 @@ Specs are design documents that describe planned changes to the system. They ser
 
 This system is inspired by the [PEP](https://peps.python.org/) (Python Enhancement Proposal) and [BIP](https://github.com/bitcoin/bips) (Bitcoin Improvement Proposal) systems, adapting their formal proposal processes for general software development.
 
-## Non-interactive CLI Usage
+## Basic CLI Usage
+
+### Interactive mode _for humans_
+
+```bash
+# Create a new spec (prompts for title and confirmation)
+specture new
+
+# Set up Specture in a new project (prompts for configuration)
+specture setup
+
+# Learn more about available flags
+specture --help
+specture new --help
+specture setup --help
+```
+
+### Non-interactive mode _for agents and automations_
 
 ```bash
 # Create spec with title (skips prompts)
@@ -21,11 +38,11 @@ cat spec.md | specture new --title "Feature name"
 specture setup --yes
 specture setup --update-agents --yes  # force AGENTS.md update
 
-# Preview without writing
+# Preview without writing (no changes committed)
 specture new --title "Feature name" --dry-run
 specture setup --dry-run
 
-# Learn more about available flags
+# Discover all available flags
 specture --help
 specture new --help
 specture setup --help

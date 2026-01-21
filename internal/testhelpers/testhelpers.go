@@ -66,3 +66,10 @@ func InitGitRepo(t *testing.T, dir string) {
 		}
 	}
 }
+
+// RunGitCommand runs a git command in the given directory.
+func RunGitCommand(dir string, args []string) error {
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	return cmd.Run()
+}

@@ -185,8 +185,12 @@ func TestSetupCommand_YesFlag(t *testing.T) {
 	cmd.SetOut(out)
 	cmd.SetErr(out)
 
-	// Reset flags before setting
+	// Reset all flags to their defaults
 	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("yes", "false")
+	cmd.Flags().Set("update-agents", "false")
+	cmd.Flags().Set("update-claude", "false")
+
 	if err := cmd.Flags().Set("yes", "true"); err != nil {
 		t.Fatalf("failed to set yes flag: %v", err)
 	}

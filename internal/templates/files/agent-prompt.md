@@ -17,7 +17,7 @@ The `specs/` directory also contains `README.md` with complete guidelines on how
 Important guidelines for AI agents and automation:
 
 - Do not edit spec files without explicit permission from a human reviewer. Prompt the user before making changes to any `specs/` file.
-- When an agent is used to create or update specs, prefer non-interactive CLI usage patterns described in the repository README.
+- When an agent is used to create or update specs, prefer non-interactive CLI usage patterns described in `specs/README.md`.
   - Use `--title` when supplying a spec body via stdin: `cat spec.md | specture new --title "My Spec"`.
   - Piping a full spec body requires `--title` and implies `--no-editor` (the editor will not be opened).
   - A single-line stdin is treated as the spec title (useful for simple scripting): `echo "Quick Title" | specture new`.

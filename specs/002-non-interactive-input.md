@@ -97,5 +97,5 @@ Describing the various nuances is essential for the best CLI user experience.
   - [x] Document that `--title` is required when piping content to stdin
   - [x] Document that `--no-editor` is automatically implied when content is piped to stdin
   - [x] Document that confirmation is skipped when `--title` is provided
-- [ ] Add non-interactive usage examples to CLI documentation
+- [x] Add non-interactive usage examples to CLI documentation
 - [ ] Update `internal/templates/files/agent-prompt.md`

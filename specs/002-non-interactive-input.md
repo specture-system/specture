@@ -65,12 +65,12 @@ We should improve all the commands implemented in [spec #000](/specs/000-basic-c
 - [x] Add `--yes` / `-y` flag to skip confirmation prompt
 - [x] Write tests for `--update-agents` flag behavior
 - [x] Add `--update-agents` flag to show update prompt (even if file doesn't exist)
-- [ ] Write tests for `--no-update-agents` flag behavior
-- [ ] Add `--no-update-agents` flag to skip AGENTS.md update
+- [x] Write tests for `--no-update-agents` flag behavior
+- [x] Add `--no-update-agents` flag to skip AGENTS.md update
 - [x] Write tests for `--update-claude` flag behavior
 - [x] Add `--update-claude` flag to show update prompt (even if file doesn't exist)
-- [ ] Write tests for `--no-update-claude` flag behavior
-- [ ] Add `--no-update-claude` flag to skip CLAUDE.md update
+- [x] Write tests for `--no-update-claude` flag behavior
+- [x] Add `--no-update-claude` flag to skip CLAUDE.md update
 
 ### New Command (`specture new`)
 

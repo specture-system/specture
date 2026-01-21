@@ -80,7 +80,69 @@ func FindNextSpecNumber(specsDir string) (int, error) {
 	return numbers[len(numbers)-1] + 1, nil
 }
 
-// RenderSpec renders a spec file from the template with the given data.
+// GenerateFrontmatter generates the YAML frontmatter for a spec.
+func GenerateFrontmatter(title, author string) (string, error) {
+	data := SpecData{
+		Title:        title,
+		Author:       author,
+		CreationDate: time.Now().Format("2006-01-02"),
+	}
+
+	frontmatter := fmt.Sprintf(`---
+status: draft
+author: %s
+creation_date: %s
+---`, data.Author, data.CreationDate)
+
+	return frontmatter, nil
+}
+
+// RenderDefaultBody renders the default body template from the spec template.
+// It returns just the body portion (title, description, and task sections).
+func RenderDefaultBody(title string) (string, error) {
+	// The default body is everything after the frontmatter in the template.
+	// We render the full template and extract just the body part.
+	tmpl, err := templates.GetSpecTemplate()
+	if err != nil {
+		return "", err
+	}
+
+	data := SpecData{
+		Title:        title,
+		Author:       "", // Not needed for body-only rendering
+		CreationDate: "", // Not needed for body-only rendering
+	}
+
+	content, err := template.RenderTemplate(tmpl, data)
+	if err != nil {
+		return "", err
+	}
+
+	// Extract body: everything after the frontmatter (second "---")
+	lines := strings.Split(content, "\n")
+	var bodyStart int
+	var foundEnd bool
+
+	for i, line := range lines {
+		if line == "---" && i > 0 { // Skip first "---"
+			bodyStart = i + 1
+			foundEnd = true
+			break
+		}
+	}
+
+	if !foundEnd || bodyStart >= len(lines) {
+		// If we can't find frontmatter, return the whole content
+		return content, nil
+	}
+
+	// Join body lines and trim leading/trailing whitespace
+	body := strings.Join(lines[bodyStart:], "\n")
+	return strings.TrimSpace(body), nil
+}
+
+// RenderSpec renders a complete spec file from the template (frontmatter + default body).
+// Kept for backward compatibility.
 func RenderSpec(title, author string) (string, error) {
 	tmpl, err := templates.GetSpecTemplate()
 	if err != nil {
@@ -94,4 +156,9 @@ func RenderSpec(title, author string) (string, error) {
 	}
 
 	return template.RenderTemplate(tmpl, data)
+}
+
+// JoinSpecContent joins frontmatter and body into a complete spec.
+func JoinSpecContent(frontmatter, body string) string {
+	return frontmatter + "\n\n" + body
 }

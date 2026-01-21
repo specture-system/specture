@@ -113,32 +113,21 @@ Note: Use --dry-run to preview what will be created without modifying files.`,
 			}
 		}
 
-		// If there was piped content, create spec using that body and imply no-editor
-		if pipedContent != "" {
-			// Create spec file and branch using provided body
-			if err := ctx.CreateSpecWithBody(dryRun, pipedContent); err != nil {
-				// Clean up if spec creation fails
-				if cleanupErr := ctx.Cleanup(); cleanupErr != nil {
-					cmd.Printf("Spec creation failed: %v\n", err)
-					cmd.Printf("Cleanup also failed: %v\n", cleanupErr)
-					return err
-				}
-				return err
-			}
-
-			cmd.Printf("\nSpec created in branch %s. Commit and push when ready.\n", ctx.BranchName)
-			return nil
-		}
-
-		// Create spec file and branch (no piped content)
-		if err := ctx.CreateSpec(dryRun); err != nil {
-			// Clean up if spec creation fails (defensive, since CreateSpec does internal cleanup)
+		// Create spec file and branch (with optional piped content)
+		if err := ctx.CreateSpec(dryRun, pipedContent); err != nil {
+			// Clean up if spec creation fails
 			if cleanupErr := ctx.Cleanup(); cleanupErr != nil {
 				cmd.Printf("Spec creation failed: %v\n", err)
 				cmd.Printf("Cleanup also failed: %v\n", cleanupErr)
 				return err
 			}
 			return err
+		}
+
+		// If there was piped content, skip the editor
+		if pipedContent != "" {
+			cmd.Printf("\nSpec created in branch %s. Commit and push when ready.\n", ctx.BranchName)
+			return nil
 		}
 
 		// Open editor unless --no-editor flag is set

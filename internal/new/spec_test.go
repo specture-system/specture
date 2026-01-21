@@ -131,3 +131,85 @@ func TestRenderSpec(t *testing.T) {
 		}
 	})
 }
+
+func TestGenerateFrontmatter(t *testing.T) {
+	t.Run("generates_valid_frontmatter", func(t *testing.T) {
+		frontmatter, err := GenerateFrontmatter("Test Spec", "Test Author")
+		if err != nil {
+			t.Fatalf("GenerateFrontmatter() error = %v", err)
+		}
+
+		if !strings.Contains(frontmatter, "---") {
+			t.Errorf("frontmatter missing YAML delimiters")
+		}
+		if !strings.Contains(frontmatter, "status: draft") {
+			t.Errorf("frontmatter missing status")
+		}
+		if !strings.Contains(frontmatter, "author: Test Author") {
+			t.Errorf("frontmatter missing author")
+		}
+		if !strings.Contains(frontmatter, "creation_date:") {
+			t.Errorf("frontmatter missing creation_date")
+		}
+	})
+}
+
+func TestRenderDefaultBody(t *testing.T) {
+	t.Run("renders_default_body_template", func(t *testing.T) {
+		body, err := RenderDefaultBody("Test Spec")
+		if err != nil {
+			t.Fatalf("RenderDefaultBody() error = %v", err)
+		}
+
+		// Should contain the title heading
+		if !strings.Contains(body, "# Test Spec") {
+			t.Errorf("body doesn't contain title heading")
+		}
+
+		// Should not contain frontmatter
+		if strings.Contains(body, "status: draft") {
+			t.Errorf("body shouldn't contain frontmatter")
+		}
+	})
+}
+
+func TestJoinSpecContent(t *testing.T) {
+	tests := []struct {
+		name        string
+		frontmatter string
+		body        string
+		check       func(string) bool
+	}{
+		{
+			name: "joins_with_blank_line",
+			frontmatter: `---
+status: draft
+author: Test
+creation_date: 2025-01-21
+---`,
+			body: "# Content\n\nBody text",
+			check: func(result string) bool {
+				return strings.Contains(result, "---\n\n# Content")
+			},
+		},
+		{
+			name:        "preserves_both_parts",
+			frontmatter: "---\nstatus: draft\n---",
+			body:        "Body content",
+			check: func(result string) bool {
+				return strings.Contains(result, "status: draft") &&
+					strings.Contains(result, "Body content")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := JoinSpecContent(tt.frontmatter, tt.body)
+
+			if !tt.check(result) {
+				t.Errorf("JoinSpecContent() result doesn't meet check:\n%s", result)
+			}
+		})
+	}
+}

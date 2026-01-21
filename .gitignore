@@ -24,3 +24,6 @@ result
 *.swo
 *~
 .DS_Store
+
+
+.envrc

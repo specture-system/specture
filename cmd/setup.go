@@ -51,8 +51,14 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 			cmd.Println("  • Show update prompt for CLAUDE.md")
 		}
 
-		// Prompt for confirmation unless in dry-run mode
-		if !dryRun {
+		// Get yes flag
+		yes, err := cmd.Flags().GetBool("yes")
+		if err != nil {
+			return fmt.Errorf("failed to get yes flag: %w", err)
+		}
+
+		// Prompt for confirmation unless in dry-run mode or --yes flag
+		if !dryRun && !yes {
 			cmd.Println()
 			ok, err := prompt.Confirm("Proceed with setup?")
 			if err != nil {
@@ -119,4 +125,5 @@ func promptForAiAgentFileUpdate(cmd *cobra.Command, filename string, isClaudeFil
 
 func init() {
 	setupCmd.Flags().Bool("dry-run", false, "Preview changes without modifying files")
+	setupCmd.Flags().BoolP("yes", "y", false, "Skip confirmation prompt")
 }

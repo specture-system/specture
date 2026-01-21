@@ -160,3 +160,51 @@ func TestSetupCommand_ForgeDetection_NoRemote(t *testing.T) {
 		t.Errorf("expected output to mention 'pull request' (default), got: %s", output)
 	}
 }
+
+func TestSetupCommand_YesFlag(t *testing.T) {
+	// Create a temporary clean git repository
+	tmpDir := t.TempDir()
+	testhelpers.InitGitRepo(t, tmpDir)
+
+	// Change to the repository
+	originalWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current working directory: %v", err)
+	}
+	t.Cleanup(func() {
+		os.Chdir(originalWd)
+	})
+
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("failed to change directory: %v", err)
+	}
+
+	// Run setup command with --yes flag
+	out := &bytes.Buffer{}
+	cmd := setupCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	// Reset flags before setting
+	cmd.Flags().Set("dry-run", "false")
+	if err := cmd.Flags().Set("yes", "true"); err != nil {
+		t.Fatalf("failed to set yes flag: %v", err)
+	}
+
+	err = cmd.RunE(cmd, []string{})
+	if err != nil {
+		t.Fatalf("expected no error with yes flag, got: %v", err)
+	}
+
+	// Verify specs directory was created
+	specsDir := filepath.Join(tmpDir, "specs")
+	if _, err := os.Stat(specsDir); err != nil {
+		t.Errorf("specs directory not created: %v", err)
+	}
+
+	// Verify no confirmation prompt in output
+	output := out.String()
+	if strings.Contains(output, "Proceed with setup?") {
+		t.Errorf("expected no confirmation prompt with yes flag, but found it in output")
+	}
+}

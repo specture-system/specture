@@ -29,6 +29,6 @@ Use these flags:
 - `specture setup --yes` (non-interactive setup)
 - Pipe spec content: `cat body.md | specture new --title "Spec Title"`
 
-See `specs/README.md` for complete non-interactive CLI examples.
+Run `specture --help` and `specture <command> --help` to learn about all available flags and options. See `specs/README.md` for complete non-interactive CLI examples.
 
 ---

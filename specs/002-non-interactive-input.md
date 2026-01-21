@@ -61,8 +61,8 @@ We should improve all the commands implemented in [spec #000](/specs/000-basic-c
 
 ### Setup Command (`specture setup`)
 
-- [ ] Write tests for `--yes` / `-y` flag behavior
-- [ ] Add `--yes` / `-y` flag to skip confirmation prompt
+- [x] Write tests for `--yes` / `-y` flag behavior
+- [x] Add `--yes` / `-y` flag to skip confirmation prompt
 - [ ] Write tests for `--update-agents` flag behavior
 - [ ] Add `--update-agents` flag to show update prompt (even if file doesn't exist)
 - [ ] Write tests for `--no-update-agents` flag behavior

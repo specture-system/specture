@@ -28,11 +28,20 @@ creates a branch for the spec, and opens the file in your editor.`,
 			return fmt.Errorf("failed to get dry-run flag: %w", err)
 		}
 
-		// Prompt for spec title
-		title, err := prompt.PromptString("Spec title: ")
+		// Get title from flag if provided, otherwise prompt
+		title, err := cmd.Flags().GetString("title")
 		if err != nil {
-			return fmt.Errorf("failed to read spec title: %w", err)
+			return fmt.Errorf("failed to get title flag: %w", err)
 		}
+
+		if title == "" {
+			// Prompt for spec title
+			title, err = prompt.PromptString("Spec title: ")
+			if err != nil {
+				return fmt.Errorf("failed to read spec title: %w", err)
+			}
+		}
+
 		if title == "" {
 			return fmt.Errorf("spec title cannot be empty")
 		}
@@ -54,14 +63,18 @@ creates a branch for the spec, and opens the file in your editor.`,
 			return nil
 		}
 
-		cmd.Println()
-		ok, err := prompt.Confirm("Proceed with creating spec?")
-		if err != nil {
-			return fmt.Errorf("failed to get confirmation: %w", err)
-		}
-		if !ok {
-			cmd.Println("Spec creation cancelled.")
-			return nil
+		// Skip confirmation if title was provided via flag
+		titleFlag, _ := cmd.Flags().GetString("title")
+		if titleFlag == "" {
+			cmd.Println()
+			ok, err := prompt.Confirm("Proceed with creating spec?")
+			if err != nil {
+				return fmt.Errorf("failed to get confirmation: %w", err)
+			}
+			if !ok {
+				cmd.Println("Spec creation cancelled.")
+				return nil
+			}
 		}
 
 		// Create spec file and branch
@@ -95,4 +108,6 @@ creates a branch for the spec, and opens the file in your editor.`,
 
 func init() {
 	newCmd.Flags().Bool("dry-run", false, "Preview changes without modifying files")
+	newCmd.Flags().StringP("title", "t", "", "Spec title (skips title prompt)")
+	newCmd.Flags().Bool("no-editor", false, "Skip opening editor after creating spec")
 }

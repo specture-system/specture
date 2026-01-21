@@ -296,3 +296,72 @@ func TestNewCommand_SpecsDirectoryCreated(t *testing.T) {
 		t.Error("spec file should not be created in dry-run mode")
 	}
 }
+
+func TestNewCommand_TitleFlag(t *testing.T) {
+	newTestContext(t)
+
+	out := &bytes.Buffer{}
+	cmd := newCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	// Reset flags
+	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("title", "")
+	cmd.Flags().Set("no-editor", "false")
+
+	// Set title and dry-run flags
+	if err := cmd.Flags().Set("title", "Feature from Flag"); err != nil {
+		t.Fatalf("failed to set title flag: %v", err)
+	}
+	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
+		t.Fatalf("failed to set dry-run flag: %v", err)
+	}
+
+	// Should not prompt for stdin since title is provided
+	err := cmd.RunE(cmd, []string{})
+	if err != nil {
+		t.Fatalf("new command failed: %v", err)
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "Feature from Flag") {
+		t.Errorf("output should contain provided title, got: %s", output)
+	}
+	if !strings.Contains(output, "Creating spec 000") {
+		t.Errorf("output should show spec creation, got: %s", output)
+	}
+}
+
+func TestNewCommand_TitleFlagSkipsConfirmation(t *testing.T) {
+	newTestContext(t)
+
+	out := &bytes.Buffer{}
+	cmd := newCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	// Reset flags
+	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("title", "")
+	cmd.Flags().Set("no-editor", "false")
+
+	// Set title and dry-run flags (dry-run to avoid needing stdin for confirmation)
+	if err := cmd.Flags().Set("title", "Feature from Flag"); err != nil {
+		t.Fatalf("failed to set title flag: %v", err)
+	}
+	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
+		t.Fatalf("failed to set dry-run flag: %v", err)
+	}
+
+	err := cmd.RunE(cmd, []string{})
+	if err != nil {
+		t.Fatalf("new command failed: %v", err)
+	}
+
+	output := out.String()
+	// When title is provided, confirmation prompt should be skipped
+	if strings.Contains(output, "Proceed with creating spec?") {
+		t.Errorf("output should NOT contain confirmation prompt when title is provided, got: %s", output)
+	}
+}

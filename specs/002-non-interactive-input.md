@@ -79,9 +79,9 @@ We should improve all the commands implemented in [spec #000](/specs/000-basic-c
 - [x] Write tests for `--no-editor` flag behavior
 - [x] Add `--no-editor` flag to skip opening editor
 - [x] Write tests for stdin content piping (including auto `--no-editor`)
-- [ ] Write tests for early exit when stdin is piped but `--title` not provided
-- [ ] Detect and read spec content from stdin pipe
-- [ ] Exit early with error when stdin is piped but `--title` not provided
+- [x] Write tests for early exit when stdin is piped but `--title` not provided
+- [x] Detect and read spec content from stdin pipe
+- [x] Exit early with error when stdin is piped but `--title` not provided
 - [x] Write tests for skipping confirmation when `--title` is provided
 - [x] Skip confirmation prompt when `--title` is provided
 
@@ -98,3 +98,4 @@ Describing the various nuances is essential for the best CLI user experience.
   - [ ] Document that `--no-editor` is automatically implied when content is piped to stdin
   - [ ] Document that confirmation is skipped when `--title` is provided
 - [ ] Add non-interactive usage examples to CLI documentation
+- [ ] Update `internal/templates/files/agent-prompt.md`

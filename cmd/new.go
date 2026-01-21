@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"strings"
 
 	"github.com/specture-system/specture/internal/new"
 	"github.com/specture-system/specture/internal/prompt"
@@ -28,12 +30,60 @@ creates a branch for the spec, and opens the file in your editor.`,
 			return fmt.Errorf("failed to get dry-run flag: %w", err)
 		}
 
-		// Get title from flag if provided, otherwise prompt
+		// Get title from flag if provided
 		title, err := cmd.Flags().GetString("title")
 		if err != nil {
 			return fmt.Errorf("failed to get title flag: %w", err)
 		}
 
+		// Detect piped stdin
+		stdinStat, _ := os.Stdin.Stat()
+		piped := (stdinStat.Mode() & os.ModeCharDevice) == 0
+
+		var pipedContent string
+		if piped {
+			// If stdin is piped, read the entire content
+			data, err := io.ReadAll(os.Stdin)
+			if err != nil {
+				return fmt.Errorf("failed to read piped stdin: %w", err)
+			}
+			pipedContent = string(data)
+
+			// Heuristic: determine if piped content looks like a full spec body
+			trimmed := strings.TrimSpace(pipedContent)
+			lines := strings.Split(trimmed, "\n")
+			isBody := false
+			// Consider it a body if it has more than one non-empty line, or looks like markdown/frontmatter
+			nonEmptyLines := 0
+			for _, l := range lines {
+				if strings.TrimSpace(l) != "" {
+					nonEmptyLines++
+				}
+			}
+			if nonEmptyLines > 1 || strings.HasPrefix(trimmed, "#") || strings.HasPrefix(trimmed, "---") {
+				isBody = true
+			}
+
+			if isBody {
+				// If content looks like a body, require --title to be present
+				if title == "" {
+					return fmt.Errorf("title is required when piping spec content to stdin")
+				}
+			} else {
+				// Treat single-line piped input as a potential title.
+				if title == "" {
+					if trimmed == "" {
+						// When piped input is empty and no title flag provided, fail early
+						return fmt.Errorf("spec title cannot be empty")
+					}
+					title = trimmed
+				}
+				// Clear pipedContent so it isn't treated as a body later
+				pipedContent = ""
+			}
+		}
+
+		// If title not provided via flag or piped input, prompt the user (normal interactive mode)
 		if title == "" {
 			// Prompt for spec title
 			title, err = prompt.PromptString("Spec title: ")
@@ -77,7 +127,24 @@ creates a branch for the spec, and opens the file in your editor.`,
 			}
 		}
 
-		// Create spec file and branch
+		// If there was piped content, create spec using that body and imply no-editor
+		if pipedContent != "" {
+			// Create spec file and branch using provided body
+			if err := ctx.CreateSpecWithBody(dryRun, pipedContent); err != nil {
+				// Clean up if spec creation fails
+				if cleanupErr := ctx.Cleanup(); cleanupErr != nil {
+					cmd.Printf("Spec creation failed: %v\n", err)
+					cmd.Printf("Cleanup also failed: %v\n", cleanupErr)
+					return err
+				}
+				return err
+			}
+
+			cmd.Printf("\nSpec created in branch %s. Commit and push when ready.\n", ctx.BranchName)
+			return nil
+		}
+
+		// Create spec file and branch (no piped content)
 		if err := ctx.CreateSpec(dryRun); err != nil {
 			// Clean up if spec creation fails (defensive, since CreateSpec does internal cleanup)
 			if cleanupErr := ctx.Cleanup(); cleanupErr != nil {

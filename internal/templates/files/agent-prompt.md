@@ -12,11 +12,11 @@ This project uses the Specture System for managing specifications and design doc
 - Task lists for implementation
 - Requirements and acceptance criteria
 
-The specs/ directory also contains README.md with complete guidelines on how the spec system works.
+The `specs/`` directory also contains README.md with complete guidelines on how the spec system works.
 
 Be sure to prompt the user for explicit permission before editing the design in any spec file.
 
-When implementing a spec, follow this workflow for each task:
+When implementing a spec, YOU MUST follow this workflow for each task:
 
 1. Complete a single task from the task list
 2. Update the spec file by changing `- [ ]` to `- [x]` for that task

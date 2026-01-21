@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/specture-system/specture/internal/fs"
@@ -106,6 +107,46 @@ func (c *NewCommandContext) CreateSpec(dryRun bool) error {
 	}
 
 	// Create the spec file using SafeWriteFile to prevent overwrites
+	if err := fs.SafeWriteFile(c.FilePath, content); err != nil {
+		return fmt.Errorf("failed to write spec file: %w", err)
+	}
+
+	// Create branch
+	if err := gitpkg.CreateBranch(c.WorkDir, c.BranchName); err != nil {
+		// Clean up the file if branch creation fails
+		os.Remove(c.FilePath)
+		return err
+	}
+
+	return nil
+}
+
+// CreateSpecWithBody creates the spec file using the provided body content (frontmatter is added automatically).
+func (c *NewCommandContext) CreateSpecWithBody(dryRun bool, body string) error {
+	// Prepend frontmatter using templates
+	content, err := RenderSpec(c.Title, c.Author)
+	if err != nil {
+		return fmt.Errorf("failed to render spec frontmatter: %w", err)
+	}
+
+	// The templates.Spec template includes frontmatter and a placeholder body. Replace everything after the frontmatter
+	// with the provided body. We do a simple split on the first occurrence of "---\n\n" following the frontmatter.
+	splitMarker := "---\n\n"
+	idx := strings.Index(content, splitMarker)
+	if idx == -1 {
+		// Fallback: append body
+		content = content + "\n" + body
+	} else {
+		content = content[:idx+len(splitMarker)] + body
+	}
+
+	if dryRun {
+		fmt.Printf("Would create file: %s\n", c.FilePath)
+		fmt.Printf("Would create branch: %s\n", c.BranchName)
+		return nil
+	}
+
+	// Write the file
 	if err := fs.SafeWriteFile(c.FilePath, content); err != nil {
 		return fmt.Errorf("failed to write spec file: %w", err)
 	}

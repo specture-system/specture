@@ -58,7 +58,7 @@ The current spec is determined by sorting the specs by ascending spec number, th
 
 Status `in-progress` can be inferred even for specs without explicit `status` value in their front matter using the algorithm mentioned above.
 
-A `--spec` flag can be used to get the status of any particular spec by number, no matter it's status.
+A `--spec` flag can be used to get the overall status of any particular spec by number, no matter if it is `in-progress` or not.
 
 ## Task List
 

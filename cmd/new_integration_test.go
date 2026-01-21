@@ -56,26 +56,10 @@ func runNewCommand(t *testing.T, title string) string {
 	cmd.Flags().Set("title", "")
 	cmd.Flags().Set("no-editor", "false")
 
-	// Set up stdin for title prompt
-	origStdin := os.Stdin
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("failed to create pipe: %v", err)
+	// Set title flag
+	if err := cmd.Flags().Set("title", title); err != nil {
+		t.Fatalf("failed to set title flag: %v", err)
 	}
-
-	// Write title only (dry-run won't prompt for more)
-	go func() {
-		defer w.Close()
-		if _, err := w.WriteString(title + "\n"); err != nil {
-			t.Logf("failed to write to pipe: %v", err)
-		}
-	}()
-
-	os.Stdin = r
-	t.Cleanup(func() {
-		os.Stdin = origStdin
-		r.Close()
-	})
 
 	// Set dry-run flag
 	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
@@ -225,7 +209,12 @@ func TestNewCommand_EmptyTitle(t *testing.T) {
 	cmd.SetOut(out)
 	cmd.SetErr(out)
 
-	// Setup stdin with empty title
+	// Reset flags
+	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("title", "")
+	cmd.Flags().Set("no-editor", "false")
+
+	// Setup stdin with empty line (simulates piped input but no --title flag)
 	origStdin := os.Stdin
 	r, w, err := os.Pipe()
 	if err != nil {
@@ -243,13 +232,13 @@ func TestNewCommand_EmptyTitle(t *testing.T) {
 		os.Stdin = origStdin
 	})
 
-	// Command should fail with empty title
+	// Command should fail because stdin is piped but no --title flag provided
 	err = cmd.RunE(cmd, []string{})
 	if err == nil {
-		t.Error("new command should fail with empty title")
+		t.Error("new command should fail when stdin is piped without --title")
 	}
-	if !strings.Contains(err.Error(), "cannot be empty") {
-		t.Errorf("error should mention empty title, got: %v", err)
+	if !strings.Contains(err.Error(), "title is required when piping spec content to stdin") {
+		t.Errorf("error should mention title required when piping, got: %v", err)
 	}
 }
 

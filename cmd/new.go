@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/specture-system/specture/internal/new"
 	"github.com/specture-system/specture/internal/prompt"
@@ -24,9 +23,8 @@ Non-interactive usage:
 
       cat content.md | specture new --title "My Spec"
 
-    - When piping a full spec body, you must provide --title.
+    - When piping content to stdin, you must provide --title.
     - Piping content implies --no-editor (the editor will not be opened).
-  - If stdin contains a single non-empty line, it will be treated as the title (interactive title input).
 
 Examples:
   - specture new --title "My Spec"  (non-interactive title)
@@ -65,37 +63,9 @@ Note: Use --dry-run to preview what will be created without modifying files.`,
 			}
 			pipedContent = string(data)
 
-			// Heuristic: determine if piped content looks like a full spec body
-			trimmed := strings.TrimSpace(pipedContent)
-			lines := strings.Split(trimmed, "\n")
-			isBody := false
-			// Consider it a body if it has more than one non-empty line, or looks like markdown/frontmatter
-			nonEmptyLines := 0
-			for _, l := range lines {
-				if strings.TrimSpace(l) != "" {
-					nonEmptyLines++
-				}
-			}
-			if nonEmptyLines > 1 || strings.HasPrefix(trimmed, "#") || strings.HasPrefix(trimmed, "---") {
-				isBody = true
-			}
-
-			if isBody {
-				// If content looks like a body, require --title to be present
-				if title == "" {
-					return fmt.Errorf("title is required when piping spec content to stdin")
-				}
-			} else {
-				// Treat single-line piped input as a potential title.
-				if title == "" {
-					if trimmed == "" {
-						// When piped input is empty and no title flag provided, fail early
-						return fmt.Errorf("spec title cannot be empty")
-					}
-					title = trimmed
-				}
-				// Clear pipedContent so it isn't treated as a body later
-				pipedContent = ""
+			// When piping content, --title is required
+			if title == "" {
+				return fmt.Errorf("title is required when piping spec content to stdin")
 			}
 		}
 

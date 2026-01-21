@@ -10,13 +10,16 @@ This system is inspired by the [PEP](https://peps.python.org/) (Python Enhanceme
 
 ## Basic CLI Usage
 
-### Interactive mode _for humans_
+### Interactive mode
+
+_for humans_
 
 ```bash
 # Create a new spec (prompts for title and confirmation)
 specture new
 
 # Set up Specture in a new project (prompts for configuration)
+# Also useful for updating Specture files in an existing project
 specture setup
 
 # Learn more about available flags
@@ -25,7 +28,9 @@ specture new --help
 specture setup --help
 ```
 
-### Non-interactive mode _for agents and automations_
+### Non-interactive mode
+
+_for agents and automations_
 
 ```bash
 # Create spec with title (skips prompts)
@@ -36,7 +41,7 @@ cat spec.md | specture new --title "Feature name"
 
 # Non-interactive setup
 specture setup --yes
-specture setup --update-agents --yes  # force AGENTS.md update
+specture setup --update-agents --yes  # force generating prompt for AGENTS.md update
 
 # Preview without writing (no changes committed)
 specture new --title "Feature name" --dry-run

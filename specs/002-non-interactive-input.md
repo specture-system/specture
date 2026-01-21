@@ -90,9 +90,9 @@ We should improve all the commands implemented in [spec #000](/specs/000-basic-c
 Well written command help text is critical for both humans and AI agents to understand how to use the specture CLI.  
 Describing the various nuances is essential for the best CLI user experience.
 
-- [ ] Update `specture setup` help text with new flags and behaviors
-  - [ ] Document that `--yes` is required to skip confirmation prompt
-  - [ ] Document that `--update-agents` / `--update-claude` trigger update prompt even when files aren't detected
+- [x] Update `specture setup` help text with new flags and behaviors
+  - [x] Document that `--yes` is required to skip confirmation prompt
+  - [x] Document that `--update-agents` / `--update-claude` trigger update prompt even when files aren't detected
 - [ ] Update `specture new` help text with new flags and behaviors
   - [ ] Document that `--title` is required when piping content to stdin
   - [ ] Document that `--no-editor` is automatically implied when content is piped to stdin

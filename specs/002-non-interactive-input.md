@@ -74,16 +74,16 @@ We should improve all the commands implemented in [spec #000](/specs/000-basic-c
 
 ### New Command (`specture new`)
 
-- [ ] Write tests for `--title` / `-t` flag behavior
-- [ ] Add `--title` / `-t` flag for spec title
+- [x] Write tests for `--title` / `-t` flag behavior
+- [x] Add `--title` / `-t` flag for spec title
 - [ ] Write tests for `--no-editor` flag behavior
 - [ ] Add `--no-editor` flag to skip opening editor
 - [ ] Write tests for stdin content piping (including auto `--no-editor`)
 - [ ] Write tests for early exit when stdin is piped but `--title` not provided
 - [ ] Detect and read spec content from stdin pipe
 - [ ] Exit early with error when stdin is piped but `--title` not provided
-- [ ] Write tests for skipping confirmation when `--title` is provided
-- [ ] Skip confirmation prompt when `--title` is provided
+- [x] Write tests for skipping confirmation when `--title` is provided
+- [x] Skip confirmation prompt when `--title` is provided
 
 ### Documentation
 

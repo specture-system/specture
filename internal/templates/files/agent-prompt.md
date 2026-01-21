@@ -14,10 +14,21 @@ This project uses the Specture System for managing specifications and design doc
 
 The `specs/` directory also contains `README.md` with complete guidelines on how the spec system works.
 
+### CLI Usage for AI Agents
+
+**IMPORTANT**: Always use non-interactive flags when running `specture` commands. The default interactive mode will hang waiting for user input and cause your workflow to fail.
+
+Use these flags:
+- `specture new --title "Spec Title"` (non-interactive spec creation)
+- `specture setup --yes` (non-interactive setup)
+- Pipe spec content: `cat body.md | specture new --title "Spec Title"`
+
+See `specs/README.md` for complete non-interactive CLI examples.
+
+### Spec Implementation Workflow
+
 **CRITICAL**: When implementing a spec, each task MUST be exactly one commit containing both the implementation AND the spec file update (change `- [ ]` to `- [x]`). Do NOT commit implementation changes without the corresponding spec update in the same commit.
 
 **Important**: Only edit spec files to mark tasks as complete during implementation. Do not retroactively update completed specs or modify design decisions without explicit user permission.
-
-For non-interactive CLI usage (`specture new`, `specture setup`), see `specs/README.md`.
 
 ---

@@ -88,17 +88,25 @@ creates a branch for the spec, and opens the file in your editor.`,
 			return err
 		}
 
-		cmd.Printf("\nOpening %s in your editor...\n", ctx.FileName)
+		// Open editor unless --no-editor flag is set
+		noEditor, err := cmd.Flags().GetBool("no-editor")
+		if err != nil {
+			return fmt.Errorf("failed to get no-editor flag: %w", err)
+		}
 
-		// Open in editor
-		if err := new.OpenEditor(ctx.FilePath); err != nil {
-			// Editor exited with error, clean up
-			cmd.Printf("\nCancelling spec creation...\n")
-			if cleanupErr := ctx.Cleanup(); cleanupErr != nil {
-				return fmt.Errorf("spec creation cancelled, but cleanup failed: %w", cleanupErr)
+		if !noEditor {
+			cmd.Printf("\nOpening %s in your editor...\n", ctx.FileName)
+
+			// Open in editor
+			if err := new.OpenEditor(ctx.FilePath); err != nil {
+				// Editor exited with error, clean up
+				cmd.Printf("\nCancelling spec creation...\n")
+				if cleanupErr := ctx.Cleanup(); cleanupErr != nil {
+					return fmt.Errorf("spec creation cancelled, but cleanup failed: %w", cleanupErr)
+				}
+				cmd.Println("Spec and branch removed.")
+				return nil
 			}
-			cmd.Println("Spec and branch removed.")
-			return nil
 		}
 
 		cmd.Printf("\nSpec created in branch %s. Commit and push when ready.\n", ctx.BranchName)

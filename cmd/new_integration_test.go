@@ -365,3 +365,39 @@ func TestNewCommand_TitleFlagSkipsConfirmation(t *testing.T) {
 		t.Errorf("output should NOT contain confirmation prompt when title is provided, got: %s", output)
 	}
 }
+
+func TestNewCommand_NoEditorFlag(t *testing.T) {
+	newTestContext(t)
+
+	out := &bytes.Buffer{}
+	cmd := newCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	// Reset flags
+	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("title", "")
+	cmd.Flags().Set("no-editor", "false")
+
+	// Set flags
+	if err := cmd.Flags().Set("title", "Feature without Editor"); err != nil {
+		t.Fatalf("failed to set title flag: %v", err)
+	}
+	if err := cmd.Flags().Set("no-editor", "true"); err != nil {
+		t.Fatalf("failed to set no-editor flag: %v", err)
+	}
+	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
+		t.Fatalf("failed to set dry-run flag: %v", err)
+	}
+
+	err := cmd.RunE(cmd, []string{})
+	if err != nil {
+		t.Fatalf("new command failed: %v", err)
+	}
+
+	output := out.String()
+	// When no-editor is set, should not try to open editor
+	if strings.Contains(output, "Opening") {
+		t.Errorf("output should NOT contain 'Opening' editor message when --no-editor is set, got: %s", output)
+	}
+}

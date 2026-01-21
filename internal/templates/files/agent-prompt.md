@@ -14,24 +14,19 @@ This project uses the Specture System for managing specifications and design doc
 
 The `specs/` directory also contains `README.md` with complete guidelines on how the spec system works.
 
-Important guidelines for AI agents and automation:
+### Important Guidelines
 
 - Do not edit spec files without explicit permission from a human reviewer. Prompt the user before making changes to any `specs/` file.
-- When an agent is used to create or update specs, prefer non-interactive CLI usage patterns described in `specs/README.md`.
+- When you are asked to create or update specs, prefer non-interactive CLI usage patterns described in `specs/README.md`.
   - Use `--title` when supplying a spec body via stdin: `cat spec.md | specture new --title "My Spec"`.
   - Piping a full spec body requires `--title` and implies `--no-editor` (the editor will not be opened).
   - A single-line stdin is treated as the spec title (useful for simple scripting): `echo "Quick Title" | specture new`.
 - For repository setup automation, use `specture setup --yes` to skip interactive confirmation. To request AGENTS.md / CLAUDE.md updates even when the files are missing, use `--update-agents` or `--update-claude`.
-
-Be sure to prompt the user for explicit permission before editing the design in any spec file.
-
-When implementing a spec, YOU MUST follow this workflow for each task:
-
-1. Complete a single task from the task list
-2. Update the spec file by changing `- [ ]` to `- [x]` for that task
-3. Commit both the implementation and spec update together with a conventional commit message (e.g., `feat: implement feature X`)
-4. Push the changes
-
-This keeps the spec file as a living document that tracks implementation progress, with each task corresponding to one commit.
+- Be sure to prompt the user for explicit permission before editing the design in any spec file.
+- When implementing a spec, YOU MUST follow this workflow for each task:
+  1. Complete a single task from the task list
+  2. Update the spec file by changing `- [ ]` to `- [x]` for that task
+  3. Commit both the implementation and spec update together with a conventional commit message (e.g., `feat: implement feature X`)
+  4. Push the changes
 
 ---

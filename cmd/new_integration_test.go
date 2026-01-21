@@ -51,6 +51,11 @@ func runNewCommand(t *testing.T, title string) string {
 	cmd.SetOut(out)
 	cmd.SetErr(out)
 
+	// Reset flags
+	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("title", "")
+	cmd.Flags().Set("no-editor", "false")
+
 	// Set up stdin for title prompt
 	origStdin := os.Stdin
 	r, w, err := os.Pipe()
@@ -399,5 +404,44 @@ func TestNewCommand_NoEditorFlag(t *testing.T) {
 	// When no-editor is set, should not try to open editor
 	if strings.Contains(output, "Opening") {
 		t.Errorf("output should NOT contain 'Opening' editor message when --no-editor is set, got: %s", output)
+	}
+}
+
+func TestNewCommand_TitleAndNoEditorImpliesContentMode(t *testing.T) {
+	// Test that providing both --title and --no-editor suggests content mode
+	newTestContext(t)
+
+	out := &bytes.Buffer{}
+	cmd := newCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	// Reset flags
+	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("title", "")
+	cmd.Flags().Set("no-editor", "false")
+
+	// Set both title and no-editor flags
+	if err := cmd.Flags().Set("title", "Feature with Content"); err != nil {
+		t.Fatalf("failed to set title flag: %v", err)
+	}
+	if err := cmd.Flags().Set("no-editor", "true"); err != nil {
+		t.Fatalf("failed to set no-editor flag: %v", err)
+	}
+	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
+		t.Fatalf("failed to set dry-run flag: %v", err)
+	}
+
+	err := cmd.RunE(cmd, []string{})
+	if err != nil {
+		t.Fatalf("new command failed: %v", err)
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "Creating spec") {
+		t.Errorf("output should indicate spec creation, got: %s", output)
+	}
+	if strings.Contains(output, "Opening") {
+		t.Errorf("output should NOT indicate opening editor when --no-editor is set, got: %s", output)
 	}
 }

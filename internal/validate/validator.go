@@ -87,7 +87,7 @@ func ValidateSpecFile(path string) (*ValidationResult, error) {
 func FormatValidationResult(result *ValidationResult) string {
 	filename := filepath.Base(result.Path)
 	if result.IsValid() {
-		return fmt.Sprintf("✓ %s", filename)
+		return fmt.Sprintf("✓ %s\n", filename)
 	}
 
 	output := fmt.Sprintf("✗ %s\n", filename)

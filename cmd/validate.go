@@ -22,6 +22,7 @@ Examples:
   specture validate                    # Validate all specs in specs/
   specture validate 000                # Validate spec by number
   specture validate specs/000-mvp.md   # Validate spec by path`,
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get current working directory
 		cwd, err := os.Getwd()

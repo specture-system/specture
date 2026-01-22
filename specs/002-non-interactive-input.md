@@ -1,5 +1,5 @@
 ---
-status: approved
+status: completed
 author: Addison Emig
 creation_date: 2026-01-06
 approved_by: Bennett Moore
@@ -61,40 +61,41 @@ We should improve all the commands implemented in [spec #000](/specs/000-basic-c
 
 ### Setup Command (`specture setup`)
 
-- [ ] Write tests for `--yes` / `-y` flag behavior
-- [ ] Add `--yes` / `-y` flag to skip confirmation prompt
-- [ ] Write tests for `--update-agents` flag behavior
-- [ ] Add `--update-agents` flag to show update prompt (even if file doesn't exist)
-- [ ] Write tests for `--no-update-agents` flag behavior
-- [ ] Add `--no-update-agents` flag to skip AGENTS.md update
-- [ ] Write tests for `--update-claude` flag behavior
-- [ ] Add `--update-claude` flag to show update prompt (even if file doesn't exist)
-- [ ] Write tests for `--no-update-claude` flag behavior
-- [ ] Add `--no-update-claude` flag to skip CLAUDE.md update
+- [x] Write tests for `--yes` / `-y` flag behavior
+- [x] Add `--yes` / `-y` flag to skip confirmation prompt
+- [x] Write tests for `--update-agents` flag behavior
+- [x] Add `--update-agents` flag to show update prompt (even if file doesn't exist)
+- [x] Write tests for `--no-update-agents` flag behavior
+- [x] Add `--no-update-agents` flag to skip AGENTS.md update
+- [x] Write tests for `--update-claude` flag behavior
+- [x] Add `--update-claude` flag to show update prompt (even if file doesn't exist)
+- [x] Write tests for `--no-update-claude` flag behavior
+- [x] Add `--no-update-claude` flag to skip CLAUDE.md update
 
 ### New Command (`specture new`)
 
-- [ ] Write tests for `--title` / `-t` flag behavior
-- [ ] Add `--title` / `-t` flag for spec title
-- [ ] Write tests for `--no-editor` flag behavior
-- [ ] Add `--no-editor` flag to skip opening editor
-- [ ] Write tests for stdin content piping (including auto `--no-editor`)
-- [ ] Write tests for early exit when stdin is piped but `--title` not provided
-- [ ] Detect and read spec content from stdin pipe
-- [ ] Exit early with error when stdin is piped but `--title` not provided
-- [ ] Write tests for skipping confirmation when `--title` is provided
-- [ ] Skip confirmation prompt when `--title` is provided
+- [x] Write tests for `--title` / `-t` flag behavior
+- [x] Add `--title` / `-t` flag for spec title
+- [x] Write tests for `--no-editor` flag behavior
+- [x] Add `--no-editor` flag to skip opening editor
+- [x] Write tests for stdin content piping (including auto `--no-editor`)
+- [x] Write tests for early exit when stdin is piped but `--title` not provided
+- [x] Detect and read spec content from stdin pipe
+- [x] Exit early with error when stdin is piped but `--title` not provided
+- [x] Write tests for skipping confirmation when `--title` is provided
+- [x] Skip confirmation prompt when `--title` is provided
 
 ### Documentation
 
 Well written command help text is critical for both humans and AI agents to understand how to use the specture CLI.  
 Describing the various nuances is essential for the best CLI user experience.
 
-- [ ] Update `specture setup` help text with new flags and behaviors
-  - [ ] Document that `--yes` is required to skip confirmation prompt
-  - [ ] Document that `--update-agents` / `--update-claude` trigger update prompt even when files aren't detected
-- [ ] Update `specture new` help text with new flags and behaviors
-  - [ ] Document that `--title` is required when piping content to stdin
-  - [ ] Document that `--no-editor` is automatically implied when content is piped to stdin
-  - [ ] Document that confirmation is skipped when `--title` is provided
-- [ ] Add non-interactive usage examples to CLI documentation
+- [x] Update `specture setup` help text with new flags and behaviors
+  - [x] Document that `--yes` is required to skip confirmation prompt
+  - [x] Document that `--update-agents` / `--update-claude` trigger update prompt even when files aren't detected
+- [x] Update `specture new` help text with new flags and behaviors
+  - [x] Document that `--title` is required when piping content to stdin
+  - [x] Document that `--no-editor` is automatically implied when content is piped to stdin
+  - [x] Document that confirmation is skipped when `--title` is provided
+- [x] Add non-interactive usage examples to CLI documentation
+- [x] Update `internal/templates/files/agent-prompt.md`

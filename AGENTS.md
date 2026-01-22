@@ -67,6 +67,7 @@ The pre-commit hook is **required** and automatically runs before every commit. 
 Use `just` to run development tasks. See `justfile` for available recipes. Common commands:
 
 - `just build`: Build the CLI binary
+- `just run-dev <args>`: Run the CLI with arguments (e.g., `just run-dev new --help`)
 - `just test`: Run tests
 - `just check`: Format, lint, and test (runs automatically on commit)
 - `just fmt`: Format code

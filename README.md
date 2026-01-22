@@ -2,8 +2,6 @@
 
 > Spec-driven software architecture system
 
-## 🚧 Coming Soon
-
 Specture is a spec-driven software architecture and project management system.
 
 ### The Concept
@@ -13,10 +11,18 @@ Specture is a spec-driven software architecture and project management system.
 - **AI-Friendly Workflow**: Designed to work seamlessly with AI agents that help build and maintain your codebase
 - **Small Team Focus**: Built for teams where lightweight, document-driven planning makes sense
 
+See [specs/README.md](/specs/README.md) for a full description of the Specture System.
+
 ### Status
 
-This project is in early stages. Documentation and tooling coming soon.
+This project is in its early stages. Documentation and tooling are a work-in-progress.
 
----
+## License
 
-**Note**: Issues are for bugs only. For features, refactors, or other changes, submit a pull request adding a spec file to `specs/`.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for the full text.
+
+All contributions must be submitted with the understanding that they will be released under the MIT License.
+
+## Contributing
+
+Issues are for bugs only. For features, refactors, or other changes, submit a pull request adding a spec file to `specs/`.

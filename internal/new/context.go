@@ -91,17 +91,33 @@ func NewContext(workDir, title string) (*NewCommandContext, error) {
 	}, nil
 }
 
-// CreateSpec creates the spec file and opens it in the editor.
-func (c *NewCommandContext) CreateSpec(dryRun bool) error {
-	// Render spec from template
-	content, err := RenderSpec(c.Title, c.Author)
+// CreateSpec creates the spec file. If body is provided, it's combined with generated frontmatter.
+// If body is empty, the template's default content is used (frontmatter + placeholder).
+// If noBranch is true, no git branch is created for the spec.
+func (c *NewCommandContext) CreateSpec(dryRun bool, body string, noBranch bool) error {
+	// Always generate frontmatter
+	frontmatter, err := GenerateFrontmatter(c.Title, c.Author)
 	if err != nil {
-		return fmt.Errorf("failed to render spec: %w", err)
+		return fmt.Errorf("failed to generate frontmatter: %w", err)
 	}
+
+	// Render body (either provided or default from template)
+	if body == "" {
+		var err error
+		body, err = RenderDefaultBody(c.Title)
+		if err != nil {
+			return fmt.Errorf("failed to render body: %w", err)
+		}
+	}
+
+	// Join frontmatter and body
+	content := JoinSpecContent(frontmatter, body)
 
 	if dryRun {
 		fmt.Printf("Would create file: %s\n", c.FilePath)
-		fmt.Printf("Would create branch: %s\n", c.BranchName)
+		if !noBranch {
+			fmt.Printf("Would create branch: %s\n", c.BranchName)
+		}
 		return nil
 	}
 
@@ -110,11 +126,13 @@ func (c *NewCommandContext) CreateSpec(dryRun bool) error {
 		return fmt.Errorf("failed to write spec file: %w", err)
 	}
 
-	// Create branch
-	if err := gitpkg.CreateBranch(c.WorkDir, c.BranchName); err != nil {
-		// Clean up the file if branch creation fails
-		os.Remove(c.FilePath)
-		return err
+	// Create branch unless --no-branch is set
+	if !noBranch {
+		if err := gitpkg.CreateBranch(c.WorkDir, c.BranchName); err != nil {
+			// Clean up the file if branch creation fails
+			os.Remove(c.FilePath)
+			return err
+		}
 	}
 
 	return nil
@@ -122,24 +140,33 @@ func (c *NewCommandContext) CreateSpec(dryRun bool) error {
 
 // Cleanup removes the spec file and deletes the branch, reverting to the original branch.
 // This is called if the editor exits with a non-zero code (user cancellation).
+// It handles both branch-based and non-branch specs.
 func (c *NewCommandContext) Cleanup() error {
 	// Remove the spec file
 	if err := os.Remove(c.FilePath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove spec file: %w", err)
 	}
 
-	// Checkout back to original branch
-	checkoutCmd := exec.Command("git", "checkout", c.OriginalBranch)
-	checkoutCmd.Dir = c.WorkDir
-	if err := checkoutCmd.Run(); err != nil {
-		return fmt.Errorf("failed to checkout original branch: %w", err)
-	}
+	// Check if branch exists before trying to delete it
+	// (it won't exist if --no-branch was used)
+	branchExistsCmd := exec.Command("git", "rev-parse", "--verify", c.BranchName)
+	branchExistsCmd.Dir = c.WorkDir
+	branchExists := branchExistsCmd.Run() == nil
 
-	// Delete the spec branch
-	deleteCmd := exec.Command("git", "branch", "-D", c.BranchName)
-	deleteCmd.Dir = c.WorkDir
-	if err := deleteCmd.Run(); err != nil {
-		return fmt.Errorf("failed to delete branch: %w", err)
+	if branchExists {
+		// Checkout back to original branch
+		checkoutCmd := exec.Command("git", "checkout", c.OriginalBranch)
+		checkoutCmd.Dir = c.WorkDir
+		if err := checkoutCmd.Run(); err != nil {
+			return fmt.Errorf("failed to checkout original branch: %w", err)
+		}
+
+		// Delete the spec branch
+		deleteCmd := exec.Command("git", "branch", "-D", c.BranchName)
+		deleteCmd.Dir = c.WorkDir
+		if err := deleteCmd.Run(); err != nil {
+			return fmt.Errorf("failed to delete branch: %w", err)
+		}
 	}
 
 	return nil

@@ -11,12 +11,13 @@ import (
 
 var setupCmd = &cobra.Command{
 	Use:     "setup",
-	Aliases: []string{"update"},
+	Aliases: []string{"update", "u"},
 	Short:   "Initialize the Specture System in a repository",
-	Long: `Setup initializes the Specture System in the current git repository.
+	Long: `Initialize the Specture System in a repository and manage AI agent config files.
 
-It creates the specs/ directory and specs/README.md with guidelines,
-and optionally updates AGENTS.md and CLAUDE.md.`,
+Actions:
+  • Create specs/ directory and specs/README.md
+  • Optionally show prompts for updating AGENTS.md and CLAUDE.md`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get current working directory
 		cwd, err := os.Getwd()
@@ -42,17 +43,44 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 		cmd.Println("  • Create specs/ directory")
 		cmd.Println("  • Create specs/README.md with Specture System guidelines")
 
+		// Get update flags
+		updateAgents, err := cmd.Flags().GetBool("update-agents")
+		if err != nil {
+			return fmt.Errorf("failed to get update-agents flag: %w", err)
+		}
+		noUpdateAgents, err := cmd.Flags().GetBool("no-update-agents")
+		if err != nil {
+			return fmt.Errorf("failed to get no-update-agents flag: %w", err)
+		}
+		updateClaude, err := cmd.Flags().GetBool("update-claude")
+		if err != nil {
+			return fmt.Errorf("failed to get update-claude flag: %w", err)
+		}
+		noUpdateClaude, err := cmd.Flags().GetBool("no-update-claude")
+		if err != nil {
+			return fmt.Errorf("failed to get no-update-claude flag: %w", err)
+		}
+
 		// Check for existing AGENTS.md and CLAUDE.md
 		hasAgentsFile, hasClaudeFile := ctx.FindExistingFiles()
-		if hasAgentsFile {
+		shouldPromptAgents := (hasAgentsFile || updateAgents) && !noUpdateAgents
+		shouldPromptClaude := (hasClaudeFile || updateClaude) && !noUpdateClaude
+
+		if shouldPromptAgents {
 			cmd.Println("  • Show update prompt for AGENTS.md")
 		}
-		if hasClaudeFile {
+		if shouldPromptClaude {
 			cmd.Println("  • Show update prompt for CLAUDE.md")
 		}
 
-		// Prompt for confirmation unless in dry-run mode
-		if !dryRun {
+		// Get yes flag
+		yes, err := cmd.Flags().GetBool("yes")
+		if err != nil {
+			return fmt.Errorf("failed to get yes flag: %w", err)
+		}
+
+		// Prompt for confirmation unless in dry-run mode or --yes flag
+		if !dryRun && !yes {
 			cmd.Println()
 			ok, err := prompt.Confirm("Proceed with setup?")
 			if err != nil {
@@ -76,13 +104,13 @@ and optionally updates AGENTS.md and CLAUDE.md.`,
 
 		// Handle AGENTS.md and CLAUDE.md update prompts (skip in dry-run mode)
 		if !dryRun {
-			if hasAgentsFile {
+			if shouldPromptAgents {
 				if err := promptForAiAgentFileUpdate(cmd, "AGENTS.md", false); err != nil {
 					return err
 				}
 			}
 
-			if hasClaudeFile {
+			if shouldPromptClaude {
 				if err := promptForAiAgentFileUpdate(cmd, "CLAUDE.md", true); err != nil {
 					return err
 				}
@@ -119,4 +147,9 @@ func promptForAiAgentFileUpdate(cmd *cobra.Command, filename string, isClaudeFil
 
 func init() {
 	setupCmd.Flags().Bool("dry-run", false, "Preview changes without modifying files")
+	setupCmd.Flags().BoolP("yes", "y", false, "Skip confirmation prompt")
+	setupCmd.Flags().Bool("update-agents", false, "Show update prompt for AGENTS.md (even if file doesn't exist)")
+	setupCmd.Flags().Bool("no-update-agents", false, "Skip AGENTS.md update prompt")
+	setupCmd.Flags().Bool("update-claude", false, "Show update prompt for CLAUDE.md (even if file doesn't exist)")
+	setupCmd.Flags().Bool("no-update-claude", false, "Skip CLAUDE.md update prompt")
 }

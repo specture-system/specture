@@ -12,8 +12,9 @@ build:
   go build -o specture .
 
 # Run the CLI with arguments (usage: just run-dev setup --help)
+[positional-arguments]
 run-dev *args:
-  go run . {{args}}
+   go run . "$@"
 
 # Run tests
 test:

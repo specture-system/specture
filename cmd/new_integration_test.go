@@ -51,26 +51,15 @@ func runNewCommand(t *testing.T, title string) string {
 	cmd.SetOut(out)
 	cmd.SetErr(out)
 
-	// Set up stdin for title prompt
-	origStdin := os.Stdin
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("failed to create pipe: %v", err)
+	// Reset flags
+	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("title", "")
+	cmd.Flags().Set("no-editor", "false")
+
+	// Set title flag
+	if err := cmd.Flags().Set("title", title); err != nil {
+		t.Fatalf("failed to set title flag: %v", err)
 	}
-
-	// Write title only (dry-run won't prompt for more)
-	go func() {
-		defer w.Close()
-		if _, err := w.WriteString(title + "\n"); err != nil {
-			t.Logf("failed to write to pipe: %v", err)
-		}
-	}()
-
-	os.Stdin = r
-	t.Cleanup(func() {
-		os.Stdin = origStdin
-		r.Close()
-	})
 
 	// Set dry-run flag
 	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
@@ -220,7 +209,12 @@ func TestNewCommand_EmptyTitle(t *testing.T) {
 	cmd.SetOut(out)
 	cmd.SetErr(out)
 
-	// Setup stdin with empty title
+	// Reset flags
+	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("title", "")
+	cmd.Flags().Set("no-editor", "false")
+
+	// Setup stdin with empty line (simulates piped input but no --title flag)
 	origStdin := os.Stdin
 	r, w, err := os.Pipe()
 	if err != nil {
@@ -238,13 +232,13 @@ func TestNewCommand_EmptyTitle(t *testing.T) {
 		os.Stdin = origStdin
 	})
 
-	// Command should fail with empty title
+	// Command should fail because stdin is piped but no --title flag provided
 	err = cmd.RunE(cmd, []string{})
 	if err == nil {
-		t.Error("new command should fail with empty title")
+		t.Error("new command should fail when stdin is piped without --title")
 	}
-	if !strings.Contains(err.Error(), "cannot be empty") {
-		t.Errorf("error should mention empty title, got: %v", err)
+	if !strings.Contains(err.Error(), "title is required when piping spec content to stdin") {
+		t.Errorf("error should mention title required when piping, got: %v", err)
 	}
 }
 
@@ -294,5 +288,149 @@ func TestNewCommand_SpecsDirectoryCreated(t *testing.T) {
 	specFile := filepath.Join(specsDir, "000-first-spec.md")
 	if _, err := os.Stat(specFile); err == nil {
 		t.Error("spec file should not be created in dry-run mode")
+	}
+}
+
+func TestNewCommand_TitleFlag(t *testing.T) {
+	newTestContext(t)
+
+	out := &bytes.Buffer{}
+	cmd := newCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	// Reset flags
+	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("title", "")
+	cmd.Flags().Set("no-editor", "false")
+
+	// Set title and dry-run flags
+	if err := cmd.Flags().Set("title", "Feature from Flag"); err != nil {
+		t.Fatalf("failed to set title flag: %v", err)
+	}
+	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
+		t.Fatalf("failed to set dry-run flag: %v", err)
+	}
+
+	// Should not prompt for stdin since title is provided
+	err := cmd.RunE(cmd, []string{})
+	if err != nil {
+		t.Fatalf("new command failed: %v", err)
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "Feature from Flag") {
+		t.Errorf("output should contain provided title, got: %s", output)
+	}
+	if !strings.Contains(output, "Creating spec 000") {
+		t.Errorf("output should show spec creation, got: %s", output)
+	}
+}
+
+func TestNewCommand_TitleFlagSkipsConfirmation(t *testing.T) {
+	newTestContext(t)
+
+	out := &bytes.Buffer{}
+	cmd := newCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	// Reset flags
+	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("title", "")
+	cmd.Flags().Set("no-editor", "false")
+
+	// Set title and dry-run flags (dry-run to avoid needing stdin for confirmation)
+	if err := cmd.Flags().Set("title", "Feature from Flag"); err != nil {
+		t.Fatalf("failed to set title flag: %v", err)
+	}
+	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
+		t.Fatalf("failed to set dry-run flag: %v", err)
+	}
+
+	err := cmd.RunE(cmd, []string{})
+	if err != nil {
+		t.Fatalf("new command failed: %v", err)
+	}
+
+	output := out.String()
+	// When title is provided, confirmation prompt should be skipped
+	if strings.Contains(output, "Proceed with creating spec?") {
+		t.Errorf("output should NOT contain confirmation prompt when title is provided, got: %s", output)
+	}
+}
+
+func TestNewCommand_NoEditorFlag(t *testing.T) {
+	newTestContext(t)
+
+	out := &bytes.Buffer{}
+	cmd := newCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	// Reset flags
+	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("title", "")
+	cmd.Flags().Set("no-editor", "false")
+
+	// Set flags
+	if err := cmd.Flags().Set("title", "Feature without Editor"); err != nil {
+		t.Fatalf("failed to set title flag: %v", err)
+	}
+	if err := cmd.Flags().Set("no-editor", "true"); err != nil {
+		t.Fatalf("failed to set no-editor flag: %v", err)
+	}
+	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
+		t.Fatalf("failed to set dry-run flag: %v", err)
+	}
+
+	err := cmd.RunE(cmd, []string{})
+	if err != nil {
+		t.Fatalf("new command failed: %v", err)
+	}
+
+	output := out.String()
+	// When no-editor is set, should not try to open editor
+	if strings.Contains(output, "Opening") {
+		t.Errorf("output should NOT contain 'Opening' editor message when --no-editor is set, got: %s", output)
+	}
+}
+
+func TestNewCommand_TitleAndNoEditorImpliesContentMode(t *testing.T) {
+	// Test that providing both --title and --no-editor suggests content mode
+	newTestContext(t)
+
+	out := &bytes.Buffer{}
+	cmd := newCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	// Reset flags
+	cmd.Flags().Set("dry-run", "false")
+	cmd.Flags().Set("title", "")
+	cmd.Flags().Set("no-editor", "false")
+
+	// Set both title and no-editor flags
+	if err := cmd.Flags().Set("title", "Feature with Content"); err != nil {
+		t.Fatalf("failed to set title flag: %v", err)
+	}
+	if err := cmd.Flags().Set("no-editor", "true"); err != nil {
+		t.Fatalf("failed to set no-editor flag: %v", err)
+	}
+	if err := cmd.Flags().Set("dry-run", "true"); err != nil {
+		t.Fatalf("failed to set dry-run flag: %v", err)
+	}
+
+	err := cmd.RunE(cmd, []string{})
+	if err != nil {
+		t.Fatalf("new command failed: %v", err)
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "Creating spec") {
+		t.Errorf("output should indicate spec creation, got: %s", output)
+	}
+	if strings.Contains(output, "Opening") {
+		t.Errorf("output should NOT indicate opening editor when --no-editor is set, got: %s", output)
 	}
 }

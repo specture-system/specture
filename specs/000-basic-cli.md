@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: completed
 author: Addison Emig
 creation_date: 2025-12-18
 approved_by: Addison Emig
@@ -274,30 +274,4 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Implement clear, actionable error messages for validation failures
 - [x] Add summary output (X of Y specs valid)
 
-### Documentation
 
-- [ ] Create CLI usage documentation
-- [ ] Add command-line help text for all commands
-
-### Distribution & Deployment
-
-- [ ] Configure GoReleaser to inject version via ldflags at build time
-- [ ] Implement version display in main.go (read injected build flag, with fallback for local builds)
-- [ ] Write tests for version display
-- [ ] Add `--version` flag to root command
-- [ ] Configure GoReleaser for multi-platform builds (Linux, macOS, Windows)
-- [ ] Create manually-triggered GitHub Actions workflow for releases
-- [ ] Workflow accepts version input parameter
-- [ ] Workflow updates flake.nix with version
-- [ ] Workflow updates vendorHash in flake.nix
-- [ ] Workflow commits changes with conventional commit message
-- [ ] Workflow creates annotated git tag matching version
-- [ ] Workflow runs GoReleaser for cross-platform builds
-- [ ] Workflow creates GitHub release with artifacts
-- [ ] Create installation instructions
-- [ ] Document how to trigger release workflow (GitHub UI or CLI)
-
-### Cross-Platform Testing
-
-- [ ] Test on different repository configurations (GitLab, GitHub, no remote)
-- [ ] Test on different platforms (Linux, macOS, Windows if available)

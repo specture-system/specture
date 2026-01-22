@@ -13,7 +13,8 @@ build:
 
 # Run the CLI with arguments (usage: just run-dev setup --help)
 run-dev *args:
-  go run . {{args}}
+   #!/bin/sh
+   exec go run . {{args}}
 
 # Run tests
 test:

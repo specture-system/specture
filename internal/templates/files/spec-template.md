@@ -19,17 +19,4 @@ Optional section to document the design process. For each major decision, includ
 
 ## Task List
 
-### TBD
-
-- [ ] TBD
-- [ ] TBD
-
-### TBD
-
-- [ ] TBD
-- [ ] TBD
-
-### TBD
-
-- [ ] TBD
-- [ ] TBD
+TBD - ask task sections and checklists here

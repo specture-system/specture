@@ -11,9 +11,9 @@ default:
 build:
   go build -o specture .
 
-# Run the CLI with arguments (usage: just run-dev setup --help)
-run-dev +args="":
-   @if [ -z "{{args}}" ]; then go run . ; else sh -c 'go run . "$@"' _ {{args}} ; fi
+# Run the CLI with arguments (usage: go run . args or just build && ./specture args)
+run-dev *args:
+   go run . {{args}}
 
 # Run tests
 test:

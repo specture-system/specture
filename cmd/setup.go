@@ -11,35 +11,13 @@ import (
 
 var setupCmd = &cobra.Command{
 	Use:     "setup",
-	Aliases: []string{"update"},
+	Aliases: []string{"update", "u"},
 	Short:   "Initialize the Specture System in a repository",
-	Long: `Setup initializes the Specture System in the current git repository and manages AI agent configuration files.
+	Long: `Initialize the Specture System in a repository and manage AI agent config files.
 
-Use this command for three purposes:
-
-1. Initialize a new repository:
-   - Creates the ` + "`specs/`" + ` directory
-   - Creates ` + "`specs/README.md`" + ` with Specture System guidelines
-
-2. Update specs/README.md to the latest version:
-   - Refreshes ` + "`specs/README.md`" + ` in existing repositories
-   - Ensures repos have the latest Specture System guidelines
-
-3. Show prompts for updating AGENTS.md and CLAUDE.md:
-   - Generates update prompts for ` + "`AGENTS.md`" + ` (supported by most coding agents)
-   - Generates update prompts for ` + "`CLAUDE.md`" + ` (for Claude)
-   - Useful in new repos or when refreshing AI agent configuration
-
-Non-interactive usage:
-  - Use ` + "`--yes`" + ` (or ` + "`-y`" + `) to skip the interactive confirmation when running non-interactively.
-  - Use ` + "`--update-agents`" + ` or ` + "`--update-claude`" + ` to force showing the respective update prompts even if the files are not present.
-  - Use ` + "`--no-update-agents`" + ` or ` + "`--no-update-claude`" + ` to explicitly skip those prompts.
-
-Examples:
-  - ` + "`specture setup --yes`" + ` (non-interactive initialization)
-  - ` + "`specture setup --update-agents --yes`" + ` (request AGENTS.md update without prompting for file existence)
-
-Note: Run with ` + "`--dry-run`" + ` to preview changes without modifying files.`,
+Actions:
+  • Create specs/ directory and specs/README.md
+  • Optionally show prompts for updating AGENTS.md and CLAUDE.md`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get current working directory
 		cwd, err := os.Getwd()

@@ -12,25 +12,14 @@ import (
 
 var newCmd = &cobra.Command{
 	Use:     "new",
-	Aliases: []string{"n"},
+	Aliases: []string{"n", "add", "a"},
 	Short:   "Create a new spec",
-	Long: `New creates a new spec file with the proper numbering,
-creates a branch for the spec, and opens the file in your editor.
-
-Non-interactive usage:
-  - Provide the spec title via --title (or -t) to skip the title prompt and confirmation.
-  - Pipe full spec content to stdin to create a spec programmatically. Example:
-
-      cat content.md | specture new --title "My Spec"
-
-    - When piping content to stdin, you must provide --title.
-    - Piping content implies --no-editor (the editor will not be opened).
-
-Examples:
-  - specture new --title "My Spec"  (non-interactive title)
-  - cat spec-body.md | specture new --title "My Spec"  (create from piped body)
-
-Note: Use --dry-run to preview what will be created without modifying files.`,
+	Long: "Create a new spec file with proper numbering and branch.\n\n" +
+		"Interactive mode (default):\n" +
+		"  Prompts for title, shows preview, opens editor\n\n" +
+		"Non-interactive mode:\n" +
+		"  specture new --title \"My Spec\"           # Provide title via flag\n" +
+		"  cat body.md | specture new --title \"...\" # Pipe content (requires --title)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get current working directory
 		cwd, err := os.Getwd()
@@ -88,9 +77,17 @@ Note: Use --dry-run to preview what will be created without modifying files.`,
 			return err
 		}
 
+		// Get no-branch flag
+		noBranch, err := cmd.Flags().GetBool("no-branch")
+		if err != nil {
+			return fmt.Errorf("failed to get no-branch flag: %w", err)
+		}
+
 		// Show what will happen
 		cmd.Printf("Creating spec %03d: %s\n", ctx.Number, ctx.Title)
-		cmd.Printf("Branch: %s\n", ctx.BranchName)
+		if !noBranch {
+			cmd.Printf("Branch: %s\n", ctx.BranchName)
+		}
 		cmd.Printf("File: %s\n", ctx.FileName)
 		cmd.Printf("Author: %s\n", ctx.Author)
 
@@ -114,7 +111,7 @@ Note: Use --dry-run to preview what will be created without modifying files.`,
 		}
 
 		// Create spec file and branch (with optional piped content)
-		if err := ctx.CreateSpec(dryRun, pipedContent); err != nil {
+		if err := ctx.CreateSpec(dryRun, pipedContent, noBranch); err != nil {
 			// Clean up if spec creation fails
 			if cleanupErr := ctx.Cleanup(); cleanupErr != nil {
 				cmd.Printf("Spec creation failed: %v\n", err)
@@ -126,7 +123,11 @@ Note: Use --dry-run to preview what will be created without modifying files.`,
 
 		// If there was piped content, skip the editor
 		if pipedContent != "" {
-			cmd.Printf("\nSpec created in branch %s. Commit and push when ready.\n", ctx.BranchName)
+			if !noBranch {
+				cmd.Printf("\nSpec created in branch %s. Commit and push when ready.\n", ctx.BranchName)
+			} else {
+				cmd.Printf("\nSpec created at %s. Commit and push when ready.\n", ctx.FilePath)
+			}
 			return nil
 		}
 
@@ -151,7 +152,11 @@ Note: Use --dry-run to preview what will be created without modifying files.`,
 			}
 		}
 
-		cmd.Printf("\nSpec created in branch %s. Commit and push when ready.\n", ctx.BranchName)
+		if !noBranch {
+			cmd.Printf("\nSpec created in branch %s. Commit and push when ready.\n", ctx.BranchName)
+		} else {
+			cmd.Printf("\nSpec created at %s. Commit and push when ready.\n", ctx.FilePath)
+		}
 		return nil
 	},
 }
@@ -160,4 +165,5 @@ func init() {
 	newCmd.Flags().Bool("dry-run", false, "Preview changes without modifying files")
 	newCmd.Flags().StringP("title", "t", "", "Spec title (skips title prompt)")
 	newCmd.Flags().Bool("no-editor", false, "Skip opening editor after creating spec")
+	newCmd.Flags().Bool("no-branch", false, "Skip creating git branch for spec")
 }

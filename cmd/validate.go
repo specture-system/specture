@@ -22,74 +22,83 @@ Examples:
   specture validate                    # Validate all specs in specs/
   specture validate 000                # Validate spec by number
   specture validate specs/000-mvp.md   # Validate spec by path`,
-	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Get current working directory
-		cwd, err := os.Getwd()
+		invalidCount, err := runValidate(cmd, args)
 		if err != nil {
-			return fmt.Errorf("failed to get current directory: %w", err)
+			return err
 		}
 
-		specsDir := filepath.Join(cwd, "specs")
-
-		// Determine which specs to validate
-		var specPaths []string
-
-		if len(args) == 0 {
-			// Validate all specs
-			paths, err := findAllSpecs(specsDir)
-			if err != nil {
-				return err
-			}
-			specPaths = paths
-		} else {
-			// Validate specific specs
-			for _, arg := range args {
-				path, err := resolveSpecPath(specsDir, arg)
-				if err != nil {
-					return err
-				}
-				specPaths = append(specPaths, path)
-			}
-		}
-
-		if len(specPaths) == 0 {
-			cmd.Println("No specs found to validate")
-			return nil
-		}
-
-		// Validate each spec
-		var validCount, invalidCount int
-		var hasErrors bool
-
-		for _, path := range specPaths {
-			result, err := validate.ValidateSpecFile(path)
-			if err != nil {
-				cmd.PrintErrf("Error validating %s: %v\n", filepath.Base(path), err)
-				hasErrors = true
-				continue
-			}
-
-			cmd.Print(validate.FormatValidationResult(result))
-
-			if result.IsValid() {
-				validCount++
-			} else {
-				invalidCount++
-				hasErrors = true
-			}
-		}
-
-		// Print summary
-		total := validCount + invalidCount
-		cmd.Printf("\n%d of %d specs valid\n", validCount, total)
-
-		if hasErrors {
-			return fmt.Errorf("validation failed")
+		// Exit with non-zero status if any specs failed validation
+		if invalidCount > 0 {
+			os.Exit(1)
 		}
 
 		return nil
 	},
+}
+
+// runValidate performs validation and returns the count of invalid specs.
+// Separated from the command for testability.
+func runValidate(cmd *cobra.Command, args []string) (invalidCount int, err error) {
+	// Get current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	specsDir := filepath.Join(cwd, "specs")
+
+	// Determine which specs to validate
+	var specPaths []string
+
+	if len(args) == 0 {
+		// Validate all specs
+		paths, err := findAllSpecs(specsDir)
+		if err != nil {
+			return 0, err
+		}
+		specPaths = paths
+	} else {
+		// Validate specific specs
+		for _, arg := range args {
+			path, err := resolveSpecPath(specsDir, arg)
+			if err != nil {
+				return 0, err
+			}
+			specPaths = append(specPaths, path)
+		}
+	}
+
+	if len(specPaths) == 0 {
+		cmd.Println("No specs found to validate")
+		return 0, nil
+	}
+
+	// Validate each spec
+	var validCount int
+
+	for _, path := range specPaths {
+		result, err := validate.ValidateSpecFile(path)
+		if err != nil {
+			cmd.PrintErrf("Error reading %s: %v\n", filepath.Base(path), err)
+			invalidCount++
+			continue
+		}
+
+		cmd.Print(validate.FormatValidationResult(result))
+
+		if result.IsValid() {
+			validCount++
+		} else {
+			invalidCount++
+		}
+	}
+
+	// Print summary
+	total := validCount + invalidCount
+	cmd.Printf("\n%d of %d specs valid\n", validCount, total)
+
+	return invalidCount, nil
 }
 
 // findAllSpecs finds all spec files in the specs directory

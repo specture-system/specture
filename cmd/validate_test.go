@@ -11,6 +11,10 @@ import (
 // Note: These tests intentionally do not use t.Parallel() because validateCmd is a
 // global Cobra command that maintains mutable state (SetOut/SetErr calls).
 // Parallel execution would cause tests to interfere with each other.
+//
+// Note: Tests that would trigger os.Exit(1) for invalid specs cannot be run
+// directly as they would terminate the test process. We test the output format
+// and that actual errors (like missing files) are returned properly.
 
 func TestValidateCommand_AllSpecsValid(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -87,9 +91,13 @@ Description without frontmatter.
 	cmd.SetOut(out)
 	cmd.SetErr(out)
 
-	err := cmd.RunE(cmd, []string{})
-	if err == nil {
-		t.Error("expected error for invalid spec")
+	invalidCount, err := runValidate(cmd, []string{})
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	if invalidCount != 1 {
+		t.Errorf("expected 1 invalid spec, got: %d", invalidCount)
 	}
 
 	output := out.String()
@@ -314,9 +322,15 @@ No frontmatter.
 	cmd.SetOut(out)
 	cmd.SetErr(out)
 
-	err := cmd.RunE(cmd, []string{})
-	if err == nil {
-		t.Error("expected error when some specs are invalid")
+	// Use runValidate directly to avoid os.Exit(1) in production code
+	invalidCount, err := runValidate(cmd, []string{})
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	// Check that we got 1 invalid spec
+	if invalidCount != 1 {
+		t.Errorf("expected 1 invalid spec, got: %d", invalidCount)
 	}
 
 	output := out.String()

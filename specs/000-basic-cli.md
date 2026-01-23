@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: completed
 author: Addison Emig
 creation_date: 2025-12-18
 approved_by: Addison Emig
@@ -256,48 +256,22 @@ It should be possible to validate one specific spec or all the specs.
 
 ### Validate Command (`specture validate`)
 
-- [ ] Implement basic command structure and alias (`validate`, `v`)
-- [ ] Write tests for spec parsing (valid and invalid specs)
-- [ ] Implement goldmark-based spec parser with frontmatter extension
-- [ ] Write tests for frontmatter validation
-- [ ] Add frontmatter validation (required fields present)
-- [ ] Write tests for status validation
-- [ ] Add status field validation (draft/approved/in-progress/completed/rejected)
-- [ ] Write tests for description validation
-- [ ] Implement description section validation (using goldmark AST)
-- [ ] Write tests for task list validation
-- [ ] Implement task list detection and validation (using goldmark AST)
-- [ ] Write integration tests for both validation modes
-- [ ] Add single-spec validation mode (by file path or number)
-- [ ] Add all-specs validation mode
-- [ ] Write tests for error messages and summary output
-- [ ] Implement clear, actionable error messages for validation failures
-- [ ] Add summary output (X of Y specs valid)
+- [x] Implement basic command structure and alias (`validate`, `v`)
+- [x] Write tests for spec parsing (valid and invalid specs)
+- [x] Implement goldmark-based spec parser with frontmatter extension
+- [x] Write tests for frontmatter validation
+- [x] Add frontmatter validation (required fields present)
+- [x] Write tests for status validation
+- [x] Add status field validation (draft/approved/in-progress/completed/rejected)
+- [x] Write tests for description validation
+- [x] Implement description section validation (using goldmark AST)
+- [x] Write tests for task list validation
+- [x] Implement task list detection and validation (using goldmark AST)
+- [x] Write integration tests for both validation modes
+- [x] Add single-spec validation mode (by file path or number)
+- [x] Add all-specs validation mode
+- [x] Write tests for error messages and summary output
+- [x] Implement clear, actionable error messages for validation failures
+- [x] Add summary output (X of Y specs valid)
 
-### Documentation
 
-- [ ] Create CLI usage documentation
-- [ ] Add command-line help text for all commands
-
-### Distribution & Deployment
-
-- [ ] Configure GoReleaser to inject version via ldflags at build time
-- [ ] Implement version display in main.go (read injected build flag, with fallback for local builds)
-- [ ] Write tests for version display
-- [ ] Add `--version` flag to root command
-- [ ] Configure GoReleaser for multi-platform builds (Linux, macOS, Windows)
-- [ ] Create manually-triggered GitHub Actions workflow for releases
-- [ ] Workflow accepts version input parameter
-- [ ] Workflow updates flake.nix with version
-- [ ] Workflow updates vendorHash in flake.nix
-- [ ] Workflow commits changes with conventional commit message
-- [ ] Workflow creates annotated git tag matching version
-- [ ] Workflow runs GoReleaser for cross-platform builds
-- [ ] Workflow creates GitHub release with artifacts
-- [ ] Create installation instructions
-- [ ] Document how to trigger release workflow (GitHub UI or CLI)
-
-### Cross-Platform Testing
-
-- [ ] Test on different repository configurations (GitLab, GitHub, no remote)
-- [ ] Test on different platforms (Linux, macOS, Windows if available)

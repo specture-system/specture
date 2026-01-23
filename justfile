@@ -32,6 +32,14 @@ lint:
 tidy:
   go mod tidy
 
+# Install Go dependencies
+deps:
+  go mod download
+
+# Set up development environment
+setup: deps
+  pre-commit install
+
 # Check code (format, lint, test)
 check: fmt lint test
 

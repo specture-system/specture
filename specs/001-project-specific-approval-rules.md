@@ -11,3 +11,7 @@ Currently, the Specture System states that approval criteria are project-specifi
 We need to come up with some mechanism for allowing projects to document their project-specific approval rules.
 
 See [this thread](https://github.com/mrs-electronics-inc/android-automotive/pull/2#discussion_r2632381243) for some ideas.
+
+## Task List
+
+Tasks will be added once the design is finalized.

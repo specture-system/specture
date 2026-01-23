@@ -8,3 +8,10 @@ repos:
         types: [go]
         pass_filenames: false
         stages: [pre-commit]
+      - id: validate-specs
+        name: Validate specs
+        entry: go run . validate
+        language: system
+        types: [markdown]
+        pass_filenames: false
+        stages: [pre-commit]

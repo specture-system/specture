@@ -2,6 +2,6 @@
   name: validate Specture specs
   entry: specture validate
   language: system
-  types: [markdown]
+  files: ^specs/.*\.md$
   pass_filenames: false
   stages: [pre-commit]

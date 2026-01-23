@@ -29,7 +29,7 @@ repos:
       - id: validate-specs
 ```
 
-This will run `specture validate` on all markdown files to ensure specs conform to the Specture format.
+This will run `specture validate` to ensure specs conform to the Specture format.
 
 ## License
 

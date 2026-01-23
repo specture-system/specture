@@ -63,11 +63,11 @@ func ValidateSpec(spec *Spec) *ValidationResult {
 		})
 	}
 
-	// Validate task list exists
+	// Validate task list heading exists
 	if !spec.HasTaskList {
 		result.Errors = append(result.Errors, ValidationError{
 			Field:   "task list",
-			Message: "no task list found",
+			Message: "missing '## Task List' heading",
 		})
 	}
 

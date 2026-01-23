@@ -88,7 +88,7 @@ status: draft
 
 # My Feature
 
-This is just a description with no tasks.
+This is just a description with no Task List heading.
 
 - Regular list item
 - Another item
@@ -104,12 +104,64 @@ This is just a description with no tasks.
 	}
 }
 
+func TestParseSpecContent_TaskListHeadingOnly(t *testing.T) {
+	// Task List heading without any checkbox items should still be valid
+	content := []byte(`---
+status: draft
+---
+
+# My Feature
+
+This spec is in design phase.
+
+## Task List
+
+Tasks will be added later.
+`)
+
+	spec, err := ParseSpecContent("test.md", content)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !spec.HasTaskList {
+		t.Error("expected HasTaskList to be true (heading present)")
+	}
+}
+
+func TestParseSpecContent_TaskListH3Heading_NotValid(t *testing.T) {
+	// H3 Task List heading should NOT be valid (must be H2)
+	content := []byte(`---
+status: draft
+---
+
+# My Feature
+
+## Implementation
+
+### Task List
+
+- [ ] Task 1
+`)
+
+	spec, err := ParseSpecContent("test.md", content)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if spec.HasTaskList {
+		t.Error("expected HasTaskList to be false (H3 is not valid, must be H2)")
+	}
+}
+
 func TestParseSpecContent_OnlyUncheckedTasks(t *testing.T) {
 	content := []byte(`---
 status: draft
 ---
 
 # My Feature
+
+## Task List
 
 - [ ] Task 1
 - [ ] Task 2
@@ -131,6 +183,8 @@ status: draft
 ---
 
 # My Feature
+
+## Task List
 
 - [x] Task 1
 - [x] Task 2
@@ -158,6 +212,8 @@ author: File Author
 # File Test
 
 Description here.
+
+## Task List
 
 - [ ] A task
 `)

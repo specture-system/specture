@@ -33,6 +33,8 @@ author: Test Author
 
 Description.
 
+## Task List
+
 - [ ] Task 1
 `
 	if err := os.WriteFile(filepath.Join(specsDir, "000-test.md"), []byte(validSpec), 0644); err != nil {
@@ -74,6 +76,8 @@ func TestValidateCommand_InvalidSpec(t *testing.T) {
 	invalidSpec := `# My Feature
 
 Description without frontmatter.
+
+## Task List
 
 - [ ] Task 1
 `
@@ -122,6 +126,8 @@ status: draft
 ---
 
 # Spec One
+
+## Task List
 
 - [ ] Task
 `
@@ -179,6 +185,8 @@ status: approved
 ---
 
 # Test
+
+## Task List
 
 - [x] Done
 `
@@ -315,6 +323,8 @@ status: draft
 ---
 
 # Valid
+
+## Task List
 
 - [ ] Task
 `

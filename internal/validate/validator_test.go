@@ -39,6 +39,8 @@ func TestValidateSpec_MissingFrontmatter(t *testing.T) {
 
 Description.
 
+## Task List
+
 - [ ] Task 1
 `)
 
@@ -67,6 +69,8 @@ author: Test Author
 ---
 
 # My Feature
+
+## Task List
 
 - [ ] Task 1
 `)
@@ -112,6 +116,8 @@ status: ` + tt.status + `
 
 # My Feature
 
+## Task List
+
 - [ ] Task 1
 `)
 
@@ -148,6 +154,8 @@ status: ` + status + `
 
 # My Feature
 
+## Task List
+
 - [ ] Task 1
 `)
 
@@ -172,6 +180,8 @@ status: draft
 ## Not a title (H2)
 
 Description.
+
+## Task List
 
 - [ ] Task 1
 `)
@@ -205,7 +215,7 @@ status: draft
 
 # My Feature
 
-Description without tasks.
+Description without Task List heading.
 
 - Regular list item
 - Another item
@@ -265,6 +275,8 @@ author: File Author
 # File Test
 
 Description here.
+
+## Task List
 
 - [ ] A task
 `)

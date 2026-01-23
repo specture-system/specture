@@ -18,7 +18,7 @@
           inherit pname version;
           src = self;
           # vendorHash locks Go module dependencies
-          vendorHash = "sha256-zrWYKBVCY4HvuxLiPQVJCaNt6P73UOu0jsIoQ2aaLTU=";
+          vendorHash = "sha256-iyOBYecijhzCqG2UTvN4gPJjJ4/KSgukDIg3s7gmMSs=";
           doCheck = false;
           meta = with pkgs.lib; {
             description = "Spec-driven software architecture system";

@@ -10,8 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var specFlag string
+
 var validateCmd = &cobra.Command{
-	Use:     "validate [spec...]",
+	Use:     "validate",
 	Aliases: []string{"v"},
 	Short:   "Validate specs",
 	Long: `Validate checks that specs follow the Specture System guidelines.
@@ -19,9 +21,9 @@ var validateCmd = &cobra.Command{
 It validates frontmatter, status, descriptions, and task lists.
 
 Examples:
-  specture validate                    # Validate all specs in specs/
-  specture validate 000                # Validate spec by number
-  specture validate specs/000-mvp.md   # Validate spec by path`,
+  specture validate              # Validate all specs in specs/
+  specture validate --spec 0     # Validate spec 000-*.md by number
+  specture validate -s 42        # Short form, validates spec 042-*.md`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		invalidCount, err := runValidate(cmd, args)
 		if err != nil {
@@ -37,6 +39,10 @@ Examples:
 	},
 }
 
+func init() {
+	validateCmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Spec number to validate (e.g., 0, 00, or 000)")
+}
+
 // runValidate performs validation and returns the count of invalid specs.
 // Separated from the command for testability.
 func runValidate(cmd *cobra.Command, args []string) (invalidCount int, err error) {
@@ -48,10 +54,13 @@ func runValidate(cmd *cobra.Command, args []string) (invalidCount int, err error
 
 	specsDir := filepath.Join(cwd, "specs")
 
+	// Get spec flag value
+	spec, _ := cmd.Flags().GetString("spec")
+
 	// Determine which specs to validate
 	var specPaths []string
 
-	if len(args) == 0 {
+	if spec == "" {
 		// Validate all specs
 		paths, err := findAllSpecs(specsDir)
 		if err != nil {
@@ -59,14 +68,12 @@ func runValidate(cmd *cobra.Command, args []string) (invalidCount int, err error
 		}
 		specPaths = paths
 	} else {
-		// Validate specific specs
-		for _, arg := range args {
-			path, err := resolveSpecPath(specsDir, arg)
-			if err != nil {
-				return 0, err
-			}
-			specPaths = append(specPaths, path)
+		// Validate specific spec
+		path, err := resolveSpecPath(specsDir, spec)
+		if err != nil {
+			return 0, err
 		}
+		specPaths = append(specPaths, path)
 	}
 
 	if len(specPaths) == 0 {
@@ -130,22 +137,22 @@ func findAllSpecs(specsDir string) ([]string, error) {
 // resolveSpecPath resolves a spec argument to a file path
 // Accepts:
 //   - Full path: specs/000-mvp.md
-//   - Just number: 000
-//   - Number with name: 000-mvp
+//   - Just number with or without leading zeros: 0, 00, 000
 func resolveSpecPath(specsDir, arg string) (string, error) {
 	// If it's already a path that exists, use it
 	if _, err := os.Stat(arg); err == nil {
 		return arg, nil
 	}
 
-	// Try to find by number prefix
-	numberPattern := regexp.MustCompile(`^(\d{3})`)
+	// Try to find by number - accept 1-3 digit numbers
+	numberPattern := regexp.MustCompile(`^(\d{1,3})$`)
 	matches := numberPattern.FindStringSubmatch(arg)
 	if len(matches) < 2 {
-		return "", fmt.Errorf("invalid spec reference: %s (expected number like 000 or path)", arg)
+		return "", fmt.Errorf("invalid spec reference: %s (expected number like 0, 00, or 000)", arg)
 	}
 
-	number := matches[1]
+	// Pad number to 3 digits with leading zeros
+	number := fmt.Sprintf("%03s", matches[1])
 
 	// Look for a file starting with that number
 	entries, err := os.ReadDir(specsDir)

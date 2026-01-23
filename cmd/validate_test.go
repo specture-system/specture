@@ -134,7 +134,10 @@ status: draft
 
 	// Change to temp directory
 	originalWd, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(originalWd) })
+	t.Cleanup(func() {
+		os.Chdir(originalWd)
+		validateCmd.Flags().Set("spec", "") // Reset flag
+	})
 	os.Chdir(tmpDir)
 
 	out := &bytes.Buffer{}
@@ -142,10 +145,14 @@ status: draft
 	cmd.SetOut(out)
 	cmd.SetErr(out)
 
-	// Validate only spec 001
-	err := cmd.RunE(cmd, []string{"001"})
+	// Set flag and run directly using --spec flag with short number
+	cmd.Flags().Set("spec", "1")
+	invalidCount, err := runValidate(cmd, []string{})
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
+	}
+	if invalidCount != 0 {
+		t.Errorf("expected 0 invalid specs, got: %d", invalidCount)
 	}
 
 	output := out.String()
@@ -182,7 +189,10 @@ status: approved
 
 	// Change to temp directory
 	originalWd, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(originalWd) })
+	t.Cleanup(func() {
+		os.Chdir(originalWd)
+		validateCmd.Flags().Set("spec", "") // Reset flag
+	})
 	os.Chdir(tmpDir)
 
 	out := &bytes.Buffer{}
@@ -190,10 +200,14 @@ status: approved
 	cmd.SetOut(out)
 	cmd.SetErr(out)
 
-	// Validate by path
-	err := cmd.RunE(cmd, []string{specPath})
+	// Set flag and run directly using --spec flag with path
+	cmd.Flags().Set("spec", specPath)
+	invalidCount, err := runValidate(cmd, []string{})
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
+	}
+	if invalidCount != 0 {
+		t.Errorf("expected 0 invalid specs, got: %d", invalidCount)
 	}
 
 	output := out.String()
@@ -244,7 +258,10 @@ func TestValidateCommand_SpecNotFound(t *testing.T) {
 
 	// Change to temp directory
 	originalWd, _ := os.Getwd()
-	t.Cleanup(func() { os.Chdir(originalWd) })
+	t.Cleanup(func() {
+		os.Chdir(originalWd)
+		validateCmd.Flags().Set("spec", "") // Reset flag
+	})
 	os.Chdir(tmpDir)
 
 	out := &bytes.Buffer{}
@@ -252,7 +269,9 @@ func TestValidateCommand_SpecNotFound(t *testing.T) {
 	cmd.SetOut(out)
 	cmd.SetErr(out)
 
-	err := cmd.RunE(cmd, []string{"999"})
+	// Set flag and run directly
+	cmd.Flags().Set("spec", "999")
+	_, err := runValidate(cmd, []string{})
 	if err == nil {
 		t.Error("expected error for nonexistent spec")
 	}
@@ -381,7 +400,9 @@ func TestResolveSpecPath(t *testing.T) {
 		arg     string
 		wantErr bool
 	}{
-		{"by number", "000", false},
+		{"by three-digit number", "000", false},
+		{"by two-digit number", "00", false},
+		{"by single-digit number", "0", false},
 		{"by full path", specPath, false},
 		{"nonexistent number", "999", true},
 		{"invalid format", "abc", true},

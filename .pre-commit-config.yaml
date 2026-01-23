@@ -5,11 +5,10 @@ repos:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
-  # TODO: enable this and add it to README once .pre-commit-hooks.yaml is merged
-  # - repo: https://github.com/specture-system/specture
-  #   rev: main
-  #   hooks:
-  #     - id: validate-specs
+  - repo: https://github.com/specture-system/specture
+    rev: v0.0.0
+    hooks:
+      - id: validate-specs
   - repo: local
     hooks:
       - id: check

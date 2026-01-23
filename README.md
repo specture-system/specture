@@ -17,6 +17,20 @@ See [specs/README.md](/specs/README.md) for a full description of the Specture S
 
 This project is in its early stages. Documentation and tooling are a work-in-progress.
 
+## Pre-commit Hooks
+
+To enable Specture's pre-commit hooks in your project, add this to your `.pre-commit-config.yaml`:
+
+```yaml
+repos:
+  - repo: https://github.com/specture-system/specture
+    rev: v0.0.0 # Use the latest release tag
+    hooks:
+      - id: validate-specs
+```
+
+This will run `specture validate` on all markdown files to ensure specs conform to the Specture format.
+
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for the full text.

@@ -1,0 +1,7 @@
+- id: validate-specs
+  name: validate Specture specs
+  entry: specture validate
+  language: system
+  types: [markdown]
+  pass_filenames: false
+  stages: [pre-commit]

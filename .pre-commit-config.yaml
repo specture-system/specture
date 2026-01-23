@@ -1,4 +1,15 @@
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  # TODO: enable this and add it to README once .pre-commit-hooks.yaml is merged
+  # - repo: https://github.com/specture-system/specture
+  #   rev: main
+  #   hooks:
+  #     - id: validate-specs
   - repo: local
     hooks:
       - id: check
@@ -6,12 +17,5 @@ repos:
         entry: just check
         language: system
         types: [go]
-        pass_filenames: false
-        stages: [pre-commit]
-      - id: validate-specs
-        name: Validate specs
-        entry: go run . validate
-        language: system
-        types: [markdown]
         pass_filenames: false
         stages: [pre-commit]

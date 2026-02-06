@@ -62,4 +62,33 @@ A `--spec` flag can be used to get the overall status of any particular spec by 
 
 ## Task List
 
-TBD
+### Shared Spec Package (`internal/spec`)
+
+Build a shared `internal/spec` package that consolidates all spec parsing, discovery, and querying. This replaces the ad-hoc parsing scattered across `internal/validate/parser.go` (goldmark-based parsing) and `cmd/validate.go` (file discovery). The `validate` command, `status` command, and future `list` command ([spec 005](/specs/005-list-command.md)) will all consume this package.
+
+- [ ] Create `SpecInfo` struct with fields: Path, Name, Number, Status (resolved), CurrentTask, CurrentTaskSection, CompleteTasks, IncompleteTasks
+- [ ] Create `Task` struct with fields: Text, Complete, Section
+- [ ] Move `findAllSpecs` and `resolveSpecPath` from `cmd/validate.go` into `internal/spec` as `FindAll` and `ResolvePath`
+- [ ] Implement `Parse(path) (*SpecInfo, error)` — wraps goldmark parsing from `internal/validate/parser.go`, extends it with task extraction and status inference
+- [ ] Implement `ParseAll(specsDir) ([]*SpecInfo, error)` — parses all specs in directory, sorted by ascending number
+- [ ] Implement task list parser: extract top-level complete and incomplete tasks from the `## Task List` section (skip indented sub-tasks)
+- [ ] Implement current task detection: first `- [ ]` line under `## Task List`, excluding indented lines
+- [ ] Implement current task section detection: scan upward from current task to find nearest `### ` heading under `## Task List`
+- [ ] Implement status inference algorithm: no task list → use frontmatter or `draft`; no complete tasks → `draft`; mixed → `in-progress`; all complete → `completed`; explicit frontmatter status always overrides inference
+- [ ] Implement `FindCurrent(specs []*SpecInfo) *SpecInfo` — returns first spec with resolved status `in-progress`, sorted by ascending number
+- [ ] Write tests for task parsing (complete, incomplete, mixed, empty, indented sub-tasks)
+- [ ] Write tests for current task and current task section detection (happy path, no tasks, no section header)
+- [ ] Write tests for status inference (all combinations of frontmatter status × task states)
+- [ ] Write tests for `FindAll`, `ResolvePath`, `ParseAll`, `FindCurrent`
+- [ ] Refactor `cmd/validate.go` to use `internal/spec` for file discovery (`FindAll`, `ResolvePath`)
+- [ ] Refactor `internal/validate` to reuse shared parsing where possible (validator keeps its own validation logic, but delegates parsing to `internal/spec`)
+
+### Command Implementation
+
+- [ ] Add `status` command with alias `s` and wire into root command
+- [ ] Implement default behavior: find current in-progress spec via `FindCurrent`, display its status
+- [ ] Add `--spec` flag to target a specific spec by number (reuses `ResolvePath`)
+- [ ] Implement `--format text` output (human-readable, default)
+- [ ] Implement `--format json` output (structured JSON, for tooling and agents)
+- [ ] Handle edge cases: no specs directory, no in-progress spec, spec not found, empty task list
+- [ ] Write tests for the status command (text output, JSON output, `--spec` flag, error cases)

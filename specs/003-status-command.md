@@ -87,10 +87,10 @@ Build a shared `internal/spec` package that consolidates all spec parsing, disco
 
 ### Command Implementation
 
-- [ ] Add `status` command with alias `s` and wire into root command
-- [ ] Implement default behavior: find current in-progress spec via `FindCurrent`, display its status
-- [ ] Add `--spec` flag to target a specific spec by number (reuses `ResolvePath`)
-- [ ] Implement `--format text` output (human-readable, default)
-- [ ] Implement `--format json` output (structured JSON, for tooling and agents)
-- [ ] Handle edge cases: no specs directory, no in-progress spec, spec not found, empty task list
+- [x] Add `status` command with alias `s` and wire into root command
+- [x] Implement default behavior: find current in-progress spec via `FindCurrent`, display its status
+- [x] Add `--spec` flag to target a specific spec by number (reuses `ResolvePath`)
+- [x] Implement `--format text` output (human-readable, default)
+- [x] Implement `--format json` output (structured JSON, for tooling and agents)
+- [x] Handle edge cases: no specs directory, no in-progress spec, spec not found, empty task list
 - [ ] Write tests for the status command (text output, JSON output, `--spec` flag, error cases)

@@ -2,10 +2,22 @@
 package spec
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/text"
+	gmfrontmatter "go.abhg.dev/goldmark/frontmatter"
 )
 
 // SpecInfo represents a parsed spec file with all extracted metadata.
@@ -25,6 +37,271 @@ type Task struct {
 	Text     string
 	Complete bool
 	Section  string
+}
+
+// frontmatter represents the YAML frontmatter of a spec.
+type frontmatter struct {
+	Status string `yaml:"status"`
+}
+
+// Parse reads and parses a spec file, returning a fully populated SpecInfo.
+func Parse(path string) (*SpecInfo, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	return ParseContent(path, content)
+}
+
+// ParseContent parses spec content and returns a fully populated SpecInfo.
+func ParseContent(path string, content []byte) (*SpecInfo, error) {
+	info := &SpecInfo{
+		Path: path,
+	}
+
+	// Extract number from filename
+	info.Number = extractNumber(filepath.Base(path))
+
+	// Parse with goldmark for frontmatter and title
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			&gmfrontmatter.Extender{},
+			extension.TaskList,
+		),
+	)
+	ctx := parser.NewContext()
+	reader := text.NewReader(content)
+	doc := md.Parser().Parse(reader, parser.WithContext(ctx))
+
+	// Extract frontmatter
+	var fmStatus string
+	fmData := gmfrontmatter.Get(ctx)
+	if fmData != nil {
+		var fm frontmatter
+		if err := fmData.Decode(&fm); err == nil {
+			fmStatus = fm.Status
+		}
+	}
+
+	// Extract title (first H1 heading)
+	info.Name = extractTitle(doc, content)
+
+	// Parse tasks from raw markdown lines
+	hasTaskList, completeTasks, incompleteTasks, currentTask, currentTaskSection := parseTasks(content)
+	info.CompleteTasks = completeTasks
+	info.IncompleteTasks = incompleteTasks
+	info.CurrentTask = currentTask
+	info.CurrentTaskSection = currentTaskSection
+
+	// Infer status
+	info.Status = inferStatus(fmStatus, hasTaskList, len(completeTasks), len(incompleteTasks))
+
+	return info, nil
+}
+
+// ParseAll finds and parses all specs in the given directory, sorted by ascending number.
+func ParseAll(specsDir string) ([]*SpecInfo, error) {
+	paths, err := FindAll(specsDir)
+	if err != nil {
+		return nil, err
+	}
+
+	var specs []*SpecInfo
+	for _, p := range paths {
+		info, err := Parse(p)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse %s: %w", p, err)
+		}
+		specs = append(specs, info)
+	}
+
+	sort.Slice(specs, func(i, j int) bool {
+		return specs[i].Number < specs[j].Number
+	})
+
+	return specs, nil
+}
+
+// FindCurrent returns the first spec with status "in-progress", sorted by ascending number.
+// Returns nil if no in-progress spec is found.
+func FindCurrent(specs []*SpecInfo) *SpecInfo {
+	// Make a sorted copy so we don't mutate the input
+	sorted := make([]*SpecInfo, len(specs))
+	copy(sorted, specs)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].Number < sorted[j].Number
+	})
+
+	for _, s := range sorted {
+		if s.Status == "in-progress" {
+			return s
+		}
+	}
+	return nil
+}
+
+// extractNumber extracts the spec number from a filename like "003-foo.md".
+func extractNumber(filename string) int {
+	re := regexp.MustCompile(`^(\d{3})-`)
+	matches := re.FindStringSubmatch(filename)
+	if len(matches) < 2 {
+		return 0
+	}
+	n, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return 0
+	}
+	return n
+}
+
+// extractTitle extracts the first H1 heading text from a goldmark document.
+func extractTitle(doc ast.Node, source []byte) string {
+	var title string
+	ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		if heading, ok := n.(*ast.Heading); ok && heading.Level == 1 {
+			var buf bytes.Buffer
+			for child := heading.FirstChild(); child != nil; child = child.NextSibling() {
+				if textNode, ok := child.(*ast.Text); ok {
+					buf.Write(textNode.Segment.Value(source))
+				}
+			}
+			title = buf.String()
+			return ast.WalkStop, nil
+		}
+		return ast.WalkContinue, nil
+	})
+	return title
+}
+
+// parseTasks parses the raw markdown to extract tasks from the ## Task List section.
+// Returns: hasTaskList, completeTasks, incompleteTasks, currentTask, currentTaskSection
+func parseTasks(content []byte) (bool, []Task, []Task, string, string) {
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+
+	// Collect all lines
+	var lines []string
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	// Find the ## Task List section
+	taskListStart := -1
+	taskListEnd := len(lines)
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "## Task List" {
+			taskListStart = i + 1
+			continue
+		}
+		// If we're inside the task list and hit another ## heading, end the section
+		if taskListStart >= 0 && i > taskListStart && strings.HasPrefix(trimmed, "## ") && !strings.HasPrefix(trimmed, "### ") {
+			taskListEnd = i
+			break
+		}
+	}
+
+	if taskListStart < 0 {
+		return false, nil, nil, "", ""
+	}
+
+	var completeTasks []Task
+	var incompleteTasks []Task
+	currentTask := ""
+	currentTaskSection := ""
+	currentSection := ""
+	// Track line index of first incomplete top-level task for section scan
+	firstIncompleteIdx := -1
+
+	for i := taskListStart; i < taskListEnd; i++ {
+		line := lines[i]
+
+		// Track ### section headers
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "### ") {
+			currentSection = strings.TrimPrefix(trimmed, "### ")
+			continue
+		}
+
+		// Skip indented lines (sub-tasks)
+		if len(line) > 0 && (line[0] == ' ' || line[0] == '\t') {
+			continue
+		}
+
+		// Check for complete task
+		if strings.HasPrefix(line, "- [x] ") {
+			taskText := strings.TrimPrefix(line, "- [x] ")
+			completeTasks = append(completeTasks, Task{
+				Text:     taskText,
+				Complete: true,
+				Section:  currentSection,
+			})
+			continue
+		}
+
+		// Check for incomplete task
+		if strings.HasPrefix(line, "- [ ] ") {
+			taskText := strings.TrimPrefix(line, "- [ ] ")
+			incompleteTasks = append(incompleteTasks, Task{
+				Text:     taskText,
+				Complete: false,
+				Section:  currentSection,
+			})
+			if currentTask == "" {
+				currentTask = taskText
+				firstIncompleteIdx = i
+			}
+			continue
+		}
+	}
+
+	// Find the current task section by scanning upward from the first incomplete task
+	if firstIncompleteIdx >= 0 {
+		for i := firstIncompleteIdx - 1; i >= taskListStart; i-- {
+			trimmed := strings.TrimSpace(lines[i])
+			if strings.HasPrefix(trimmed, "### ") {
+				currentTaskSection = strings.TrimPrefix(trimmed, "### ")
+				break
+			}
+		}
+	}
+
+	return true, completeTasks, incompleteTasks, currentTask, currentTaskSection
+}
+
+// inferStatus determines the spec status based on frontmatter and task state.
+// Explicit frontmatter status always overrides inference.
+func inferStatus(fmStatus string, hasTaskList bool, completeCount, incompleteCount int) string {
+	// Explicit frontmatter status always wins
+	if fmStatus != "" {
+		return fmStatus
+	}
+
+	// No task list → draft
+	if !hasTaskList {
+		return "draft"
+	}
+
+	// Has task list but no tasks at all → draft
+	if completeCount == 0 && incompleteCount == 0 {
+		return "draft"
+	}
+
+	// No complete tasks → draft
+	if completeCount == 0 {
+		return "draft"
+	}
+
+	// All complete → completed
+	if incompleteCount == 0 {
+		return "completed"
+	}
+
+	// Mixed → in-progress
+	return "in-progress"
 }
 
 // FindAll finds all spec files in the given specs directory.

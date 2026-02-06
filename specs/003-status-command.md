@@ -71,13 +71,13 @@ Build a shared `internal/spec` package that consolidates all spec parsing, disco
 - [x] Create `SpecInfo` struct with fields: Path, Name, Number, Status (resolved), CurrentTask, CurrentTaskSection, CompleteTasks, IncompleteTasks
 - [x] Create `Task` struct with fields: Text, Complete, Section
 - [x] Move `findAllSpecs` and `resolveSpecPath` from `cmd/validate.go` into `internal/spec` as `FindAll` and `ResolvePath`
-- [ ] Implement `Parse(path) (*SpecInfo, error)` — wraps goldmark parsing from `internal/validate/parser.go`, extends it with task extraction and status inference
-- [ ] Implement `ParseAll(specsDir) ([]*SpecInfo, error)` — parses all specs in directory, sorted by ascending number
-- [ ] Implement task list parser: extract top-level complete and incomplete tasks from the `## Task List` section (skip indented sub-tasks)
-- [ ] Implement current task detection: first `- [ ]` line under `## Task List`, excluding indented lines
-- [ ] Implement current task section detection: scan upward from current task to find nearest `### ` heading under `## Task List`
-- [ ] Implement status inference algorithm: no task list → use frontmatter or `draft`; no complete tasks → `draft`; mixed → `in-progress`; all complete → `completed`; explicit frontmatter status always overrides inference
-- [ ] Implement `FindCurrent(specs []*SpecInfo) *SpecInfo` — returns first spec with resolved status `in-progress`, sorted by ascending number
+- [x] Implement `Parse(path) (*SpecInfo, error)` — wraps goldmark parsing from `internal/validate/parser.go`, extends it with task extraction and status inference
+- [x] Implement `ParseAll(specsDir) ([]*SpecInfo, error)` — parses all specs in directory, sorted by ascending number
+- [x] Implement task list parser: extract top-level complete and incomplete tasks from the `## Task List` section (skip indented sub-tasks)
+- [x] Implement current task detection: first `- [ ]` line under `## Task List`, excluding indented lines
+- [x] Implement current task section detection: scan upward from current task to find nearest `### ` heading under `## Task List`
+- [x] Implement status inference algorithm: no task list → use frontmatter or `draft`; no complete tasks → `draft`; mixed → `in-progress`; all complete → `completed`; explicit frontmatter status always overrides inference
+- [x] Implement `FindCurrent(specs []*SpecInfo) *SpecInfo` — returns first spec with resolved status `in-progress`, sorted by ascending number
 - [ ] Write tests for task parsing (complete, incomplete, mixed, empty, indented sub-tasks)
 - [ ] Write tests for current task and current task section detection (happy path, no tasks, no section header)
 - [ ] Write tests for status inference (all combinations of frontmatter status × task states)

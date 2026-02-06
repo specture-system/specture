@@ -68,8 +68,8 @@ A `--spec` flag can be used to get the overall status of any particular spec by 
 
 Build a shared `internal/spec` package that consolidates all spec parsing, discovery, and querying. This replaces the ad-hoc parsing scattered across `internal/validate/parser.go` (goldmark-based parsing) and `cmd/validate.go` (file discovery). The `validate` command, `status` command, and future `list` command ([spec 005](/specs/005-list-command.md)) will all consume this package.
 
-- [ ] Create `SpecInfo` struct with fields: Path, Name, Number, Status (resolved), CurrentTask, CurrentTaskSection, CompleteTasks, IncompleteTasks
-- [ ] Create `Task` struct with fields: Text, Complete, Section
+- [x] Create `SpecInfo` struct with fields: Path, Name, Number, Status (resolved), CurrentTask, CurrentTaskSection, CompleteTasks, IncompleteTasks
+- [x] Create `Task` struct with fields: Text, Complete, Section
 - [ ] Move `findAllSpecs` and `resolveSpecPath` from `cmd/validate.go` into `internal/spec` as `FindAll` and `ResolvePath`
 - [ ] Implement `Parse(path) (*SpecInfo, error)` — wraps goldmark parsing from `internal/validate/parser.go`, extends it with task extraction and status inference
 - [ ] Implement `ParseAll(specsDir) ([]*SpecInfo, error)` — parses all specs in directory, sorted by ascending number

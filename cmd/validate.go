@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 
+	specpkg "github.com/specture-system/specture/internal/spec"
 	"github.com/specture-system/specture/internal/validate"
 	"github.com/spf13/cobra"
 )
@@ -62,14 +62,14 @@ func runValidate(cmd *cobra.Command, args []string) (invalidCount int, err error
 
 	if spec == "" {
 		// Validate all specs
-		paths, err := findAllSpecs(specsDir)
+		paths, err := specpkg.FindAll(specsDir)
 		if err != nil {
 			return 0, err
 		}
 		specPaths = paths
 	} else {
 		// Validate specific spec
-		path, err := resolveSpecPath(specsDir, spec)
+		path, err := specpkg.ResolvePath(specsDir, spec)
 		if err != nil {
 			return 0, err
 		}
@@ -108,66 +108,3 @@ func runValidate(cmd *cobra.Command, args []string) (invalidCount int, err error
 	return invalidCount, nil
 }
 
-// findAllSpecs finds all spec files in the specs directory
-func findAllSpecs(specsDir string) ([]string, error) {
-	if _, err := os.Stat(specsDir); os.IsNotExist(err) {
-		return nil, fmt.Errorf("specs directory not found: %s", specsDir)
-	}
-
-	entries, err := os.ReadDir(specsDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read specs directory: %w", err)
-	}
-
-	var paths []string
-	specPattern := regexp.MustCompile(`^\d{3}-.*\.md$`)
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if specPattern.MatchString(entry.Name()) {
-			paths = append(paths, filepath.Join(specsDir, entry.Name()))
-		}
-	}
-
-	return paths, nil
-}
-
-// resolveSpecPath resolves a spec argument to a file path
-// Accepts:
-//   - Full path: specs/000-mvp.md
-//   - Just number with or without leading zeros: 0, 00, 000
-func resolveSpecPath(specsDir, arg string) (string, error) {
-	// If it's already a path that exists, use it
-	if _, err := os.Stat(arg); err == nil {
-		return arg, nil
-	}
-
-	// Try to find by number - accept 1-3 digit numbers
-	numberPattern := regexp.MustCompile(`^(\d{1,3})$`)
-	matches := numberPattern.FindStringSubmatch(arg)
-	if len(matches) < 2 {
-		return "", fmt.Errorf("invalid spec reference: %s (expected number like 0, 00, or 000)", arg)
-	}
-
-	// Pad number to 3 digits with leading zeros
-	number := fmt.Sprintf("%03s", matches[1])
-
-	// Look for a file starting with that number
-	entries, err := os.ReadDir(specsDir)
-	if err != nil {
-		return "", fmt.Errorf("failed to read specs directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if regexp.MustCompile(`^` + number + `-.*\.md$`).MatchString(entry.Name()) {
-			return filepath.Join(specsDir, entry.Name()), nil
-		}
-	}
-
-	return "", fmt.Errorf("spec not found: %s", arg)
-}

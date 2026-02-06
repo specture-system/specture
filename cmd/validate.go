@@ -107,4 +107,3 @@ func runValidate(cmd *cobra.Command, args []string) (invalidCount int, err error
 
 	return invalidCount, nil
 }
-

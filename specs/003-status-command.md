@@ -93,4 +93,4 @@ Build a shared `internal/spec` package that consolidates all spec parsing, disco
 - [x] Implement `--format text` output (human-readable, default)
 - [x] Implement `--format json` output (structured JSON, for tooling and agents)
 - [x] Handle edge cases: no specs directory, no in-progress spec, spec not found, empty task list
-- [ ] Write tests for the status command (text output, JSON output, `--spec` flag, error cases)
+- [x] Write tests for the status command (text output, JSON output, `--spec` flag, error cases)

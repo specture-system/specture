@@ -128,14 +128,14 @@ func formatText(cmd *cobra.Command, info *specpkg.SpecInfo) error {
 
 // jsonOutput represents the JSON structure for the status command.
 type jsonOutput struct {
-	Number           int            `json:"number"`
-	Name             string         `json:"name"`
-	Status           string         `json:"status"`
-	CurrentTask      string         `json:"current_task"`
-	CurrentTaskSect  string         `json:"current_task_section"`
-	CompleteTasks    []jsonTask     `json:"complete_tasks"`
-	IncompleteTasks  []jsonTask     `json:"incomplete_tasks"`
-	Progress         jsonProgress   `json:"progress"`
+	Number          int          `json:"number"`
+	Name            string       `json:"name"`
+	Status          string       `json:"status"`
+	CurrentTask     string       `json:"current_task"`
+	CurrentTaskSect string       `json:"current_task_section"`
+	CompleteTasks   []jsonTask   `json:"complete_tasks"`
+	IncompleteTasks []jsonTask   `json:"incomplete_tasks"`
+	Progress        jsonProgress `json:"progress"`
 }
 
 type jsonTask struct {

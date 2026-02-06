@@ -13,16 +13,25 @@ import (
 	gmfrontmatter "go.abhg.dev/goldmark/frontmatter"
 )
 
-// ValidStatus contains the valid status values for a spec
+// ValidStatus contains the valid status values for a spec.
 var ValidStatus = []string{"draft", "approved", "in-progress", "completed", "rejected"}
 
-// Frontmatter represents the YAML frontmatter of a spec
+// Frontmatter represents the YAML frontmatter of a spec.
+// This is distinct from internal/spec's frontmatter type because validation
+// needs access to additional fields (e.g., Author) for validation rules.
 type Frontmatter struct {
 	Status string `yaml:"status"`
 	Author string `yaml:"author"`
 }
 
-// Spec represents a parsed spec file
+// Spec represents a parsed spec file for validation purposes.
+//
+// Note: The internal/spec package provides a higher-level SpecInfo type used
+// for status display, task extraction, and spec discovery. This Spec type
+// serves a different purpose: it retains the raw goldmark AST (Document) and
+// validation-specific fields (HasTaskList, Source) needed by the validator.
+// File discovery (FindAll, ResolvePath) is already delegated to internal/spec
+// via cmd/validate.go.
 type Spec struct {
 	Path        string
 	Frontmatter *Frontmatter
@@ -32,7 +41,8 @@ type Spec struct {
 	Document    ast.Node
 }
 
-// ParseSpec parses a spec file and returns a Spec struct
+// ParseSpec parses a spec file and returns a Spec struct.
+// For higher-level spec info (tasks, status inference), see internal/spec.Parse.
 func ParseSpec(path string) (*Spec, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -42,7 +52,9 @@ func ParseSpec(path string) (*Spec, error) {
 	return ParseSpecContent(path, content)
 }
 
-// ParseSpecContent parses spec content and returns a Spec struct
+// ParseSpecContent parses spec content and returns a Spec struct.
+// This parser retains the raw goldmark AST for validation rules.
+// For higher-level spec info (tasks, status inference), see internal/spec.ParseContent.
 func ParseSpecContent(path string, content []byte) (*Spec, error) {
 	// Create goldmark parser with frontmatter and task list extensions
 	md := goldmark.New(

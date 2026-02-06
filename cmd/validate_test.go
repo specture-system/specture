@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/specture-system/specture/internal/spec"
 )
 
 // Note: These tests intentionally do not use t.Parallel() because validateCmd is a
@@ -386,7 +388,7 @@ func TestFindAllSpecs(t *testing.T) {
 		}
 	}
 
-	paths, err := findAllSpecs(tmpDir)
+	paths, err := spec.FindAll(tmpDir)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -420,9 +422,9 @@ func TestResolveSpecPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := resolveSpecPath(tmpDir, tt.arg)
+			_, err := spec.ResolvePath(tmpDir, tt.arg)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("resolveSpecPath() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ResolvePath() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

@@ -23,4 +23,5 @@ func init() {
 	rootCmd.AddCommand(setupCmd)
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(validateCmd)
+	rootCmd.AddCommand(statusCmd)
 }

@@ -83,7 +83,7 @@ Build a shared `internal/spec` package that consolidates all spec parsing, disco
 - [x] Write tests for status inference (all combinations of frontmatter status × task states)
 - [x] Write tests for `FindAll`, `ResolvePath`, `ParseAll`, `FindCurrent`
 - [x] Refactor `cmd/validate.go` to use `internal/spec` for file discovery (`FindAll`, `ResolvePath`)
-- [ ] Refactor `internal/validate` to reuse shared parsing where possible (validator keeps its own validation logic, but delegates parsing to `internal/spec`)
+- [x] Refactor `internal/validate` to reuse shared parsing where possible (validator keeps its own validation logic, but delegates parsing to `internal/spec`)
 
 ### Command Implementation
 

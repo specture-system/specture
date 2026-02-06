@@ -78,10 +78,10 @@ Build a shared `internal/spec` package that consolidates all spec parsing, disco
 - [x] Implement current task section detection: scan upward from current task to find nearest `### ` heading under `## Task List`
 - [x] Implement status inference algorithm: no task list → use frontmatter or `draft`; no complete tasks → `draft`; mixed → `in-progress`; all complete → `completed`; explicit frontmatter status always overrides inference
 - [x] Implement `FindCurrent(specs []*SpecInfo) *SpecInfo` — returns first spec with resolved status `in-progress`, sorted by ascending number
-- [ ] Write tests for task parsing (complete, incomplete, mixed, empty, indented sub-tasks)
-- [ ] Write tests for current task and current task section detection (happy path, no tasks, no section header)
-- [ ] Write tests for status inference (all combinations of frontmatter status × task states)
-- [ ] Write tests for `FindAll`, `ResolvePath`, `ParseAll`, `FindCurrent`
+- [x] Write tests for task parsing (complete, incomplete, mixed, empty, indented sub-tasks)
+- [x] Write tests for current task and current task section detection (happy path, no tasks, no section header)
+- [x] Write tests for status inference (all combinations of frontmatter status × task states)
+- [x] Write tests for `FindAll`, `ResolvePath`, `ParseAll`, `FindCurrent`
 - [x] Refactor `cmd/validate.go` to use `internal/spec` for file discovery (`FindAll`, `ResolvePath`)
 - [ ] Refactor `internal/validate` to reuse shared parsing where possible (validator keeps its own validation logic, but delegates parsing to `internal/spec`)
 

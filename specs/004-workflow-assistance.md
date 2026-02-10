@@ -81,7 +81,7 @@ Instead, agents get the full Specture workflow injected into their context at th
 ### Simplified project docs
 
 - Chosen: Minimal `AGENTS.md` / `CLAUDE.md` that mentions the Specture CLI and skill
-  - One or two lines pointing agents to the skill
+  - One or two lines pointing agents to `specture help` and the skill
   - Project-specific development instructions stay in `AGENTS.md` as before
   - `specs/README.md` becomes a brief overview for humans, linking to the Specture repo
   - All workflow detail lives in the skill where agents actually consume it

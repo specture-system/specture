@@ -34,25 +34,23 @@ Move spec numbers into frontmatter and use plain slug filenames.
 
 ### Migration of existing specs
 
-`specture setup` should handle migration of existing projects:
+`specture setup` should handle adding `number` to existing specs:
 
 - Scan for files matching the `NNN-slug.md` pattern
 - Extract the number from the filename
 - Add `number` field to frontmatter if not already present
-- Rename the file to remove the numeric prefix
-- Report changes for user confirmation before applying
+- Do **not** rename files — existing filenames stay as-is to preserve links, git history, and cross-references
+- Report changes for user confirmation before applying (uses existing `--dry-run` and `--yes` flags)
 
 ### Backward compatibility
 
-During a transition period, the CLI should accept both formats:
+The CLI accepts both formats indefinitely:
 
 - Files with numeric prefix and no `number` in frontmatter — number extracted from filename
 - Files with `number` in frontmatter and no numeric prefix — number from frontmatter
 - Files with both — frontmatter takes precedence, `specture validate` warns about the redundancy
 
-### Cross-references
-
-Specs that link to other specs by filename (e.g., `[spec 003](/specs/003-status-command.md)`) will break after migration. `specture setup` should update these links as part of the migration. Going forward, specs should reference other specs by number in prose (e.g., "see spec 3") since filenames are no longer stable identifiers for numbering.
+This means old-format and new-format specs coexist in the same project with no issues.
 
 ## Task List
 
@@ -67,10 +65,8 @@ Specs that link to other specs by filename (e.g., `[spec 003](/specs/003-status-
 
 ### Migration
 
-- [ ] Implement migration logic in `specture setup`: scan, extract, rename, update frontmatter
-- [ ] Update cross-reference links in spec files during migration
-- [ ] Add `--dry-run` support for migration preview
-- [ ] Add user confirmation before applying migration changes
+- [ ] Implement migration logic in `specture setup`: scan for `NNN-slug.md` files, extract number, add `number` field to frontmatter
+- [ ] Use existing `--dry-run` and `--yes` flags for preview and confirmation
 
 ### Documentation
 

@@ -125,5 +125,5 @@ The skill follows the [Agent Skills specification](https://agentskills.io/specif
 ### Simplify Project Docs
 
 - [x] Reduce `agent-prompt.md` template to a minimal Specture mention
-- [ ] Slim down `specs-readme.md` template to a brief overview linking to the Specture repo
+- [x] Slim down `specs-readme.md` template to a brief overview linking to the Specture repo
 - [ ] Update `specture setup` to generate the simplified docs

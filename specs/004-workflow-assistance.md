@@ -102,15 +102,6 @@ The skill follows the [Agent Skills specification](https://agentskills.io/specif
 - `references/spec-format.md` contains the detailed spec file format (frontmatter fields, sections, naming conventions) — loaded only when creating or editing specs
 - Keeps `SKILL.md` focused and under 500 lines per the spec recommendation
 
-### Inferring in-progress status
-
-The skill references the status inference algorithm from the [status command spec](/specs/003-status-command.md) and instructs agents to use `specture status` to check current progress:
-
-- No task list → `draft`
-- No complete tasks → `draft`
-- Mix of complete and incomplete → `in-progress`
-- All tasks complete → `completed`
-
 ## Task List
 
 ### Skill Content

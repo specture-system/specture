@@ -21,7 +21,7 @@ test:
   go test -v ./...
 
 # Format code
-fmt:
+format:
   go fmt ./...
 
 # Lint code with go vet
@@ -41,7 +41,7 @@ setup: deps
   pre-commit install
 
 # Check code (format, lint, test)
-check: fmt lint test
+check: format lint test
 
 # Install the CLI locally
 install:

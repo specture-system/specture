@@ -131,9 +131,9 @@ Ready to go.
 
 func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{
-		"001-setup.md":    listCompletedSpec,
-		"002-draft.md":    listDraftSpec,
-		"003-status.md":   listInProgressSpec,
+		"001-setup.md":  listCompletedSpec,
+		"002-draft.md":  listDraftSpec,
+		"003-status.md": listInProgressSpec,
 	})
 
 	output, err := execList(t, tmpDir, nil, nil)
@@ -141,13 +141,21 @@ func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Should list all three specs in ascending order
 	lines := strings.Split(strings.TrimSpace(output), "\n")
-	if len(lines) != 3 {
-		t.Fatalf("expected 3 lines, got %d:\n%s", len(lines), output)
+	// 1 header + 3 data rows
+	if len(lines) != 4 {
+		t.Fatalf("expected 4 lines (header + 3 rows), got %d:\n%s", len(lines), output)
 	}
 
-	// Check each row has expected columns
+	// Check header
+	header := lines[0]
+	for _, col := range []string{"NUM", "STATUS", "PROGRESS", "NAME"} {
+		if !strings.Contains(header, col) {
+			t.Errorf("header missing %q: %s", col, header)
+		}
+	}
+
+	// Check each data row has expected columns
 	expected := []struct {
 		number   string
 		status   string
@@ -160,17 +168,18 @@ func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 	}
 
 	for i, exp := range expected {
-		if !strings.Contains(lines[i], exp.number) {
-			t.Errorf("line %d: expected number %s, got: %s", i, exp.number, lines[i])
+		row := lines[i+1] // skip header
+		if !strings.Contains(row, exp.number) {
+			t.Errorf("row %d: expected number %s, got: %s", i, exp.number, row)
 		}
-		if !strings.Contains(lines[i], exp.status) {
-			t.Errorf("line %d: expected status %s, got: %s", i, exp.status, lines[i])
+		if !strings.Contains(row, exp.status) {
+			t.Errorf("row %d: expected status %s, got: %s", i, exp.status, row)
 		}
-		if !strings.Contains(lines[i], exp.progress) {
-			t.Errorf("line %d: expected progress %s, got: %s", i, exp.progress, lines[i])
+		if !strings.Contains(row, exp.progress) {
+			t.Errorf("row %d: expected progress %s, got: %s", i, exp.progress, row)
 		}
-		if !strings.Contains(lines[i], exp.name) {
-			t.Errorf("line %d: expected name %s, got: %s", i, exp.name, lines[i])
+		if !strings.Contains(row, exp.name) {
+			t.Errorf("row %d: expected name %s, got: %s", i, exp.name, row)
 		}
 	}
 }
@@ -188,18 +197,19 @@ func TestListCommand_TextOutput_SortedByNumber(t *testing.T) {
 	}
 
 	lines := strings.Split(strings.TrimSpace(output), "\n")
-	if len(lines) != 3 {
-		t.Fatalf("expected 3 lines, got %d", len(lines))
+	if len(lines) != 4 {
+		t.Fatalf("expected 4 lines (header + 3 rows), got %d", len(lines))
 	}
 
-	if !strings.HasPrefix(lines[0], "001") {
-		t.Errorf("first line should start with 001, got: %s", lines[0])
+	// Skip header (lines[0]), check data rows
+	if !strings.HasPrefix(lines[1], "001") {
+		t.Errorf("first data row should start with 001, got: %s", lines[1])
 	}
-	if !strings.HasPrefix(lines[1], "002") {
-		t.Errorf("second line should start with 002, got: %s", lines[1])
+	if !strings.HasPrefix(lines[2], "002") {
+		t.Errorf("second data row should start with 002, got: %s", lines[2])
 	}
-	if !strings.HasPrefix(lines[2], "003") {
-		t.Errorf("third line should start with 003, got: %s", lines[2])
+	if !strings.HasPrefix(lines[3], "003") {
+		t.Errorf("third data row should start with 003, got: %s", lines[3])
 	}
 }
 
@@ -379,11 +389,12 @@ func TestListCommand_FilterSingleStatus(t *testing.T) {
 	}
 
 	lines := strings.Split(strings.TrimSpace(output), "\n")
-	if len(lines) != 1 {
-		t.Fatalf("expected 1 line, got %d:\n%s", len(lines), output)
+	// 1 header + 1 data row
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 lines (header + 1 row), got %d:\n%s", len(lines), output)
 	}
-	if !strings.Contains(lines[0], "Setup Command") {
-		t.Errorf("expected Setup Command, got: %s", lines[0])
+	if !strings.Contains(lines[1], "Setup Command") {
+		t.Errorf("expected Setup Command, got: %s", lines[1])
 	}
 }
 
@@ -401,14 +412,15 @@ func TestListCommand_FilterMultipleStatuses(t *testing.T) {
 	}
 
 	lines := strings.Split(strings.TrimSpace(output), "\n")
-	if len(lines) != 2 {
-		t.Fatalf("expected 2 lines, got %d:\n%s", len(lines), output)
+	// 1 header + 2 data rows
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 lines (header + 2 rows), got %d:\n%s", len(lines), output)
 	}
-	if !strings.Contains(lines[0], "draft") {
-		t.Errorf("expected draft in first line, got: %s", lines[0])
+	if !strings.Contains(lines[1], "draft") {
+		t.Errorf("expected draft in first data row, got: %s", lines[1])
 	}
-	if !strings.Contains(lines[1], "in-progress") {
-		t.Errorf("expected in-progress in second line, got: %s", lines[1])
+	if !strings.Contains(lines[2], "in-progress") {
+		t.Errorf("expected in-progress in second data row, got: %s", lines[2])
 	}
 }
 

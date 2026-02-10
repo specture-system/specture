@@ -96,7 +96,7 @@ func filterByStatus(specs []*specpkg.SpecInfo, filter string) []*specpkg.SpecInf
 	return filtered
 }
 
-// formatListText outputs specs as a human-readable table.
+// formatListText outputs specs as a human-readable table with aligned columns.
 func formatListText(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 	if len(specs) == 0 {
 		cmd.Println("No specs found")
@@ -120,22 +120,40 @@ func formatListText(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 		showIncomplete = true
 	}
 
+	// Calculate column widths from data
+	statusWidth := len("STATUS")
+	progressWidth := len("PROGRESS")
+	for _, spec := range specs {
+		if len(spec.Status) > statusWidth {
+			statusWidth = len(spec.Status)
+		}
+		total := len(spec.CompleteTasks) + len(spec.IncompleteTasks)
+		p := fmt.Sprintf("%d/%d", len(spec.CompleteTasks), total)
+		if len(p) > progressWidth {
+			progressWidth = len(p)
+		}
+	}
+
+	rowFmt := fmt.Sprintf("%%03d  %%-%ds  %%%ds  %%s\n", statusWidth, progressWidth)
+	headerFmt := fmt.Sprintf("%%s  %%-%ds  %%%ds  %%s\n", statusWidth, progressWidth)
+	indent := "     "
+
+	cmd.Printf(headerFmt, "NUM", "STATUS", "PROGRESS", "NAME")
+
 	for i, spec := range specs {
 		totalTasks := len(spec.CompleteTasks) + len(spec.IncompleteTasks)
-		cmd.Printf("%03d  %-12s %d/%d  %s\n",
-			spec.Number, spec.Status,
-			len(spec.CompleteTasks), totalTasks,
-			spec.Name)
+		progress := fmt.Sprintf("%d/%d", len(spec.CompleteTasks), totalTasks)
+		cmd.Printf(rowFmt, spec.Number, spec.Status, progress, spec.Name)
 
 		if showTaskDetails {
 			if showComplete {
 				for _, task := range spec.CompleteTasks {
-					cmd.Printf("     ✓ %s\n", task.Text)
+					cmd.Printf("%s✓ %s\n", indent, task.Text)
 				}
 			}
 			if showIncomplete {
 				for _, task := range spec.IncompleteTasks {
-					cmd.Printf("     • %s\n", task.Text)
+					cmd.Printf("%s• %s\n", indent, task.Text)
 				}
 			}
 			// Add blank line between specs when showing tasks (except after last)

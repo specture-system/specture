@@ -48,9 +48,23 @@ Move spec numbers into frontmatter and use plain slug filenames.
 
 The path for existing projects is: run `specture setup`, which adds `number` to all specs that are missing it (extracted from the `NNN-` filename prefix). After that, validation passes.
 
-### Mixed filename formats are permanent
+### Mixed filename formats are fine
 
-After migration, old files keep their `NNN-slug.md` filenames and new files use `slug.md`. Both naming patterns are valid — the CLI does not care about filenames, only frontmatter. This mixed state is expected and permanent.
+After migration, old files keep their `NNN-slug.md` filenames and new files use `slug.md`. Both naming patterns are valid — the CLI does not care about filenames, only frontmatter. Users can clean up old filenames at their own pace using `specture rename`.
+
+### Rename command
+
+`specture rename` updates a spec's filename and all markdown links that reference it across the specs directory.
+
+```bash
+specture rename --spec 3 --slug status-command
+```
+
+This would rename `003-status-command.md` to `status-command.md` and update any `[text](/specs/003-status-command.md)` links in other specs to `[text](/specs/status-command.md)`.
+
+- `--dry-run` previews changes without applying them
+- If `--slug` is omitted, the command strips the numeric prefix from the current filename
+- The command updates all markdown links in `specs/` that reference the old filename
 
 ### Auto-assignment uses max+1
 
@@ -71,6 +85,13 @@ If a file has a `NNN-` prefix and a `number` field that disagree, `specture vali
 - [ ] Update `specture validate` to warn on number/filename mismatch
 - [ ] Update `specture new` to auto-assign next available number in frontmatter
 - [ ] Update `specture new` to generate slug-only filenames (no numeric prefix)
+
+### Rename
+
+- [ ] Implement `specture rename` command: rename spec file and update all markdown links in specs directory
+- [ ] Support `--spec` flag to select spec by number
+- [ ] Support `--slug` flag for target filename; default to stripping numeric prefix
+- [ ] Support `--dry-run` flag for preview
 
 ### Migration
 

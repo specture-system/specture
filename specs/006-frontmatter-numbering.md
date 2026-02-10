@@ -44,9 +44,21 @@ Move spec numbers into frontmatter and use plain slug filenames.
 
 ### Number is a required field
 
-`number` is a required frontmatter field. `specture validate` fails if any spec is missing it. This keeps the system simple — one source of truth, no fallback logic, no ambiguity.
+`number` is a required frontmatter field — a non-negative integer (starting from 0). `specture validate` fails if any spec is missing it or has an invalid value. This keeps the system simple — one source of truth, no fallback logic, no ambiguity.
 
 The path for existing projects is: run `specture setup`, which adds `number` to all specs that are missing it (extracted from the `NNN-` filename prefix). After that, validation passes.
+
+### Mixed filename formats are permanent
+
+After migration, old files keep their `NNN-slug.md` filenames and new files use `slug.md`. Both naming patterns are valid — the CLI does not care about filenames, only frontmatter. This mixed state is expected and permanent.
+
+### Auto-assignment uses max+1
+
+`specture new` assigns the next number as max(existing numbers) + 1. Gaps in numbering are allowed and not backfilled. This avoids confusion about which numbers are "available."
+
+### Number/filename mismatch
+
+If a file has a `NNN-` prefix and a `number` field that disagree, `specture validate` warns about the inconsistency. The frontmatter `number` is always authoritative.
 
 ## Task List
 
@@ -56,6 +68,7 @@ The path for existing projects is: run `specture setup`, which adds `number` to 
 - [ ] Update spec parsing to read number exclusively from frontmatter
 - [ ] Update `specture validate` to require `number` in frontmatter
 - [ ] Update `specture validate` to detect duplicate numbers across specs
+- [ ] Update `specture validate` to warn on number/filename mismatch
 - [ ] Update `specture new` to auto-assign next available number in frontmatter
 - [ ] Update `specture new` to generate slug-only filenames (no numeric prefix)
 

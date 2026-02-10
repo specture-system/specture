@@ -1,7 +1,9 @@
 ---
-status: draft
+status: approved
 author: Addison Emig
 creation_date: 2026-02-05
+approved_by: Addison Emig
+approval_date: 2026-02-10
 ---
 
 # List Command

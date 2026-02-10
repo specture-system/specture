@@ -27,6 +27,7 @@ func TestValidateCommand_AllSpecsValid(t *testing.T) {
 
 	// Create a valid spec
 	validSpec := `---
+number: 0
 status: draft
 author: Test Author
 ---
@@ -123,7 +124,8 @@ func TestValidateCommand_ByNumber(t *testing.T) {
 	}
 
 	// Create two specs
-	validSpec := `---
+	validSpec0 := `---
+number: 0
 status: draft
 ---
 
@@ -133,10 +135,21 @@ status: draft
 
 - [ ] Task
 `
-	if err := os.WriteFile(filepath.Join(specsDir, "000-first.md"), []byte(validSpec), 0644); err != nil {
+	validSpec1 := `---
+number: 1
+status: draft
+---
+
+# Spec One
+
+## Task List
+
+- [ ] Task
+`
+	if err := os.WriteFile(filepath.Join(specsDir, "000-first.md"), []byte(validSpec0), 0644); err != nil {
 		t.Fatalf("failed to write spec: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(specsDir, "001-second.md"), []byte(validSpec), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(specsDir, "001-second.md"), []byte(validSpec1), 0644); err != nil {
 		t.Fatalf("failed to write spec: %v", err)
 	}
 
@@ -183,6 +196,7 @@ func TestValidateCommand_ByPath(t *testing.T) {
 	}
 
 	validSpec := `---
+number: 0
 status: approved
 ---
 
@@ -321,6 +335,7 @@ func TestValidateCommand_MixedResults(t *testing.T) {
 
 	// Create valid spec
 	validSpec := `---
+number: 0
 status: draft
 ---
 

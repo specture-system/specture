@@ -42,26 +42,22 @@ Move spec numbers into frontmatter and use plain slug filenames.
 - Do **not** rename files — existing filenames stay as-is to preserve links, git history, and cross-references
 - Report changes for user confirmation before applying (uses existing `--dry-run` and `--yes` flags)
 
-### Backward compatibility
+### Number is a required field
 
-The CLI accepts both formats indefinitely:
+`number` is a required frontmatter field. `specture validate` fails if any spec is missing it. This keeps the system simple — one source of truth, no fallback logic, no ambiguity.
 
-- Files with numeric prefix and no `number` in frontmatter — number extracted from filename
-- Files with `number` in frontmatter and no numeric prefix — number from frontmatter
-- Files with both — frontmatter takes precedence, `specture validate` warns about the redundancy
-
-This means old-format and new-format specs coexist in the same project with no issues.
+The path for existing projects is: run `specture setup`, which adds `number` to all specs that are missing it (extracted from the `NNN-` filename prefix). After that, validation passes.
 
 ## Task List
 
 ### Core Changes
 
-- [ ] Add `number` as an optional frontmatter field
-- [ ] Update spec parsing to read number from frontmatter, falling back to filename
+- [ ] Add `number` as a required frontmatter field
+- [ ] Update spec parsing to read number exclusively from frontmatter
+- [ ] Update `specture validate` to require `number` in frontmatter
+- [ ] Update `specture validate` to detect duplicate numbers across specs
 - [ ] Update `specture new` to auto-assign next available number in frontmatter
 - [ ] Update `specture new` to generate slug-only filenames (no numeric prefix)
-- [ ] Update `specture validate` to detect duplicate numbers across specs
-- [ ] Update `specture validate` to warn when number exists in both filename and frontmatter
 
 ### Migration
 

@@ -8,6 +8,9 @@ import (
 //go:embed files/*.md
 var templateFiles embed.FS
 
+//go:embed all:files/skills
+var skillFiles embed.FS
+
 // readTemplate reads and returns a template file from the embedded filesystem.
 func readTemplate(filename, description string) (string, error) {
 	content, err := templateFiles.ReadFile("files/" + filename)
@@ -30,4 +33,10 @@ func GetAgentPromptTemplate() (string, error) {
 // GetSpecsReadmeTemplate returns the specs README template.
 func GetSpecsReadmeTemplate() (string, error) {
 	return readTemplate("specs-readme.md", "specs readme template")
+}
+
+// GetSkillFiles returns the embedded skill filesystem.
+// Files are rooted at "files/skills" within the embed.FS.
+func GetSkillFiles() embed.FS {
+	return skillFiles
 }

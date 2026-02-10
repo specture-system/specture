@@ -76,8 +76,6 @@ If a file has a `NNN-` prefix and a `number` field that disagree, `specture vali
 
 ## Task List
 
-All implementation follows red/green TDD: write a failing test first, then implement to make it pass.
-
 ### Core Changes
 
 - [ ] Add `number` field to spec parsing, read exclusively from frontmatter

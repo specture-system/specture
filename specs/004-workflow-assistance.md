@@ -109,7 +109,7 @@ The skill follows the [Agent Skills specification](https://agentskills.io/specif
 ### Skill Content
 
 - [x] Write `SKILL.md` with frontmatter (name: `specture`, description: "Follow the Specture System for spec-driven development. Use when creating, implementing, or managing specs.")
-- [ ] Write core workflow instructions: implementing specs, checking off tasks, committing properly
+- [x] Write core workflow instructions: implementing specs, checking off tasks, committing properly
 - [ ] Document CLI commands in skill (`specture status`, `specture new`, `specture validate`)
 - [ ] Write `references/spec-format.md` with detailed spec file format (frontmatter, sections, naming, precedence)
 - [ ] Validate skill against the Agent Skills specification

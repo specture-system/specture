@@ -1,5 +1,5 @@
 ---
-status: approved
+status: completed
 author: Addison Emig
 creation_date: 2026-02-05
 approved_by: Addison Emig
@@ -71,6 +71,6 @@ Task flags show top-level tasks only (consistent with the status command's treat
 
 ### Documentation
 
-- [ ] Add usage examples to `specture list --help`
-- [ ] Include `list` in `specture help` workflow overview
-- [ ] Update the specture skill with `list` command usage
+- [x] Add usage examples to `specture list --help`
+- [x] Include `list` in `specture help` workflow overview
+- [x] Update the specture skill with `list` command usage

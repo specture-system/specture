@@ -1,5 +1,5 @@
 ---
-status: approved
+status: completed
 author: Addison Emig
 creation_date: 2026-02-05
 approved_by: Addison Emig
@@ -33,44 +33,29 @@ No filters shows all specs.
 
 The JSON format is the primary interface for agents. It should include all fields defined in the status command spec: name, number, status, current task, current task section, complete tasks, and incomplete tasks.
 
-### Task listing
+### No task listing in text output
 
-By default, the text output shows a compact overview (one row per spec). Additional flags expose task details:
-
-- `--tasks` — include all tasks (complete and incomplete) in output
-- `--incomplete` — only show incomplete tasks (automatically enables task display)
-- `--complete` — only show complete tasks (automatically enables task display)
-
-When both `--complete` and `--incomplete` are passed, all tasks are shown (equivalent to `--tasks`).
-
-Task flags show top-level tasks only (consistent with the status command's treatment of indented tasks). The JSON format always includes full task information regardless of these flags.
+The text output is intentionally a compact overview — one row per spec. For task details, use `specture status --spec N`. The JSON format still includes full task information for programmatic use.
 
 ## Task List
 
 ### Core Implementation
 
-- [ ] Write tests for list command text and JSON output
-- [ ] Implement `specture list` command structure and aliases (`list`, `ls`)
-- [ ] Use `spec.ParseAll` from `internal/spec` ([spec 003](/specs/003-status-command.md)) to load and parse all specs
-- [ ] Implement text output with columns: Number, Status, Progress (e.g., `3/7`), Name — sorted by ascending spec number
-- [ ] Implement JSON output with full `SpecInfo` metadata per spec (name, number, status, current task, current task section, complete tasks, incomplete tasks)
-- [ ] Add `--format` flag (`text`, `json`)
+- [x] Write tests for list command text and JSON output
+- [x] Implement `specture list` command structure and aliases (`list`, `ls`)
+- [x] Use `spec.ParseAll` from `internal/spec` ([spec 003](/specs/003-status-command.md)) to load and parse all specs
+- [x] Implement text output with columns: Number, Status, Progress (e.g., `3/7`), Name — sorted by ascending spec number
+- [x] Implement JSON output with full `SpecInfo` metadata per spec (name, number, status, current task, current task section, complete tasks, incomplete tasks)
+- [x] Add `--format` flag (`text`, `json`)
 
 ### Filtering
 
-- [ ] Write tests for filtering (single status, multiple statuses, no matches)
-- [ ] Implement `--status` filter (single value) — uses resolved status from `SpecInfo`
-- [ ] Implement `--status` filter with comma-separated multiple values
-
-### Task Display
-
-- [ ] Write tests for task display flags
-- [ ] Implement `--tasks` flag to include all tasks (complete and incomplete) in text output
-- [ ] Implement `--incomplete` flag (only incomplete tasks, automatically enables task display)
-- [ ] Implement `--complete` flag (only complete tasks, automatically enables task display)
+- [x] Write tests for filtering (single status, multiple statuses, no matches)
+- [x] Implement `--status` filter (single value) — uses resolved status from `SpecInfo`
+- [x] Implement `--status` filter with comma-separated multiple values
 
 ### Documentation
 
-- [ ] Add usage examples to `specture list --help`
-- [ ] Include `list` in `specture help` workflow overview
-- [ ] Update the specture skill with `list` command usage
+- [x] Add usage examples to `specture list --help`
+- [x] Include `list` in `specture help` workflow overview
+- [x] Update the specture skill with `list` command usage

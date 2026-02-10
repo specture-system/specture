@@ -58,16 +58,16 @@ Task flags show top-level tasks only (consistent with the status command's treat
 
 ### Filtering
 
-- [ ] Write tests for filtering (single status, multiple statuses, no matches)
-- [ ] Implement `--status` filter (single value) — uses resolved status from `SpecInfo`
-- [ ] Implement `--status` filter with comma-separated multiple values
+- [x] Write tests for filtering (single status, multiple statuses, no matches)
+- [x] Implement `--status` filter (single value) — uses resolved status from `SpecInfo`
+- [x] Implement `--status` filter with comma-separated multiple values
 
 ### Task Display
 
-- [ ] Write tests for task display flags
-- [ ] Implement `--tasks` flag to include all tasks (complete and incomplete) in text output
-- [ ] Implement `--incomplete` flag (only incomplete tasks, automatically enables task display)
-- [ ] Implement `--complete` flag (only complete tasks, automatically enables task display)
+- [x] Write tests for task display flags
+- [x] Implement `--tasks` flag to include all tasks (complete and incomplete) in text output
+- [x] Implement `--incomplete` flag (only incomplete tasks, automatically enables task display)
+- [x] Implement `--complete` flag (only complete tasks, automatically enables task display)
 
 ### Documentation
 

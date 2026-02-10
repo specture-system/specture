@@ -21,9 +21,8 @@ The [status command spec](/specs/003-status-command.md) defines parsing logic fo
 The command should support filtering by:
 
 - `--status <value>` — filter by spec status (comma-separated for multiple: `draft,in-progress`)
-- `--spec <number>` — show a single spec by number
 
-Filters are composable. No filters shows all specs.
+No filters shows all specs.
 
 ### Output formats
 
@@ -36,9 +35,11 @@ The JSON format is the primary interface for agents. It should include all field
 
 By default, the text output shows a compact overview (one row per spec). Additional flags expose task details:
 
-- `--tasks` — include task lists in output
-- `--incomplete` — only show incomplete tasks (implies `--tasks`)
-- `--complete` — only show complete tasks (implies `--tasks`)
+- `--tasks` — include all tasks (complete and incomplete) in output
+- `--incomplete` — only show incomplete tasks (automatically enables task display)
+- `--complete` — only show complete tasks (automatically enables task display)
+
+When both `--complete` and `--incomplete` are passed, all tasks are shown (equivalent to `--tasks`).
 
 Task flags show top-level tasks only (consistent with the status command's treatment of indented tasks). The JSON format always includes full task information regardless of these flags.
 
@@ -46,6 +47,7 @@ Task flags show top-level tasks only (consistent with the status command's treat
 
 ### Core Implementation
 
+- [ ] Write tests for list command text and JSON output
 - [ ] Implement `specture list` command structure and aliases (`list`, `ls`)
 - [ ] Use `spec.ParseAll` from `internal/spec` ([spec 003](/specs/003-status-command.md)) to load and parse all specs
 - [ ] Implement text output with columns: Number, Status, Progress (e.g., `3/7`), Name — sorted by ascending spec number
@@ -54,19 +56,19 @@ Task flags show top-level tasks only (consistent with the status command's treat
 
 ### Filtering
 
+- [ ] Write tests for filtering (single status, multiple statuses, no matches)
 - [ ] Implement `--status` filter (single value) — uses resolved status from `SpecInfo`
 - [ ] Implement `--status` filter with comma-separated multiple values
-- [ ] Implement `--spec` filter by number (reuses `spec.ResolvePath` from `internal/spec`)
-- [ ] Write tests for filtering (single status, multiple statuses, by number, no matches, composability)
 
 ### Task Display
 
-- [ ] Implement `--tasks` flag to include task lists in text output
-- [ ] Implement `--incomplete` flag (only incomplete tasks, implies `--tasks`)
-- [ ] Implement `--complete` flag (only complete tasks, implies `--tasks`)
 - [ ] Write tests for task display flags
+- [ ] Implement `--tasks` flag to include all tasks (complete and incomplete) in text output
+- [ ] Implement `--incomplete` flag (only incomplete tasks, automatically enables task display)
+- [ ] Implement `--complete` flag (only complete tasks, automatically enables task display)
 
 ### Documentation
 
 - [ ] Add usage examples to `specture list --help`
 - [ ] Include `list` in `specture help` workflow overview
+- [ ] Update the specture skill with `list` command usage

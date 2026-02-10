@@ -69,3 +69,4 @@ The path for existing projects is: run `specture setup`, which adds `number` to 
 - [ ] Update `specs/README.md` template to reflect new file naming convention
 - [ ] Update `specture help` to describe numbering in frontmatter
 - [ ] Update spec template to include `number` field in frontmatter
+- [ ] Update `.skills/specture/SKILL.md` to document `number` frontmatter field and new filename conventions

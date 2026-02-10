@@ -99,9 +99,9 @@ If a file has a `NNN-` prefix and a `number` field that disagree, `specture vali
 
 ### Migration
 
-- [ ] Tests for migration (adds number, skips existing, dry-run)
-- [ ] `specture setup` adds `number` to frontmatter of `NNN-slug.md` files
-- [ ] Migration respects existing `--dry-run` and `--yes` flags
+- [x] Tests for migration (adds number, skips existing, dry-run)
+- [x] `specture setup` adds `number` to frontmatter of `NNN-slug.md` files
+- [x] Migration respects existing `--dry-run` and `--yes` flags
 
 ### Documentation
 

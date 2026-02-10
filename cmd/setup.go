@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/specture-system/specture/internal/prompt"
 	"github.com/specture-system/specture/internal/setup"
@@ -106,6 +107,24 @@ Actions:
 		// Install Specture skill files
 		if err := setup.InstallSkill(cwd, dryRun); err != nil {
 			return err
+		}
+
+		// Migrate specs: add number to frontmatter of NNN-slug.md files
+		specsDir := filepath.Join(cwd, "specs")
+		migrations, err := setup.FindSpecsNeedingMigration(specsDir)
+		if err == nil && len(migrations) > 0 {
+			cmd.Printf("\nMigrating %d spec(s) to add number field:\n", len(migrations))
+			for _, m := range migrations {
+				cmd.Printf("  %s → number: %d\n", filepath.Base(m.Path), m.Number)
+				if !dryRun {
+					if err := setup.AddNumberToFrontmatter(m.Path, m.Number); err != nil {
+						cmd.PrintErrf("  Error migrating %s: %v\n", filepath.Base(m.Path), err)
+					}
+				}
+			}
+			if dryRun {
+				cmd.Println("  [dry-run] No changes made")
+			}
 		}
 
 		// Handle AGENTS.md and CLAUDE.md update prompts (skip in dry-run mode)

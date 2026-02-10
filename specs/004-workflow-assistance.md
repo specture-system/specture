@@ -31,10 +31,10 @@ Instead, agents get the full Specture workflow injected into their context at th
   - The skill is always up-to-date (installed version = current instructions), eliminating doc drift
   - Works with the agent's natural capabilities — editing files, running commands — rather than wrapping them in CLI subcommands
   - Open standard with growing adoption across agent platforms
-- Considered: Move workflow knowledge into `specture help` output
-  - Requires agents to discover and run the command
-  - Help output is optimized for humans, not agent context
-  - Agents must parse CLI output rather than receiving structured instructions
+- Additionally: Workflow knowledge also lives in `specture help` and `specture <command> --help` output
+  - Agents without skill support can still discover the workflow via the CLI
+  - Humans benefit from help output too
+  - Two sources of truth is acceptable here — both are generated from the same project and updated together
 - Considered: Keep detailed `AGENTS.md` prompt and comprehensive `specs/README.md`
   - Relies on agents reading and following docs
   - Prompt goes stale when Specture evolves

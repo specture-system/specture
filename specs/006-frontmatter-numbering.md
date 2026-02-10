@@ -78,28 +78,28 @@ If a file has a `NNN-` prefix and a `number` field that disagree, `specture vali
 
 ### Core Changes
 
-- [ ] Add `number` field to spec parsing, read exclusively from frontmatter
 - [ ] Tests for `number` parsing (present, missing, invalid values)
+- [ ] Add `number` field to spec parsing, read exclusively from frontmatter
+- [ ] Tests for all new validate rules (missing number, duplicates, number/filename mismatch)
 - [ ] `specture validate` rejects specs missing `number`
 - [ ] `specture validate` detects duplicate numbers across specs
 - [ ] `specture validate` warns on number/filename mismatch
-- [ ] Tests for all new validate rules
+- [ ] Tests for new `specture new` behavior (auto-assign max+1, slug-only filename)
 - [ ] `specture new` assigns max+1 number in frontmatter
 - [ ] `specture new` generates slug-only filenames
-- [ ] Tests for new `specture new` behavior
 
 ### Rename
 
+- [ ] Tests for rename command (file rename, link updates, --slug, --dry-run)
 - [ ] `specture rename` renames file and updates all markdown links in specs directory
 - [ ] `--slug` flag sets target filename; default strips numeric prefix
 - [ ] `--dry-run` previews changes without modifying files
-- [ ] Tests for rename command (file rename, link updates, --slug, --dry-run)
 
 ### Migration
 
+- [ ] Tests for migration (adds number, skips existing, dry-run)
 - [ ] `specture setup` adds `number` to frontmatter of `NNN-slug.md` files
 - [ ] Migration respects existing `--dry-run` and `--yes` flags
-- [ ] Tests for migration (adds number, skips existing, dry-run)
 
 ### Documentation
 

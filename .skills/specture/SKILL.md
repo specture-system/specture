@@ -21,8 +21,8 @@ When implementing a spec, follow this loop:
 
 **Critical rules:**
 
-- Follow red/green TDD: write a failing test first, then implement to make it pass.
 - Every commit that completes a task MUST include the spec file checkbox update alongside the implementation changes. Never commit implementation without the corresponding `- [x]` update. This is the most important rule.
+- Follow red/green TDD: write a failing test first, then implement to make it pass.
 - If a single commit completes multiple tasks, check off all of them in that same commit. Do NOT make separate empty commits just to check off tasks that were already implemented.
 - Do NOT edit spec design decisions or descriptions without explicit user permission. You may only mark tasks complete and add/remove tasks during implementation.
 - When editing a spec, keep the design decisions section and task list in sync. If a description is updated, update all corresponding task descriptions to match, and vice versa.

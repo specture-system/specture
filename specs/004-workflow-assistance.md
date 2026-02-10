@@ -118,7 +118,7 @@ The skill follows the [Agent Skills specification](https://agentskills.io/specif
 
 - [x] Embed skill files in Go binary and implement `InstallSkill` (writes `.skills/specture/SKILL.md`)
 - [x] Write reference files (`.skills/specture/references/spec-format.md`)
-- [ ] Overwrite existing skill files on re-run
+- [x] Overwrite existing skill files on re-run
 - [ ] Support dry-run flag
 - [ ] Integrate `InstallSkill` into `specture setup` flow
 

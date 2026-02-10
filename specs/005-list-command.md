@@ -49,12 +49,12 @@ Task flags show top-level tasks only (consistent with the status command's treat
 
 ### Core Implementation
 
-- [ ] Write tests for list command text and JSON output
-- [ ] Implement `specture list` command structure and aliases (`list`, `ls`)
-- [ ] Use `spec.ParseAll` from `internal/spec` ([spec 003](/specs/003-status-command.md)) to load and parse all specs
-- [ ] Implement text output with columns: Number, Status, Progress (e.g., `3/7`), Name — sorted by ascending spec number
-- [ ] Implement JSON output with full `SpecInfo` metadata per spec (name, number, status, current task, current task section, complete tasks, incomplete tasks)
-- [ ] Add `--format` flag (`text`, `json`)
+- [x] Write tests for list command text and JSON output
+- [x] Implement `specture list` command structure and aliases (`list`, `ls`)
+- [x] Use `spec.ParseAll` from `internal/spec` ([spec 003](/specs/003-status-command.md)) to load and parse all specs
+- [x] Implement text output with columns: Number, Status, Progress (e.g., `3/7`), Name — sorted by ascending spec number
+- [x] Implement JSON output with full `SpecInfo` metadata per spec (name, number, status, current task, current task section, complete tasks, incomplete tasks)
+- [x] Add `--format` flag (`text`, `json`)
 
 ### Filtering
 

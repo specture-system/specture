@@ -1,7 +1,9 @@
 ---
-status: draft
+status: approved
 author: Addison Emig
 creation_date: 2026-02-05
+approved_by: Addison Emig
+approval_date: 2026-02-10
 ---
 
 # Frontmatter Numbering
@@ -34,46 +36,76 @@ Move spec numbers into frontmatter and use plain slug filenames.
 
 ### Migration of existing specs
 
-`specture setup` should handle migration of existing projects:
+`specture setup` should handle adding `number` to existing specs:
 
 - Scan for files matching the `NNN-slug.md` pattern
 - Extract the number from the filename
 - Add `number` field to frontmatter if not already present
-- Rename the file to remove the numeric prefix
-- Report changes for user confirmation before applying
+- Do **not** rename files — existing filenames stay as-is to preserve links, git history, and cross-references
+- Report changes for user confirmation before applying (uses existing `--dry-run` and `--yes` flags)
 
-### Backward compatibility
+### Number is a required field
 
-During a transition period, the CLI should accept both formats:
+`number` is a required frontmatter field — a non-negative integer (starting from 0). `specture validate` fails if any spec is missing it or has an invalid value. This keeps the system simple — one source of truth, no fallback logic, no ambiguity.
 
-- Files with numeric prefix and no `number` in frontmatter — number extracted from filename
-- Files with `number` in frontmatter and no numeric prefix — number from frontmatter
-- Files with both — frontmatter takes precedence, `specture validate` warns about the redundancy
+The path for existing projects is: run `specture setup`, which adds `number` to all specs that are missing it (extracted from the `NNN-` filename prefix). After that, validation passes.
 
-### Cross-references
+### Mixed filename formats are fine
 
-Specs that link to other specs by filename (e.g., `[spec 003](/specs/003-status-command.md)`) will break after migration. `specture setup` should update these links as part of the migration. Going forward, specs should reference other specs by number in prose (e.g., "see spec 3") since filenames are no longer stable identifiers for numbering.
+After migration, old files keep their `NNN-slug.md` filenames and new files use `slug.md`. Both naming patterns are valid — the CLI does not care about filenames, only frontmatter. Users can clean up old filenames at their own pace using `specture rename`.
+
+### Rename command
+
+`specture rename` updates a spec's filename and all markdown links that reference it across the specs directory.
+
+```bash
+specture rename --spec 3 --slug status-command
+```
+
+This would rename `003-status-command.md` to `status-command.md` and update any `[text](/specs/003-status-command.md)` links in other specs to `[text](/specs/status-command.md)`.
+
+- `--dry-run` previews changes without applying them
+- If `--slug` is omitted, the command strips the numeric prefix from the current filename
+- The command updates all markdown links in `specs/` that reference the old filename
+
+### Auto-assignment uses max+1
+
+`specture new` assigns the next number as max(existing numbers) + 1. Gaps in numbering are allowed and not backfilled. This avoids confusion about which numbers are "available."
+
+### Number/filename mismatch
+
+If a file has a `NNN-` prefix and a `number` field that disagree, `specture validate` warns about the inconsistency. The frontmatter `number` is always authoritative.
 
 ## Task List
 
 ### Core Changes
 
-- [ ] Add `number` as an optional frontmatter field
-- [ ] Update spec parsing to read number from frontmatter, falling back to filename
-- [ ] Update `specture new` to auto-assign next available number in frontmatter
-- [ ] Update `specture new` to generate slug-only filenames (no numeric prefix)
-- [ ] Update `specture validate` to detect duplicate numbers across specs
-- [ ] Update `specture validate` to warn when number exists in both filename and frontmatter
+- [ ] Tests for `number` parsing (present, missing, invalid values)
+- [ ] Add `number` field to spec parsing, read exclusively from frontmatter
+- [ ] Tests for all new validate rules (missing number, duplicates, number/filename mismatch)
+- [ ] `specture validate` rejects specs missing `number`
+- [ ] `specture validate` detects duplicate numbers across specs
+- [ ] `specture validate` warns on number/filename mismatch
+- [ ] Tests for new `specture new` behavior (auto-assign max+1, slug-only filename)
+- [ ] `specture new` assigns max+1 number in frontmatter
+- [ ] `specture new` generates slug-only filenames
+
+### Rename
+
+- [ ] Tests for rename command (file rename, link updates, --slug, --dry-run)
+- [ ] `specture rename` renames file and updates all markdown links in specs directory
+- [ ] `--slug` flag sets target filename; default strips numeric prefix
+- [ ] `--dry-run` previews changes without modifying files
 
 ### Migration
 
-- [ ] Implement migration logic in `specture setup`: scan, extract, rename, update frontmatter
-- [ ] Update cross-reference links in spec files during migration
-- [ ] Add `--dry-run` support for migration preview
-- [ ] Add user confirmation before applying migration changes
+- [ ] Tests for migration (adds number, skips existing, dry-run)
+- [ ] `specture setup` adds `number` to frontmatter of `NNN-slug.md` files
+- [ ] Migration respects existing `--dry-run` and `--yes` flags
 
 ### Documentation
 
 - [ ] Update `specs/README.md` template to reflect new file naming convention
 - [ ] Update `specture help` to describe numbering in frontmatter
 - [ ] Update spec template to include `number` field in frontmatter
+- [ ] Update `.skills/specture/SKILL.md` to document `number` frontmatter field and new filename conventions

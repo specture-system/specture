@@ -80,8 +80,8 @@ If a file has a `NNN-` prefix and a `number` field that disagree, `specture vali
 
 ### Core Changes
 
-- [ ] Tests for `number` parsing (present, missing, invalid values)
-- [ ] Add `number` field to spec parsing, read exclusively from frontmatter
+- [x] Tests for `number` parsing (present, missing, invalid values)
+- [x] Add `number` field to spec parsing, read exclusively from frontmatter
 - [ ] Tests for all new validate rules (missing number, duplicates, number/filename mismatch)
 - [ ] `specture validate` rejects specs missing `number`
 - [ ] `specture validate` detects duplicate numbers across specs

@@ -55,6 +55,7 @@ func execList(t *testing.T, tmpDir string, flags map[string]string) (string, err
 // ---- Spec fixtures ----
 
 const listInProgressSpec = `---
+number: 3
 status: in-progress
 ---
 
@@ -76,6 +77,7 @@ Description.
 `
 
 const listCompletedSpec = `---
+number: 1
 status: completed
 ---
 
@@ -91,6 +93,7 @@ All done.
 `
 
 const listDraftSpec = `---
+number: 2
 status: draft
 ---
 
@@ -105,6 +108,7 @@ Just an idea.
 `
 
 const listApprovedSpec = `---
+number: 4
 status: approved
 ---
 

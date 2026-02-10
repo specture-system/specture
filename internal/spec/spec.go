@@ -42,6 +42,7 @@ type Task struct {
 // frontmatter represents the YAML frontmatter of a spec.
 type frontmatter struct {
 	Status string `yaml:"status"`
+	Number *int   `yaml:"number"`
 }
 
 // Parse reads and parses a spec file, returning a fully populated SpecInfo.
@@ -60,9 +61,6 @@ func ParseContent(path string, content []byte) (*SpecInfo, error) {
 		Path: path,
 	}
 
-	// Extract number from filename
-	info.Number = extractNumber(filepath.Base(path))
-
 	// Parse with goldmark for frontmatter and title
 	md := goldmark.New(
 		goldmark.WithExtensions(
@@ -76,13 +74,22 @@ func ParseContent(path string, content []byte) (*SpecInfo, error) {
 
 	// Extract frontmatter
 	var fmStatus string
+	var fmNumber *int
 	fmData := gmfrontmatter.Get(ctx)
 	if fmData != nil {
 		var fm frontmatter
 		if err := fmData.Decode(&fm); err == nil {
 			fmStatus = fm.Status
+			fmNumber = fm.Number
 		}
 	}
+
+	// Resolve spec number exclusively from frontmatter
+	number, err := resolveNumber(fmNumber)
+	if err != nil {
+		return nil, err
+	}
+	info.Number = number
 
 	// Extract title (first H1 heading)
 	info.Name = extractTitle(doc, content)
@@ -141,16 +148,31 @@ func FindCurrent(specs []*SpecInfo) *SpecInfo {
 	return nil
 }
 
-// extractNumber extracts the spec number from a filename like "003-foo.md".
-func extractNumber(filename string) int {
+// resolveNumber determines the spec number exclusively from frontmatter.
+// Returns -1 if number is not present in frontmatter.
+// Returns an error if the frontmatter number is negative.
+func resolveNumber(fmNumber *int) (int, error) {
+	if fmNumber == nil {
+		return -1, nil
+	}
+	if *fmNumber < 0 {
+		return 0, fmt.Errorf("invalid spec number %d: must be a non-negative integer", *fmNumber)
+	}
+	return *fmNumber, nil
+}
+
+// extractNumberFromFilename extracts the spec number from a filename like "003-foo.md".
+// Returns -1 if the filename doesn't have a numeric prefix.
+// Used only by migration/setup, not by spec parsing.
+func extractNumberFromFilename(filename string) int {
 	re := regexp.MustCompile(`^(\d{3})-`)
 	matches := re.FindStringSubmatch(filename)
 	if len(matches) < 2 {
-		return 0
+		return -1
 	}
 	n, err := strconv.Atoi(matches[1])
 	if err != nil {
-		return 0
+		return -1
 	}
 	return n
 }

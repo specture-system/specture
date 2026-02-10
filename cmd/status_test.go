@@ -56,6 +56,7 @@ func execStatus(t *testing.T, tmpDir string, flags map[string]string) (string, e
 }
 
 const inProgressSpec = `---
+number: 3
 status: in-progress
 ---
 
@@ -94,6 +95,7 @@ No frontmatter.
 `
 
 const completedSpec = `---
+number: 1
 status: completed
 ---
 
@@ -109,6 +111,7 @@ All done.
 `
 
 const draftSpec = `---
+number: 2
 status: draft
 ---
 
@@ -123,6 +126,7 @@ Just an idea.
 `
 
 const noTasksSpec = `---
+number: 1
 status: draft
 ---
 

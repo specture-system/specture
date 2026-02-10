@@ -23,7 +23,7 @@ Instead, agents get the full Specture workflow injected into their context at th
 
 ### Agent skill instead of CLI help output
 
-- Chosen: Ship a `specture-workflow` agent skill
+- Chosen: Ship a `specture` agent skill
   - Skills are loaded into agent context automatically — zero discovery friction
   - Progressive disclosure: agents see only the name/description at startup, full instructions load on activation
   - The skill is always up-to-date (installed version = current instructions), eliminating doc drift
@@ -92,7 +92,7 @@ Instead, agents get the full Specture workflow injected into their context at th
 The skill follows the [Agent Skills specification](https://agentskills.io/specification.md):
 
 ```
-.skills/specture-workflow/
+.skills/specture/
 ├── SKILL.md              # Workflow instructions for agents
 └── references/
     └── spec-format.md    # Spec file format reference (loaded on demand)
@@ -117,7 +117,7 @@ The skill references the status inference algorithm from the [status command spe
 
 These tasks produce markdown files, not code — no TDD needed.
 
-- [ ] Write `SKILL.md` with frontmatter (name: `specture-workflow`, description)
+- [ ] Write `SKILL.md` with frontmatter (name: `specture`, description)
 - [ ] Write core workflow instructions: implementing specs, checking off tasks, committing properly
 - [ ] Document CLI commands in skill (`specture status`, `specture new`, `specture validate`)
 - [ ] Write `references/spec-format.md` with detailed spec file format (frontmatter, sections, naming, precedence)
@@ -127,9 +127,9 @@ These tasks produce markdown files, not code — no TDD needed.
 
 Red/green TDD: write failing test, then write minimum code to pass.
 
-- [ ] Red: test that `InstallSkill` creates `.skills/specture-workflow/SKILL.md` with expected content
+- [ ] Red: test that `InstallSkill` creates `.skills/specture/SKILL.md` with expected content
 - [ ] Green: embed skill files in Go binary and implement `InstallSkill`
-- [ ] Red: test that `InstallSkill` creates `.skills/specture-workflow/references/spec-format.md`
+- [ ] Red: test that `InstallSkill` creates `.skills/specture/references/spec-format.md`
 - [ ] Green: extend `InstallSkill` to write reference files
 - [ ] Red: test that `InstallSkill` overwrites existing skill files on re-run
 - [ ] Green: implement overwrite behavior

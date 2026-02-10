@@ -112,7 +112,7 @@ The skill follows the [Agent Skills specification](https://agentskills.io/specif
 - [x] Write core workflow instructions: implementing specs, checking off tasks, committing properly
 - [x] Document CLI commands in skill (`specture status`, `specture new`, `specture validate`)
 - [x] Write `references/spec-format.md` with detailed spec file format (frontmatter, sections, naming, precedence)
-- [ ] Validate skill against the Agent Skills specification
+- [x] Validate skill against the Agent Skills specification
 
 ### Skill Installation
 

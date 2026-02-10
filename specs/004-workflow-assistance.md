@@ -125,8 +125,6 @@ These tasks produce markdown files, not code — no TDD needed.
 
 ### Skill Installation
 
-Red/green TDD: write failing test, then write minimum code to pass.
-
 - [ ] Red: test that `InstallSkill` creates `.skills/specture/SKILL.md` with expected content
 - [ ] Green: embed skill files in Go binary and implement `InstallSkill`
 - [ ] Red: test that `InstallSkill` creates `.skills/specture/references/spec-format.md`
@@ -138,8 +136,6 @@ Red/green TDD: write failing test, then write minimum code to pass.
 - [ ] Refactor: integrate `InstallSkill` into `specture setup` flow
 
 ### Simplify Project Docs
-
-Red/green TDD: write failing test, then write minimum code to pass.
 
 - [ ] Red: test that agent prompt template contains only a minimal Specture mention
 - [ ] Green: reduce `agent-prompt.md` template content

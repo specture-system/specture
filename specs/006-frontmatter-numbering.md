@@ -86,9 +86,9 @@ If a file has a `NNN-` prefix and a `number` field that disagree, `specture vali
 - [x] `specture validate` rejects specs missing `number`
 - [x] `specture validate` detects duplicate numbers across specs
 - [x] `specture validate` warns on number/filename mismatch
-- [ ] Tests for new `specture new` behavior (auto-assign max+1, slug-only filename)
-- [ ] `specture new` assigns max+1 number in frontmatter
-- [ ] `specture new` generates slug-only filenames
+- [x] Tests for new `specture new` behavior (auto-assign max+1, slug-only filename)
+- [x] `specture new` assigns max+1 number in frontmatter
+- [x] `specture new` generates slug-only filenames
 
 ### Rename
 

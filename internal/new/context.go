@@ -74,8 +74,8 @@ func NewContext(workDir, title string) (*NewCommandContext, error) {
 	date := time.Now().Format("2006-01-02")
 	branchName := fmt.Sprintf("spec/%03d-%s-%s", number, slug, date)
 
-	// Create file name and path
-	fileName := fmt.Sprintf("%03d-%s.md", number, slug)
+	// Create slug-only file name and path
+	fileName := fmt.Sprintf("%s.md", slug)
 	filePath := filepath.Join(specsDir, fileName)
 
 	return &NewCommandContext{
@@ -96,7 +96,7 @@ func NewContext(workDir, title string) (*NewCommandContext, error) {
 // If noBranch is true, no git branch is created for the spec.
 func (c *NewCommandContext) CreateSpec(dryRun bool, body string, noBranch bool) error {
 	// Always generate frontmatter
-	frontmatter, err := GenerateFrontmatter(c.Title, c.Author)
+	frontmatter, err := GenerateFrontmatter(c.Title, c.Author, c.Number)
 	if err != nil {
 		return fmt.Errorf("failed to generate frontmatter: %w", err)
 	}

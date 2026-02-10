@@ -416,9 +416,9 @@ func TestFindAllSpecs(t *testing.T) {
 func TestResolveSpecPath(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create a spec file
+	// Create a spec file with number in frontmatter
 	specPath := filepath.Join(tmpDir, "000-test.md")
-	if err := os.WriteFile(specPath, []byte("content"), 0644); err != nil {
+	if err := os.WriteFile(specPath, []byte("---\nnumber: 0\n---\n\n# Test\n"), 0644); err != nil {
 		t.Fatalf("failed to write file: %v", err)
 	}
 

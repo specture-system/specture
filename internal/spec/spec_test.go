@@ -250,14 +250,14 @@ func TestFindAll_MatchesOnlySpecFiles(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create spec files and non-spec files
+	// FindAll includes all .md files except README.md
 	files := map[string]bool{
 		"001-first.md":  true,
 		"002-second.md": true,
 		"010-tenth.md":  true,
+		"my-feature.md": true, // slug-only filename
 		"README.md":     false,
 		"notes.txt":     false,
-		"1-bad.md":      false, // not 3 digits
-		"abc-bad.md":    false,
 	}
 
 	for name := range files {
@@ -304,10 +304,10 @@ func TestFindAll_NonexistentDirectory(t *testing.T) {
 func TestResolvePath(t *testing.T) {
 	dir := t.TempDir()
 
-	// Create a spec file
+	// Create a spec file with number in frontmatter
 	specFile := "007-feature.md"
 	specPath := filepath.Join(dir, specFile)
-	if err := os.WriteFile(specPath, []byte("# Feature\n"), 0644); err != nil {
+	if err := os.WriteFile(specPath, []byte("---\nnumber: 7\n---\n\n# Feature\n"), 0644); err != nil {
 		t.Fatalf("failed to create spec file: %v", err)
 	}
 

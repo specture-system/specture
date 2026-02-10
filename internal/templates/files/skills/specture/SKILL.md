@@ -31,44 +31,30 @@ When implementing a spec, follow this loop:
 
 Always use non-interactive flags. Interactive mode will hang waiting for input.
 
-### specture list
+### specture list and specture status
 
-List all specs with optional filtering and task display.
+Use `list` to see all specs at a glance, then `status` to drill into a specific one.
+
+**`specture list`** — overview of all specs (number, status, progress, name).
 
 ```bash
-# List all specs (compact table)
-specture list
-
-# Filter by status
-specture list --status in-progress
-specture list --status draft,approved
-
-# JSON output (for programmatic use)
-specture list -f json
-specture list --status in-progress -f json
+specture list                            # All specs
+specture list --status in-progress       # Filter by status
+specture list --status draft,approved    # Multiple statuses
+specture list -f json                    # JSON output with full metadata
 ```
-
-Text output columns: Number, Status, Progress (e.g., `3/7`), Name — sorted by ascending spec number. JSON output includes full `SpecInfo` metadata per spec. For task details on a specific spec, use `specture status --spec N`.
 
 Aliases: `list`, `ls`
 
-### specture status
-
-Show the current in-progress spec, its progress, and the next task.
+**`specture status`** — detailed view of one spec, including tasks and current task.
 
 ```bash
-# Show current in-progress spec (default)
-specture status
-
-# Target a specific spec by number
-specture status --spec 3
-specture status -s 003
-
-# JSON output (for programmatic use)
-specture status -f json
+specture status                          # Current in-progress spec
+specture status --spec 3                 # Specific spec by number
+specture status -f json                  # JSON output
 ```
 
-Output includes: spec name, number, status, progress (N/M tasks), current task, current task section, complete tasks, and remaining tasks.
+Typical workflow: run `specture list` to find the spec you need, then `specture status --spec N` to see its tasks and progress.
 
 ### specture new
 

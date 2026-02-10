@@ -76,27 +76,40 @@ If a file has a `NNN-` prefix and a `number` field that disagree, `specture vali
 
 ## Task List
 
+All implementation follows red/green TDD: write a failing test first, then implement to make it pass.
+
 ### Core Changes
 
-- [ ] Add `number` as a required frontmatter field
-- [ ] Update spec parsing to read number exclusively from frontmatter
-- [ ] Update `specture validate` to require `number` in frontmatter
-- [ ] Update `specture validate` to detect duplicate numbers across specs
-- [ ] Update `specture validate` to warn on number/filename mismatch
-- [ ] Update `specture new` to auto-assign next available number in frontmatter
-- [ ] Update `specture new` to generate slug-only filenames (no numeric prefix)
+- [ ] Test: spec parsing reads `number` from frontmatter
+- [ ] Implement: add `number` field to spec parsing
+- [ ] Test: parsing fails when `number` is missing from frontmatter
+- [ ] Implement: make `number` a required field in spec parsing
+- [ ] Test: `specture validate` rejects specs missing `number`
+- [ ] Implement: update `specture validate` to require `number`
+- [ ] Test: `specture validate` detects duplicate numbers across specs
+- [ ] Implement: duplicate number detection in `specture validate`
+- [ ] Test: `specture validate` warns on number/filename mismatch
+- [ ] Implement: number/filename mismatch warning in `specture validate`
+- [ ] Test: `specture new` assigns max+1 number in frontmatter
+- [ ] Implement: auto-assign number in `specture new`
+- [ ] Test: `specture new` generates slug-only filename
+- [ ] Implement: slug-only filename generation in `specture new`
 
 ### Rename
 
-- [ ] Implement `specture rename` command: rename spec file and update all markdown links in specs directory
-- [ ] Support `--spec` flag to select spec by number
-- [ ] Support `--slug` flag for target filename; default to stripping numeric prefix
-- [ ] Support `--dry-run` flag for preview
+- [ ] Test: `specture rename` renames file and updates markdown links
+- [ ] Implement: `specture rename` command with file rename and link updates
+- [ ] Test: `--slug` flag sets target filename; default strips numeric prefix
+- [ ] Implement: `--slug` flag and default behavior
+- [ ] Test: `--dry-run` previews changes without modifying files
+- [ ] Implement: `--dry-run` support
 
 ### Migration
 
-- [ ] Implement migration logic in `specture setup`: scan for `NNN-slug.md` files, extract number, add `number` field to frontmatter
-- [ ] Use existing `--dry-run` and `--yes` flags for preview and confirmation
+- [ ] Test: `specture setup` adds `number` to frontmatter of `NNN-slug.md` files
+- [ ] Implement: migration logic in `specture setup`
+- [ ] Test: migration respects `--dry-run` and `--yes` flags
+- [ ] Implement: wire migration into existing `--dry-run` and `--yes` flow
 
 ### Documentation
 

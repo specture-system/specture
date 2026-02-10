@@ -170,10 +170,9 @@ func TestSetupCommand_CreatesFilesWithCorrectContent(t *testing.T) {
 	// Verify README content contains expected sections
 	contentStr := string(content)
 	expectedContent := []string{
-		"Spec Guidelines",
-		"Spec Scope",
-		"Spec File Structure",
-		"Workflow",
+		"Specs",
+		"design documents",
+		"Specture System",
 		"pull request", // ContributionType should be rendered
 	}
 

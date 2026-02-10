@@ -1,5 +1,5 @@
 ---
-status: approved
+status: completed
 author: Addison Emig
 creation_date: 2026-02-05
 approved_by: Addison Emig
@@ -108,22 +108,22 @@ The skill follows the [Agent Skills specification](https://agentskills.io/specif
 
 ### Skill Content
 
-- [ ] Write `SKILL.md` with frontmatter (name: `specture`, description: "Follow the Specture System for spec-driven development. Use when creating, implementing, or managing specs.")
-- [ ] Write core workflow instructions: implementing specs, checking off tasks, committing properly
-- [ ] Document CLI commands in skill (`specture status`, `specture new`, `specture validate`)
-- [ ] Write `references/spec-format.md` with detailed spec file format (frontmatter, sections, naming, precedence)
-- [ ] Validate skill against the Agent Skills specification
+- [x] Write `SKILL.md` with frontmatter (name: `specture`, description: "Follow the Specture System for spec-driven development. Use when creating, implementing, or managing specs.")
+- [x] Write core workflow instructions: implementing specs, checking off tasks, committing properly
+- [x] Document CLI commands in skill (`specture status`, `specture new`, `specture validate`)
+- [x] Write `references/spec-format.md` with detailed spec file format (frontmatter, sections, naming, precedence)
+- [x] Validate skill against the Agent Skills specification
 
 ### Skill Installation
 
-- [ ] Embed skill files in Go binary and implement `InstallSkill` (writes `.skills/specture/SKILL.md`)
-- [ ] Write reference files (`.skills/specture/references/spec-format.md`)
-- [ ] Overwrite existing skill files on re-run
-- [ ] Support dry-run flag
-- [ ] Integrate `InstallSkill` into `specture setup` flow
+- [x] Embed skill files in Go binary and implement `InstallSkill` (writes `.skills/specture/SKILL.md`)
+- [x] Write reference files (`.skills/specture/references/spec-format.md`)
+- [x] Overwrite existing skill files on re-run
+- [x] Support dry-run flag
+- [x] Integrate `InstallSkill` into `specture setup` flow
 
 ### Simplify Project Docs
 
-- [ ] Reduce `agent-prompt.md` template to a minimal Specture mention
-- [ ] Slim down `specs-readme.md` template to a brief overview linking to the Specture repo
-- [ ] Update `specture setup` to generate the simplified docs
+- [x] Reduce `agent-prompt.md` template to a minimal Specture mention
+- [x] Slim down `specs-readme.md` template to a brief overview linking to the Specture repo
+- [x] Update `specture setup` to generate the simplified docs

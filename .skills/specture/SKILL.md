@@ -1,0 +1,139 @@
+---
+name: specture
+description: Follow the Specture System for spec-driven development. Use when creating, implementing, or managing specs.
+---
+
+# Specture System
+
+Specture is a spec-driven development system. Specs are design documents in the `specs/` directory that describe planned changes — features, refactors, redesigns, tooling improvements. Each spec contains the design rationale, decisions, and an implementation task list.
+
+## Implementation Workflow
+
+When implementing a spec, follow this loop for every task:
+
+1. Run `specture status` to see the current spec and next task
+2. Complete **one task** from the task list
+3. Edit the spec file: change `- [ ]` to `- [x]` for that task
+4. Stage both the implementation files **and** the spec file update
+5. Commit together with a conventional commit message (e.g., `feat: implement feature X`)
+6. Push the changes
+7. Repeat from step 1
+
+**Critical rules:**
+
+- Every commit that completes a task MUST include the spec file checkbox update alongside the implementation changes. Never commit implementation without the corresponding `- [x]` update.
+- Do NOT batch multiple tasks into one commit. One task = one commit.
+- Do NOT edit spec design decisions or descriptions without explicit user permission. You may only mark tasks complete and add/remove tasks during implementation.
+- When all tasks are checked off, update the frontmatter `status` to `completed`.
+
+## CLI Commands
+
+Always use non-interactive flags. Interactive mode will hang waiting for input.
+
+### specture status
+
+Show the current in-progress spec, its progress, and the next task.
+
+```bash
+# Show current in-progress spec (default)
+specture status
+
+# Target a specific spec by number
+specture status --spec 3
+specture status -s 003
+
+# JSON output (for programmatic use)
+specture status -f json
+```
+
+Output includes: spec name, number, status, progress (N/M tasks), current task, current task section, complete tasks, and remaining tasks.
+
+### specture new
+
+Create a new spec file with automatic numbering and branch.
+
+```bash
+# Non-interactive: provide title via flag (required for agents)
+specture new --title "Feature name"
+
+# Pipe full body content
+cat spec-body.md | specture new --title "Feature name"
+
+# Skip branch creation
+specture new --title "Feature name" --no-branch
+
+# Skip opening editor
+specture new --title "Feature name" --no-editor
+
+# Preview without creating anything
+specture new --title "Feature name" --dry-run
+```
+
+Aliases: `new`, `n`, `add`, `a`
+
+### specture validate
+
+Validate that specs follow the Specture System format.
+
+```bash
+# Validate all specs
+specture validate
+
+# Validate a specific spec by number
+specture validate --spec 3
+specture validate -s 42
+```
+
+Checks: valid frontmatter, valid status field, description present, task list present.
+
+Aliases: `validate`, `v`
+
+### specture setup
+
+Initialize or update the Specture System in a repository.
+
+```bash
+# Non-interactive setup
+specture setup --yes
+
+# Preview without changes
+specture setup --dry-run
+
+# Force AGENTS.md update prompt
+specture setup --update-agents --yes
+```
+
+Aliases: `setup`, `update`, `u`
+
+## Spec Status Workflow
+
+Specs move through these statuses:
+
+1. **draft** — Being written and refined
+2. **approved** — Ready for implementation
+3. **in-progress** — Implementation underway (tasks being checked off)
+4. **completed** — All tasks done
+5. **rejected** — Reviewed and rejected
+
+If a spec has no explicit `status` in frontmatter, it is inferred from tasks:
+- No task list or no complete tasks → `draft`
+- Mix of complete and incomplete → `in-progress`
+- All tasks complete → `completed`
+
+## Commit Messages
+
+Use conventional commits:
+
+- `feat:` — new features
+- `fix:` — bug fixes
+- `refactor:` — code restructuring
+- `docs:` — documentation
+- `test:` — test changes
+
+## Precedence
+
+Higher-numbered specs take precedence over lower-numbered ones when they conflict. Completed specs are historical records — do not retroactively update them (except to fix typos or factual errors).
+
+## Spec Format Reference
+
+For detailed spec file format (frontmatter fields, sections, naming conventions), see [references/spec-format.md](references/spec-format.md).

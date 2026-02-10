@@ -130,8 +130,8 @@ func TestCreateSpecsReadme(t *testing.T) {
 
 	// Check content contains expected patterns
 	content := testhelpers.ReadFile(t, readmePath)
-	if !strings.Contains(content, "Spec Guidelines") {
-		t.Error("specs README should contain 'Spec Guidelines'")
+	if !strings.Contains(content, "Specs") {
+		t.Error("specs README should contain 'Specs'")
 	}
 	if !strings.Contains(content, "pull request") {
 		t.Error("specs README should contain contribution type")

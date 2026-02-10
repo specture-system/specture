@@ -42,6 +42,7 @@ Actions:
 		cmd.Println("\nSetup will:")
 		cmd.Println("  • Create specs/ directory")
 		cmd.Println("  • Create specs/README.md with Specture System guidelines")
+		cmd.Println("  • Install Specture skill files into .skills/")
 
 		// Get update flags
 		updateAgents, err := cmd.Flags().GetBool("update-agents")
@@ -99,6 +100,11 @@ Actions:
 
 		// Create specs/README.md
 		if err := ctx.CreateSpecsReadme(dryRun); err != nil {
+			return err
+		}
+
+		// Install Specture skill files
+		if err := setup.InstallSkill(cwd, dryRun); err != nil {
 			return err
 		}
 

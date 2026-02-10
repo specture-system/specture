@@ -1,108 +1,129 @@
 ---
-status: draft
+status: approved
 author: Addison Emig
 creation_date: 2026-02-05
+approved_by: Addison Emig
+approval_date: 2026-02-10
 ---
 
 # Workflow Assistance
 
 The Specture System relies on agents reading and obeying instructions in `AGENTS.md` and `specs/README.md`. In practice, agents often forget to check off tasks in spec files and commit the spec update alongside their implementation changes.
 
-Rather than relying on documentation compliance, we should make the CLI the primary interface for understanding and following the workflow:
+Rather than relying on documentation compliance or moving workflow knowledge into CLI help output, we should ship Specture's workflow as an **agent skill** — a standardized format ([agentskills.io](https://agentskills.io)) that agents load automatically into their context.
 
-- A `done` command that makes checking off tasks trivially easy
-- A pre-commit hook that reminds agents about spec updates at the moment they commit
-- Simplified `AGENTS.md` prompt that points agents to the CLI instead of docs
-- Workflow knowledge moved from `specs/README.md` into CLI help output
+The skill replaces the need for:
+
+- Detailed `AGENTS.md` / `CLAUDE.md` workflow prompts
+- Comprehensive `specs/README.md` in every project
+- A `done` CLI command for checking off tasks
+- A pre-commit hook for nudging agents
+
+Instead, agents get the full Specture workflow injected into their context at the right time, and they follow it natively.
 
 ## Design Decisions
 
-### `done` command with text matching
+### Agent skill instead of CLI help output
 
-- Chosen: `specture done [substring]` — matches a task by text content
-  - Task text is a stable identifier (unlike position or number)
-  - Default (no argument) checks off the first unchecked task ("current task")
-  - Substring match handles the common case without requiring exact text
-  - After checking off the task, automatically runs `git add` on the spec file so it's staged for the next commit
-- Considered: `specture done --task <number>`
-  - Task numbers are fragile — tasks get added, removed, and reordered
-  - Agent would need to count lines to determine the right number
-- Considered: `specture complete` as the command name
-  - `done` is shorter and more natural
-  - `complete` could be confused with shell completion
-
-### Pre-commit hook as a soft nudge
-
-- Chosen: Non-blocking pre-commit hook (prints reminder, exits 0)
-  - Commit always succeeds — no workflow disruption
-  - Agents typically read `git commit` output, so the reminder is visible
-  - No false-positive blocking on intermediate commits (refactoring, docs, etc.)
-  - Only triggers when a spec has status `in-progress`
-- Considered: Blocking pre-commit hook (exit 1 if spec not staged)
-  - Too aggressive — many commits are legitimately unrelated to spec tasks
-  - Would require escape hatches (`--no-verify`) that become habitual
-  - Intermediate commits during a task would be blocked
-- Considered: No hook, rely on `specture status` output for reminders
-  - Only works if agents are already calling `specture status`
-  - Misses the natural nudge point (commit time)
-
-### Inferring in-progress status
-
-The hook and `done` command should use the same status inference algorithm defined in the [status command spec](/specs/003-status-command.md):
-
-- No task list → `draft`
-- No complete tasks → `draft`
-- Mix of complete and incomplete → `in-progress`
-- All tasks complete → `completed`
-
-This means specs don't need an explicit `status: in-progress` in frontmatter for the workflow tools to activate.
-
-### CLI as the source of truth
-
-Currently, agents must read `AGENTS.md` and `specs/README.md` to understand the Specture workflow. This is unreliable — agents may not read the docs, may misinterpret them, or the docs may be stale.
-
-- Chosen: Move workflow knowledge into CLI help output, simplify docs to pointers
-  - The `AGENTS.md` / `CLAUDE.md` prompt becomes: `This project uses the Specture System. Use \`specture help\` for more information.`
-  - `specs/README.md` stays in every project but becomes minimal — a brief overview linking to the [Specture GitHub repo](https://github.com/specture-system/specture) and referencing the CLI for detailed usage
-  - All detailed workflow information moves into `specture help` output
-  - Less important or subcommand-specific information moves into `specture <command> --help` to avoid overwhelming agents with `specture help`
-  - The CLI is always up-to-date (installed version = current instructions), eliminating doc drift
-  - Agents only need to discover one thing (the `specture` command) instead of reading multiple files
+- Chosen: Ship a `specture` agent skill
+  - Skills are loaded into agent context automatically — zero discovery friction
+  - Progressive disclosure: agents see only the name/description at startup, full instructions load on activation
+  - The skill is always up-to-date (installed version = current instructions), eliminating doc drift
+  - Works with the agent's natural capabilities — editing files, running commands — rather than wrapping them in CLI subcommands
+  - Open standard with growing adoption across agent platforms
+- Additionally: Workflow knowledge also lives in `specture help` and `specture <command> --help` output
+  - Agents without skill support can still discover the workflow via the CLI
+  - Humans benefit from help output too
+  - Two sources of truth is acceptable here — both are generated from the same project and updated together
 - Considered: Keep detailed `AGENTS.md` prompt and comprehensive `specs/README.md`
   - Relies on agents reading and following docs
   - Prompt goes stale when Specture evolves
   - Different projects may have outdated versions of the prompt
 
-### Current spec selection
+### No `done` command
 
-The `done` command operates on the "current spec" by default — the first spec (by ascending spec number) with status `in-progress`. A `--spec` flag allows targeting a different spec.
+- Chosen: Skill instructs agents to edit spec files directly
+  - Agents are already excellent at editing markdown files — this is a core capability
+  - No new CLI command to discover, learn, or maintain
+  - The skill provides clear instructions: change `- [ ]` to `- [x]`, stage the file, commit with the implementation
+  - Fewer moving parts = less to break
+- Considered: `specture done [substring]` CLI command
+  - Adds complexity for something agents can already do
+  - Requires substring matching logic, ambiguity handling, error messages
+  - The real problem was agents not knowing the workflow, not lacking a tool to execute it
+
+### No pre-commit hook for workflow nudging
+
+- Chosen: Rely on skill instructions instead of hook-based reminders
+  - Skills inject workflow knowledge before the agent starts working, not after
+  - Pre-commit hooks are reactive (remind after forgetting); skills are proactive (prevent forgetting)
+  - No hook configuration or framework integration needed
+  - The existing `validate` pre-commit hook remains for format validation — that's a CI concern, not a workflow concern
+- Considered: Non-blocking pre-commit hook (prints reminder, exits 0)
+  - Only helps if agents read commit output carefully
+  - Adds installation complexity
+  - Agents may still forget if the reminder isn't actionable in context
+
+### Skill installation via `specture setup`
+
+- Chosen: `specture setup` installs the skill into the project's `.skills/` directory
+  - Follows the agent skills convention for project-local skills
+  - Skill is versioned with the project (committed to git)
+  - `specture setup` already creates `specs/` directory and templates — adding the skill is a natural extension
+  - Updating Specture and re-running setup updates the skill
+- Considered: Install to `~/.skills/` (user-global)
+  - Not project-specific — can't version with the project
+  - Assumes a specific agent's directory conventions
+- Considered: Skill lives only in the Specture repo, agents fetch it remotely
+  - Adds network dependency
+  - Projects can't customize or pin a version
+
+### Simplified project docs
+
+- Chosen: Minimal `AGENTS.md` / `CLAUDE.md` that mentions the Specture system and skill
+  - One or two lines pointing agents to `specture help` and the skill
+  - Project-specific development instructions stay in `AGENTS.md` as before
+  - `specs/README.md` becomes a brief overview for humans, linking to the Specture repo
+  - All workflow detail lives in the skill where agents actually consume it
+- Considered: Remove `AGENTS.md` content entirely
+  - Projects still need project-specific instructions (build commands, test setup, etc.)
+  - The Specture section just gets much smaller
+
+### Skill structure
+
+The skill follows the [Agent Skills specification](https://agentskills.io/specification.md):
+
+```
+.skills/specture/
+├── SKILL.md              # Workflow instructions for agents
+└── references/
+    └── spec-format.md    # Spec file format reference (loaded on demand)
+```
+
+- `SKILL.md` contains the core workflow: how to implement specs, check off tasks, commit properly, use CLI commands
+- `references/spec-format.md` contains the detailed spec file format (frontmatter fields, sections, naming conventions) — loaded only when creating or editing specs
+- Keeps `SKILL.md` focused and under 500 lines per the spec recommendation
 
 ## Task List
 
-### `done` Command
+### Skill Content
 
-- [ ] Implement `specture done` with no arguments (checks off first unchecked task in current spec)
-- [ ] Implement substring matching for `specture done [text]`
-- [ ] Handle ambiguous matches (multiple tasks match substring) with clear error message
-- [ ] Handle no match with clear error message
-- [ ] Run `git add` on the spec file after checking off the task
-- [ ] Add `--spec` flag to target a specific spec instead of current
-- [ ] Add `--dry-run` flag to preview changes without modifying files
-- [ ] Print confirmation with task text, spec name, and "next task" hint
+- [ ] Write `SKILL.md` with frontmatter (name: `specture`, description: "Follow the Specture System for spec-driven development. Use when creating, implementing, or managing specs.")
+- [ ] Write core workflow instructions: implementing specs, checking off tasks, committing properly
+- [ ] Document CLI commands in skill (`specture status`, `specture new`, `specture validate`)
+- [ ] Write `references/spec-format.md` with detailed spec file format (frontmatter, sections, naming, precedence)
+- [ ] Validate skill against the Agent Skills specification
 
-### Pre-commit Hook
+### Skill Installation
 
-- [ ] Implement hook logic: detect in-progress specs, check if spec file is staged
-- [ ] Print soft reminder with spec name, current task, and `specture done` hint
-- [ ] Always exit 0 (non-blocking)
-- [ ] Silence the hook when no spec is in-progress
-- [ ] Integrate with pre-commit framework (`.pre-commit-hooks.yaml`)
+- [ ] Embed skill files in Go binary and implement `InstallSkill` (writes `.skills/specture/SKILL.md`)
+- [ ] Write reference files (`.skills/specture/references/spec-format.md`)
+- [ ] Overwrite existing skill files on re-run
+- [ ] Support dry-run flag
+- [ ] Integrate `InstallSkill` into `specture setup` flow
 
-### Simplify Agent Prompt
+### Simplify Project Docs
 
-- [ ] Reduce `agent-prompt.md` template to a minimal one-liner pointing to `specture help`
-- [ ] Slim down `specs/README.md` template to a brief overview linking to the Specture GitHub repo and referencing the CLI
-- [ ] Move important workflow information from `specs/README.md` template into `specture help` output
-- [ ] Distribute subcommand-specific details into `specture <command> --help` messages
-- [ ] Keep `specture help` focused and concise — avoid overwhelming agents
+- [ ] Reduce `agent-prompt.md` template to a minimal Specture mention
+- [ ] Slim down `specs-readme.md` template to a brief overview linking to the Specture repo
 - [ ] Update `specture setup` to generate the simplified docs

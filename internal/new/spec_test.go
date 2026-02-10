@@ -111,7 +111,7 @@ func TestFindNextSpecNumber(t *testing.T) {
 
 func TestRenderSpec(t *testing.T) {
 	t.Run("renders_with_title_and_author", func(t *testing.T) {
-		result, err := RenderSpec("Test Feature", "Test Author")
+		result, err := RenderSpec("Test Feature", "Test Author", 5)
 		if err != nil {
 			t.Fatalf("RenderSpec() error = %v", err)
 		}
@@ -126,10 +126,13 @@ func TestRenderSpec(t *testing.T) {
 		if !strings.Contains(result, "status: draft") {
 			t.Errorf("rendered spec doesn't contain status")
 		}
+		if !strings.Contains(result, "number: 5") {
+			t.Errorf("rendered spec doesn't contain number")
+		}
 	})
 
 	t.Run("includes_creation_date", func(t *testing.T) {
-		result, err := RenderSpec("Test", "Author")
+		result, err := RenderSpec("Test", "Author", 0)
 		if err != nil {
 			t.Fatalf("RenderSpec() error = %v", err)
 		}

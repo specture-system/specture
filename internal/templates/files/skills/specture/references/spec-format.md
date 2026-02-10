@@ -4,21 +4,23 @@ Detailed format specification for Specture spec files. Loaded on demand when cre
 
 ## File Location and Naming
 
-Specs live in the `specs/` directory with a 3-digit numeric prefix and kebab-case name:
+Specs live in the `specs/` directory with kebab-case slug filenames:
 
 ```
-specs/000-mvp.md
-specs/001-add-authentication-system.md
-specs/013-refactor-database-layer.md
-specs/314-redesign-api-endpoints.md
+specs/mvp.md
+specs/add-authentication-system.md
+specs/refactor-database-layer.md
 ```
 
-The numeric prefix determines precedence (higher number = higher precedence). Numbers should generally increment with each new spec.
+Spec numbers are stored in the YAML frontmatter `number` field (not in the filename). The number determines precedence (higher number = higher precedence). `specture new` auto-assigns the next available number.
+
+Older specs may retain `NNN-slug.md` filenames — both naming patterns are valid. The CLI reads numbers exclusively from frontmatter. Use `specture rename` to strip numeric prefixes from old filenames.
 
 ## Complete Example
 
 ```markdown
 ---
+number: 0
 status: draft
 author: Your Name
 creation_date: 2025-12-18
@@ -66,6 +68,7 @@ YAML frontmatter between `---` delimiters at the top of the file.
 
 | Field    | Values                                                         |
 | -------- | -------------------------------------------------------------- |
+| `number` | Non-negative integer (0, 1, 2, ...). Auto-assigned by `specture new`. |
 | `status` | `draft`, `approved`, `in-progress`, `completed`, or `rejected` |
 
 ### Optional Fields
@@ -176,7 +179,9 @@ Include as many decision points as needed. No obligation for small or trivial sp
 
 Run `specture validate` to check specs against these format rules. The validator checks:
 
-- Valid YAML frontmatter with required `status` field
+- Valid YAML frontmatter with required `number` and `status` fields
+- Number is a non-negative integer with no duplicates across specs
 - Status is one of the allowed values
 - Description section is present (content after H1 title)
 - Task list section is present (`## Task List`)
+- Warns if frontmatter number doesn't match filename numeric prefix

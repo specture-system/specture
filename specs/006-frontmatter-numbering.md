@@ -1,5 +1,5 @@
 ---
-status: approved
+status: completed
 author: Addison Emig
 creation_date: 2026-02-05
 approved_by: Addison Emig
@@ -105,7 +105,7 @@ If a file has a `NNN-` prefix and a `number` field that disagree, `specture vali
 
 ### Documentation
 
-- [ ] Update `specs/README.md` template to reflect new file naming convention
-- [ ] Update `specture help` to describe numbering in frontmatter
-- [ ] Update spec template to include `number` field in frontmatter
-- [ ] Update `.skills/specture/SKILL.md` to document `number` frontmatter field and new filename conventions
+- [x] Update `specs/README.md` template to reflect new file naming convention
+- [x] Update `specture help` to describe numbering in frontmatter
+- [x] Update spec template to include `number` field in frontmatter
+- [x] Update `.skills/specture/SKILL.md` to document `number` frontmatter field and new filename conventions

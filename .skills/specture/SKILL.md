@@ -7,6 +7,8 @@ description: Follow the Specture System for spec-driven development. Use when cr
 
 Specture is a spec-driven development system. Specs are design documents in the `specs/` directory that describe planned changes — features, refactors, redesigns, tooling improvements. Each spec contains the design rationale, decisions, and an implementation task list.
 
+Spec numbers are stored in the YAML frontmatter `number` field. New specs use slug-only filenames (e.g., `my-feature.md`). Older specs may retain `NNN-slug.md` filenames — both naming patterns are valid.
+
 ## Implementation Workflow
 
 When implementing a spec, follow this loop:
@@ -94,7 +96,7 @@ specture validate --spec 3
 specture validate -s 42
 ```
 
-Checks: valid frontmatter, valid status field, description present, task list present.
+Checks: valid frontmatter (number and status), no duplicate numbers, description present, task list present. Warns on number/filename mismatch.
 
 Aliases: `validate`, `v`
 
@@ -114,6 +116,21 @@ specture setup --update-agents --yes
 ```
 
 Aliases: `setup`, `update`, `u`
+
+### specture rename
+
+Rename a spec file and update all markdown links in the specs directory.
+
+```bash
+# Rename spec 3, stripping the numeric prefix
+specture rename --spec 3
+
+# Rename spec 3 with a custom slug
+specture rename --spec 3 --slug status-command
+
+# Preview changes
+specture rename --spec 3 --dry-run
+```
 
 ## Spec Status Workflow
 

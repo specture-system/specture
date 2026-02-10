@@ -19,6 +19,7 @@ type SpecData struct {
 	Title        string
 	Author       string
 	CreationDate string
+	Number       int
 }
 
 // ToSlug converts a string to a URL-safe slug (kebab-case with special characters removed).
@@ -142,7 +143,7 @@ func RenderDefaultBody(title string) (string, error) {
 
 // RenderSpec renders a complete spec file from the template (frontmatter + default body).
 // Kept for backward compatibility.
-func RenderSpec(title, author string) (string, error) {
+func RenderSpec(title, author string, number int) (string, error) {
 	tmpl, err := templates.GetSpecTemplate()
 	if err != nil {
 		return "", err
@@ -152,6 +153,7 @@ func RenderSpec(title, author string) (string, error) {
 		Title:        title,
 		Author:       author,
 		CreationDate: time.Now().Format("2006-01-02"),
+		Number:       number,
 	}
 
 	return template.RenderTemplate(tmpl, data)

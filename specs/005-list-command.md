@@ -33,17 +33,9 @@ No filters shows all specs.
 
 The JSON format is the primary interface for agents. It should include all fields defined in the status command spec: name, number, status, current task, current task section, complete tasks, and incomplete tasks.
 
-### Task listing
+### No task listing in text output
 
-By default, the text output shows a compact overview (one row per spec). Additional flags expose task details:
-
-- `--tasks` — include all tasks (complete and incomplete) in output
-- `--incomplete` — only show incomplete tasks (automatically enables task display)
-- `--complete` — only show complete tasks (automatically enables task display)
-
-When both `--complete` and `--incomplete` are passed, all tasks are shown (equivalent to `--tasks`).
-
-Task flags show top-level tasks only (consistent with the status command's treatment of indented tasks). The JSON format always includes full task information regardless of these flags.
+The text output is intentionally a compact overview — one row per spec. For task details, use `specture status --spec N`. The JSON format still includes full task information for programmatic use.
 
 ## Task List
 
@@ -61,13 +53,6 @@ Task flags show top-level tasks only (consistent with the status command's treat
 - [x] Write tests for filtering (single status, multiple statuses, no matches)
 - [x] Implement `--status` filter (single value) — uses resolved status from `SpecInfo`
 - [x] Implement `--status` filter with comma-separated multiple values
-
-### Task Display
-
-- [x] Write tests for task display flags
-- [x] Implement `--tasks` flag to include all tasks (complete and incomplete) in text output
-- [x] Implement `--incomplete` flag (only incomplete tasks, automatically enables task display)
-- [x] Implement `--complete` flag (only complete tasks, automatically enables task display)
 
 ### Documentation
 

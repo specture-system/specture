@@ -43,17 +43,12 @@ specture list
 specture list --status in-progress
 specture list --status draft,approved
 
-# Show tasks
-specture list --tasks              # All tasks
-specture list --incomplete         # Only incomplete tasks
-specture list --complete           # Only complete tasks
-
 # JSON output (for programmatic use)
 specture list -f json
 specture list --status in-progress -f json
 ```
 
-Text output columns: Number, Status, Progress (e.g., `3/7`), Name — sorted by ascending spec number. JSON output includes full `SpecInfo` metadata per spec.
+Text output columns: Number, Status, Progress (e.g., `3/7`), Name — sorted by ascending spec number. JSON output includes full `SpecInfo` metadata per spec. For task details on a specific spec, use `specture status --spec N`.
 
 Aliases: `list`, `ls`
 

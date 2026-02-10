@@ -13,9 +13,6 @@ import (
 
 var listStatusFilter string
 var listFormatFlag string
-var listTasksFlag bool
-var listIncompleteFlag bool
-var listCompleteFlag bool
 
 var listCmd = &cobra.Command{
 	Use:     "list",
@@ -30,9 +27,6 @@ Examples:
   specture list                          # List all specs
   specture list --status in-progress     # Filter by status
   specture list --status draft,approved  # Multiple statuses
-  specture list --tasks                  # Show all tasks
-  specture list --incomplete             # Show only incomplete tasks
-  specture list --complete               # Show only complete tasks
   specture list -f json                  # JSON output`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runList(cmd, args)
@@ -42,9 +36,6 @@ Examples:
 func init() {
 	listCmd.Flags().StringVarP(&listStatusFilter, "status", "s", "", "Filter by status (comma-separated for multiple)")
 	listCmd.Flags().StringVarP(&listFormatFlag, "format", "f", "text", "Output format: text or json")
-	listCmd.Flags().BoolVar(&listTasksFlag, "tasks", false, "Show all tasks (complete and incomplete)")
-	listCmd.Flags().BoolVar(&listIncompleteFlag, "incomplete", false, "Show only incomplete tasks")
-	listCmd.Flags().BoolVar(&listCompleteFlag, "complete", false, "Show only complete tasks")
 }
 
 func runList(cmd *cobra.Command, args []string) error {
@@ -103,23 +94,6 @@ func formatListText(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 		return nil
 	}
 
-	showTasks, _ := cmd.Flags().GetBool("tasks")
-	showIncomplete, _ := cmd.Flags().GetBool("incomplete")
-	showComplete, _ := cmd.Flags().GetBool("complete")
-
-	// --incomplete or --complete automatically enables task display
-	showTaskDetails := showTasks || showIncomplete || showComplete
-	// If both --complete and --incomplete, show all (equivalent to --tasks)
-	if showComplete && showIncomplete {
-		showComplete = true
-		showIncomplete = true
-	}
-	// If just --tasks, show all
-	if showTasks {
-		showComplete = true
-		showIncomplete = true
-	}
-
 	// Calculate column widths from data
 	statusWidth := len("STATUS")
 	progressWidth := len("PROGRESS")
@@ -136,31 +110,13 @@ func formatListText(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 
 	rowFmt := fmt.Sprintf("%%03d  %%-%ds  %%%ds  %%s\n", statusWidth, progressWidth)
 	headerFmt := fmt.Sprintf("%%s  %%-%ds  %%%ds  %%s\n", statusWidth, progressWidth)
-	indent := "     "
 
 	cmd.Printf(headerFmt, "NUM", "STATUS", "PROGRESS", "NAME")
 
-	for i, spec := range specs {
+	for _, spec := range specs {
 		totalTasks := len(spec.CompleteTasks) + len(spec.IncompleteTasks)
 		progress := fmt.Sprintf("%d/%d", len(spec.CompleteTasks), totalTasks)
 		cmd.Printf(rowFmt, spec.Number, spec.Status, progress, spec.Name)
-
-		if showTaskDetails {
-			if showComplete {
-				for _, task := range spec.CompleteTasks {
-					cmd.Printf("%s✓ %s\n", indent, task.Text)
-				}
-			}
-			if showIncomplete {
-				for _, task := range spec.IncompleteTasks {
-					cmd.Printf("%s• %s\n", indent, task.Text)
-				}
-			}
-			// Add blank line between specs when showing tasks (except after last)
-			if i < len(specs)-1 {
-				cmd.Println()
-			}
-		}
 	}
 
 	return nil

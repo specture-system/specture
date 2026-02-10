@@ -28,7 +28,7 @@ func setupListTest(t *testing.T, specs map[string]string) string {
 }
 
 // Helper to run the list command and return the output and error.
-func execList(t *testing.T, tmpDir string, flags map[string]string, boolFlags map[string]bool) (string, error) {
+func execList(t *testing.T, tmpDir string, flags map[string]string) (string, error) {
 	t.Helper()
 
 	originalWd, _ := os.Getwd()
@@ -36,9 +36,6 @@ func execList(t *testing.T, tmpDir string, flags map[string]string, boolFlags ma
 		os.Chdir(originalWd)
 		listCmd.Flags().Set("status", "")
 		listCmd.Flags().Set("format", "text")
-		listCmd.Flags().Set("tasks", "false")
-		listCmd.Flags().Set("incomplete", "false")
-		listCmd.Flags().Set("complete", "false")
 	})
 	os.Chdir(tmpDir)
 
@@ -49,13 +46,6 @@ func execList(t *testing.T, tmpDir string, flags map[string]string, boolFlags ma
 
 	for k, v := range flags {
 		cmd.Flags().Set(k, v)
-	}
-	for k, v := range boolFlags {
-		if v {
-			cmd.Flags().Set(k, "true")
-		} else {
-			cmd.Flags().Set(k, "false")
-		}
 	}
 
 	err := runList(cmd, []string{})
@@ -136,7 +126,7 @@ func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 		"003-status.md": listInProgressSpec,
 	})
 
-	output, err := execList(t, tmpDir, nil, nil)
+	output, err := execList(t, tmpDir, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -191,7 +181,7 @@ func TestListCommand_TextOutput_SortedByNumber(t *testing.T) {
 		"002-second.md": listDraftSpec,
 	})
 
-	output, err := execList(t, tmpDir, nil, nil)
+	output, err := execList(t, tmpDir, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -216,7 +206,7 @@ func TestListCommand_TextOutput_SortedByNumber(t *testing.T) {
 func TestListCommand_TextOutput_NoSpecs(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{})
 
-	output, err := execList(t, tmpDir, nil, nil)
+	output, err := execList(t, tmpDir, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -229,7 +219,7 @@ func TestListCommand_TextOutput_NoSpecs(t *testing.T) {
 func TestListCommand_NoSpecsDirectory(t *testing.T) {
 	tmpDir := setupListTest(t, nil) // no specs dir created
 
-	_, err := execList(t, tmpDir, nil, nil)
+	_, err := execList(t, tmpDir, nil)
 	if err == nil {
 		t.Fatal("expected error for missing specs directory")
 	}
@@ -243,7 +233,7 @@ func TestListCommand_InvalidFormat(t *testing.T) {
 		"001-setup.md": listCompletedSpec,
 	})
 
-	_, err := execList(t, tmpDir, map[string]string{"format": "xml"}, nil)
+	_, err := execList(t, tmpDir, map[string]string{"format": "xml"})
 	if err == nil {
 		t.Fatal("expected error for invalid format")
 	}
@@ -261,7 +251,7 @@ func TestListCommand_JSONOutput_AllSpecs(t *testing.T) {
 		"003-status.md": listInProgressSpec,
 	})
 
-	output, err := execList(t, tmpDir, map[string]string{"format": "json"}, nil)
+	output, err := execList(t, tmpDir, map[string]string{"format": "json"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -333,7 +323,7 @@ func TestListCommand_JSONOutput_AllSpecs(t *testing.T) {
 func TestListCommand_JSONOutput_EmptyList(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{})
 
-	output, err := execList(t, tmpDir, map[string]string{"format": "json"}, nil)
+	output, err := execList(t, tmpDir, map[string]string{"format": "json"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -352,7 +342,7 @@ func TestListCommand_JSONOutput_IncludesTaskSections(t *testing.T) {
 		"003-status.md": listInProgressSpec,
 	})
 
-	output, err := execList(t, tmpDir, map[string]string{"format": "json"}, nil)
+	output, err := execList(t, tmpDir, map[string]string{"format": "json"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -383,7 +373,7 @@ func TestListCommand_FilterSingleStatus(t *testing.T) {
 		"003-status.md": listInProgressSpec,
 	})
 
-	output, err := execList(t, tmpDir, map[string]string{"status": "completed"}, nil)
+	output, err := execList(t, tmpDir, map[string]string{"status": "completed"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -406,7 +396,7 @@ func TestListCommand_FilterMultipleStatuses(t *testing.T) {
 		"004-approved.md": listApprovedSpec,
 	})
 
-	output, err := execList(t, tmpDir, map[string]string{"status": "draft,in-progress"}, nil)
+	output, err := execList(t, tmpDir, map[string]string{"status": "draft,in-progress"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -430,7 +420,7 @@ func TestListCommand_FilterNoMatches(t *testing.T) {
 		"002-draft.md": listDraftSpec,
 	})
 
-	output, err := execList(t, tmpDir, map[string]string{"status": "rejected"}, nil)
+	output, err := execList(t, tmpDir, map[string]string{"status": "rejected"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -447,7 +437,7 @@ func TestListCommand_FilterJSON(t *testing.T) {
 		"003-status.md": listInProgressSpec,
 	})
 
-	output, err := execList(t, tmpDir, map[string]string{"format": "json", "status": "in-progress"}, nil)
+	output, err := execList(t, tmpDir, map[string]string{"format": "json", "status": "in-progress"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -464,101 +454,4 @@ func TestListCommand_FilterJSON(t *testing.T) {
 	}
 }
 
-// ---- Task display tests ----
 
-func TestListCommand_TasksFlag(t *testing.T) {
-	tmpDir := setupListTest(t, map[string]string{
-		"003-status.md": listInProgressSpec,
-	})
-
-	output, err := execList(t, tmpDir, nil, map[string]bool{"tasks": true})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// Should show both complete and incomplete tasks
-	if !strings.Contains(output, "\u2713 Create SpecInfo struct") {
-		t.Errorf("expected complete task marker, got:\n%s", output)
-	}
-	if !strings.Contains(output, "\u2022 Write tests") {
-		t.Errorf("expected incomplete task marker, got:\n%s", output)
-	}
-}
-
-func TestListCommand_IncompleteFlag(t *testing.T) {
-	tmpDir := setupListTest(t, map[string]string{
-		"003-status.md": listInProgressSpec,
-	})
-
-	output, err := execList(t, tmpDir, nil, map[string]bool{"incomplete": true})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// Should show incomplete tasks only
-	if !strings.Contains(output, "\u2022 Write tests") {
-		t.Errorf("expected incomplete task, got:\n%s", output)
-	}
-	// Should NOT show complete tasks
-	if strings.Contains(output, "\u2713") {
-		t.Errorf("should not show complete tasks with --incomplete, got:\n%s", output)
-	}
-}
-
-func TestListCommand_CompleteFlag(t *testing.T) {
-	tmpDir := setupListTest(t, map[string]string{
-		"003-status.md": listInProgressSpec,
-	})
-
-	output, err := execList(t, tmpDir, nil, map[string]bool{"complete": true})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// Should show complete tasks only
-	if !strings.Contains(output, "\u2713 Create SpecInfo struct") {
-		t.Errorf("expected complete task, got:\n%s", output)
-	}
-	// Should NOT show incomplete tasks
-	if strings.Contains(output, "\u2022") {
-		t.Errorf("should not show incomplete tasks with --complete, got:\n%s", output)
-	}
-}
-
-func TestListCommand_BothCompleteAndIncomplete(t *testing.T) {
-	tmpDir := setupListTest(t, map[string]string{
-		"003-status.md": listInProgressSpec,
-	})
-
-	output, err := execList(t, tmpDir, nil, map[string]bool{"complete": true, "incomplete": true})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// Should show both (equivalent to --tasks)
-	if !strings.Contains(output, "\u2713 Create SpecInfo struct") {
-		t.Errorf("expected complete task, got:\n%s", output)
-	}
-	if !strings.Contains(output, "\u2022 Write tests") {
-		t.Errorf("expected incomplete task, got:\n%s", output)
-	}
-}
-
-func TestListCommand_TasksNotShownByDefault(t *testing.T) {
-	tmpDir := setupListTest(t, map[string]string{
-		"003-status.md": listInProgressSpec,
-	})
-
-	output, err := execList(t, tmpDir, nil, nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// Should NOT show task details
-	if strings.Contains(output, "\u2713") {
-		t.Errorf("should not show tasks by default, got:\n%s", output)
-	}
-	if strings.Contains(output, "\u2022") {
-		t.Errorf("should not show tasks by default, got:\n%s", output)
-	}
-}

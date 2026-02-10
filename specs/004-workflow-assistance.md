@@ -125,20 +125,14 @@ These tasks produce markdown files, not code — no TDD needed.
 
 ### Skill Installation
 
-- [ ] Red: test that `InstallSkill` creates `.skills/specture/SKILL.md` with expected content
-- [ ] Green: embed skill files in Go binary and implement `InstallSkill`
-- [ ] Red: test that `InstallSkill` creates `.skills/specture/references/spec-format.md`
-- [ ] Green: extend `InstallSkill` to write reference files
-- [ ] Red: test that `InstallSkill` overwrites existing skill files on re-run
-- [ ] Green: implement overwrite behavior
-- [ ] Red: test that `InstallSkill` respects dry-run flag
-- [ ] Green: implement dry-run support
-- [ ] Refactor: integrate `InstallSkill` into `specture setup` flow
+- [ ] Embed skill files in Go binary and implement `InstallSkill` (writes `.skills/specture/SKILL.md`)
+- [ ] Write reference files (`.skills/specture/references/spec-format.md`)
+- [ ] Overwrite existing skill files on re-run
+- [ ] Support dry-run flag
+- [ ] Integrate `InstallSkill` into `specture setup` flow
 
 ### Simplify Project Docs
 
-- [ ] Red: test that agent prompt template contains only a minimal Specture mention
-- [ ] Green: reduce `agent-prompt.md` template content
-- [ ] Red: test that specs README template is a brief overview linking to the Specture repo
-- [ ] Green: slim down `specs-readme.md` template content
-- [ ] Refactor: update `specture setup` to generate the simplified docs
+- [ ] Reduce `agent-prompt.md` template to a minimal Specture mention
+- [ ] Slim down `specs-readme.md` template to a brief overview linking to the Specture repo
+- [ ] Update `specture setup` to generate the simplified docs

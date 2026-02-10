@@ -5,7 +5,7 @@
 *.so
 *.so.*
 *.dylib
-specture
+/specture
 
 # Test coverage
 *.out

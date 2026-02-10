@@ -80,36 +80,24 @@ All implementation follows red/green TDD: write a failing test first, then imple
 
 ### Core Changes
 
-- [ ] Test: spec parsing reads `number` from frontmatter
-- [ ] Implement: add `number` field to spec parsing
-- [ ] Test: parsing fails when `number` is missing from frontmatter
-- [ ] Implement: make `number` a required field in spec parsing
-- [ ] Test: `specture validate` rejects specs missing `number`
-- [ ] Implement: update `specture validate` to require `number`
-- [ ] Test: `specture validate` detects duplicate numbers across specs
-- [ ] Implement: duplicate number detection in `specture validate`
-- [ ] Test: `specture validate` warns on number/filename mismatch
-- [ ] Implement: number/filename mismatch warning in `specture validate`
-- [ ] Test: `specture new` assigns max+1 number in frontmatter
-- [ ] Implement: auto-assign number in `specture new`
-- [ ] Test: `specture new` generates slug-only filename
-- [ ] Implement: slug-only filename generation in `specture new`
+- [ ] Add `number` field to spec parsing, read exclusively from frontmatter
+- [ ] Make `number` a required field — parsing fails when missing
+- [ ] `specture validate` rejects specs missing `number`
+- [ ] `specture validate` detects duplicate numbers across specs
+- [ ] `specture validate` warns on number/filename mismatch
+- [ ] `specture new` assigns max+1 number in frontmatter
+- [ ] `specture new` generates slug-only filenames
 
 ### Rename
 
-- [ ] Test: `specture rename` renames file and updates markdown links
-- [ ] Implement: `specture rename` command with file rename and link updates
-- [ ] Test: `--slug` flag sets target filename; default strips numeric prefix
-- [ ] Implement: `--slug` flag and default behavior
-- [ ] Test: `--dry-run` previews changes without modifying files
-- [ ] Implement: `--dry-run` support
+- [ ] `specture rename` renames file and updates all markdown links in specs directory
+- [ ] `--slug` flag sets target filename; default strips numeric prefix
+- [ ] `--dry-run` previews changes without modifying files
 
 ### Migration
 
-- [ ] Test: `specture setup` adds `number` to frontmatter of `NNN-slug.md` files
-- [ ] Implement: migration logic in `specture setup`
-- [ ] Test: migration respects `--dry-run` and `--yes` flags
-- [ ] Implement: wire migration into existing `--dry-run` and `--yes` flow
+- [ ] `specture setup` adds `number` to frontmatter of `NNN-slug.md` files
+- [ ] Migration respects existing `--dry-run` and `--yes` flags
 
 ### Documentation
 

@@ -24,6 +24,7 @@ When implementing a spec, follow this loop for every task:
 - Every commit that completes a task MUST include the spec file checkbox update alongside the implementation changes. Never commit implementation without the corresponding `- [x]` update.
 - Do NOT batch multiple tasks into one commit. One task = one commit.
 - Do NOT edit spec design decisions or descriptions without explicit user permission. You may only mark tasks complete and add/remove tasks during implementation.
+- When editing a spec, keep the design decisions section and task list in sync. If a description is updated, update all corresponding task descriptions to match, and vice versa.
 - When all tasks are checked off, update the frontmatter `status` to `completed`.
 
 ## CLI Commands

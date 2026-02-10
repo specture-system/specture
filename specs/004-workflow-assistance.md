@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: completed
 author: Addison Emig
 creation_date: 2026-02-05
 approved_by: Addison Emig
@@ -126,4 +126,4 @@ The skill follows the [Agent Skills specification](https://agentskills.io/specif
 
 - [x] Reduce `agent-prompt.md` template to a minimal Specture mention
 - [x] Slim down `specs-readme.md` template to a brief overview linking to the Specture repo
-- [ ] Update `specture setup` to generate the simplified docs
+- [x] Update `specture setup` to generate the simplified docs

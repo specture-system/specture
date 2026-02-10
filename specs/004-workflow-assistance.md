@@ -120,7 +120,7 @@ The skill follows the [Agent Skills specification](https://agentskills.io/specif
 - [x] Write reference files (`.skills/specture/references/spec-format.md`)
 - [x] Overwrite existing skill files on re-run
 - [x] Support dry-run flag
-- [ ] Integrate `InstallSkill` into `specture setup` flow
+- [x] Integrate `InstallSkill` into `specture setup` flow
 
 ### Simplify Project Docs
 

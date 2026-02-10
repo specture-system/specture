@@ -115,8 +115,6 @@ The skill references the status inference algorithm from the [status command spe
 
 ### Skill Content
 
-These tasks produce markdown files, not code — no TDD needed.
-
 - [ ] Write `SKILL.md` with frontmatter (name: `specture`, description)
 - [ ] Write core workflow instructions: implementing specs, checking off tasks, committing properly
 - [ ] Document CLI commands in skill (`specture status`, `specture new`, `specture validate`)

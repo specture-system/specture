@@ -70,7 +70,7 @@ Use `just` to run development tasks. See `justfile` for available recipes. Commo
 - `just run-dev <args>`: Run the CLI with arguments (e.g., `just run-dev new --help`)
 - `just test`: Run tests
 - `just check`: Format, lint, and test (runs automatically on commit)
-- `just fmt`: Format code
+- `just format`: Format code
 - `just lint`: Run linters
 - `just install`: Install the CLI locally
 - `just clean`: Clean build artifacts

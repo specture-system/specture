@@ -115,27 +115,34 @@ The skill references the status inference algorithm from the [status command spe
 
 ### Skill Content
 
+These tasks produce markdown files, not code — no TDD needed.
+
 - [ ] Write `SKILL.md` with frontmatter (name: `specture-workflow`, description)
 - [ ] Write core workflow instructions: implementing specs, checking off tasks, committing properly
 - [ ] Document CLI commands in skill (`specture status`, `specture new`, `specture validate`)
 - [ ] Write `references/spec-format.md` with detailed spec file format (frontmatter, sections, naming, precedence)
-- [ ] Validate skill with `skills-ref validate` or manual review against the spec
+- [ ] Validate skill against the Agent Skills specification
 
 ### Skill Installation
 
-- [ ] Embed skill files in the Go binary (using `embed` package)
-- [ ] Add skill installation to `specture setup` (writes to `.skills/specture-workflow/`)
-- [ ] Handle skill updates on re-run of `specture setup` (overwrite with current version)
-- [ ] Add `.skills/` to the list of directories `specture setup` creates
+Red/green TDD: write failing test, then write minimum code to pass.
+
+- [ ] Red: test that `InstallSkill` creates `.skills/specture-workflow/SKILL.md` with expected content
+- [ ] Green: embed skill files in Go binary and implement `InstallSkill`
+- [ ] Red: test that `InstallSkill` creates `.skills/specture-workflow/references/spec-format.md`
+- [ ] Green: extend `InstallSkill` to write reference files
+- [ ] Red: test that `InstallSkill` overwrites existing skill files on re-run
+- [ ] Green: implement overwrite behavior
+- [ ] Red: test that `InstallSkill` respects dry-run flag
+- [ ] Green: implement dry-run support
+- [ ] Refactor: integrate `InstallSkill` into `specture setup` flow
 
 ### Simplify Project Docs
 
-- [ ] Reduce `agent-prompt.md` template to a minimal mention of Specture and the skill
-- [ ] Slim down `specs-readme.md` template to a brief overview linking to the Specture repo
-- [ ] Update `specture setup` to generate the simplified docs
+Red/green TDD: write failing test, then write minimum code to pass.
 
-### Testing
-
-- [ ] Test skill installation creates correct directory structure and file contents
-- [ ] Test skill update overwrites existing skill files
-- [ ] Test setup generates simplified agent prompt and specs README
+- [ ] Red: test that agent prompt template contains only a minimal Specture mention
+- [ ] Green: reduce `agent-prompt.md` template content
+- [ ] Red: test that specs README template is a brief overview linking to the Specture repo
+- [ ] Green: slim down `specs-readme.md` template content
+- [ ] Refactor: update `specture setup` to generate the simplified docs

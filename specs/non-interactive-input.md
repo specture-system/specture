@@ -1,4 +1,5 @@
 ---
+number: 2
 status: completed
 author: Addison Emig
 creation_date: 2026-01-06
@@ -10,7 +11,7 @@ approval_date: 2026-01-11
 
 The current specture CLI requires interactive input to create new specs. This makes it difficult to use from automated workflows, for example, AI agents.
 
-We should improve all the commands implemented in [spec #000](/specs/000-basic-cli.md) with optional flags that enable full configuration without requiring any interactive input.
+We should improve all the commands implemented in [spec #000](/specs/basic-cli.md) with optional flags that enable full configuration without requiring any interactive input.
 
 ## Design Decisions
 

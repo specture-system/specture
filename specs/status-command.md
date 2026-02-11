@@ -1,4 +1,5 @@
 ---
+number: 3
 status: completed
 author: Addison Emig
 creation_date: 2026-01-20
@@ -66,7 +67,7 @@ A `--spec` flag can be used to get the overall status of any particular spec by 
 
 ### Shared Spec Package (`internal/spec`)
 
-Build a shared `internal/spec` package that consolidates all spec parsing, discovery, and querying. This replaces the ad-hoc parsing scattered across `internal/validate/parser.go` (goldmark-based parsing) and `cmd/validate.go` (file discovery). The `validate` command, `status` command, and future `list` command ([spec 005](/specs/005-list-command.md)) will all consume this package.
+Build a shared `internal/spec` package that consolidates all spec parsing, discovery, and querying. This replaces the ad-hoc parsing scattered across `internal/validate/parser.go` (goldmark-based parsing) and `cmd/validate.go` (file discovery). The `validate` command, `status` command, and future `list` command ([spec 005](/specs/list-command.md)) will all consume this package.
 
 - [x] Create `SpecInfo` struct with fields: Path, Name, Number, Status (resolved), CurrentTask, CurrentTaskSection, CompleteTasks, IncompleteTasks
 - [x] Create `Task` struct with fields: Text, Complete, Section

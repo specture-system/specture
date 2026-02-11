@@ -15,7 +15,7 @@ func TestInstallSkill_CreatesFiles(t *testing.T) {
 	}
 
 	// Check SKILL.md was created with expected content
-	skillPath := filepath.Join(tmpDir, ".skills", "specture", "SKILL.md")
+	skillPath := filepath.Join(tmpDir, ".agents", "skills", "specture", "SKILL.md")
 	content, err := os.ReadFile(skillPath)
 	if err != nil {
 		t.Fatalf("SKILL.md not created: %v", err)
@@ -25,7 +25,7 @@ func TestInstallSkill_CreatesFiles(t *testing.T) {
 	}
 
 	// Check references/spec-format.md was created with expected content
-	refPath := filepath.Join(tmpDir, ".skills", "specture", "references", "spec-format.md")
+	refPath := filepath.Join(tmpDir, ".agents", "skills", "specture", "references", "spec-format.md")
 	content, err = os.ReadFile(refPath)
 	if err != nil {
 		t.Fatalf("references/spec-format.md not created: %v", err)
@@ -39,7 +39,7 @@ func TestInstallSkill_OverwritesExistingFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create existing files with stale content
-	skillDir := filepath.Join(tmpDir, ".skills", "specture")
+	skillDir := filepath.Join(tmpDir, ".agents", "skills", "specture")
 	refsDir := filepath.Join(skillDir, "references")
 	if err := os.MkdirAll(refsDir, 0755); err != nil {
 		t.Fatalf("failed to create dirs: %v", err)
@@ -87,8 +87,8 @@ func TestInstallSkill_DryRun(t *testing.T) {
 	}
 
 	// Verify no files were created
-	skillsDir := filepath.Join(tmpDir, ".skills")
-	if _, err := os.Stat(skillsDir); err == nil {
-		t.Error(".skills directory should not be created in dry-run mode")
+	agentsDir := filepath.Join(tmpDir, ".agents")
+	if _, err := os.Stat(agentsDir); err == nil {
+		t.Error(".agents directory should not be created in dry-run mode")
 	}
 }

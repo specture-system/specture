@@ -47,8 +47,8 @@ We should move the skill installation target from `.skills/` to `.agents/skills/
 
 ### Core Changes
 
-- [ ] Update `InstallSkill` in `internal/setup/skill.go` to write to `.agents/skills/` instead of `.skills/`
-- [ ] Update `InstallSkill` tests to expect files under `.agents/skills/`
+- [x] Update `InstallSkill` in `internal/setup/skill.go` to write to `.agents/skills/` instead of `.skills/`
+- [x] Update `InstallSkill` tests to expect files under `.agents/skills/`
 
 ### Migration
 

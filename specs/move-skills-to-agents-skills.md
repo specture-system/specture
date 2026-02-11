@@ -60,5 +60,5 @@ We should move the skill installation target from `.skills/` to `.agents/skills/
 
 ### Update References
 
-- [ ] Update `agent-prompt.md` template to reference `.agents/skills/specture/` instead of `.skills/specture/`
+- [x] Update `agent-prompt.md` template to reference `.agents/skills/specture/` instead of `.skills/specture/`
 - [ ] Update `AGENTS.md` and `CLAUDE.md` in this repo to reference the new path

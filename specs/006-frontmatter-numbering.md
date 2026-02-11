@@ -94,7 +94,7 @@ If a file has a `NNN-` prefix and a `number` field that disagree, `specture vali
 
 - [x] Tests for rename command (file rename, link updates, --slug, --dry-run)
 - [x] `specture rename` renames file and updates all markdown links in specs directory
-- [x] `--slug` flag sets target filename; default strips numeric prefix
+- [x] Positional argument sets target filename (required)
 - [x] `--dry-run` previews changes without modifying files
 
 ### Migration

@@ -10,14 +10,14 @@ import (
 )
 
 var renameCmd = &cobra.Command{
-	Use:   "rename",
+	Use:   "rename [slug]",
+	Args:  cobra.ExactArgs(1),
 	Short: "Rename a spec file and update cross-references",
 	Long: `Rename a spec file and update all markdown links that reference it in the specs directory.
 
 Examples:
-  specture rename --spec 3 --slug status-command  # Rename to status-command.md
-  specture rename --spec 3                        # Strip numeric prefix
-  specture rename --spec 3 --dry-run              # Preview changes`,
+  specture rename --spec 3 status-command           # Rename to status-command.md
+  specture rename --spec 3 status-command --dry-run  # Preview changes`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runRename(cmd, args)
 	},
@@ -25,7 +25,7 @@ Examples:
 
 func init() {
 	renameCmd.Flags().StringP("spec", "s", "", "Spec number to rename (required)")
-	renameCmd.Flags().String("slug", "", "Target filename slug (default: strip numeric prefix)")
+
 	renameCmd.Flags().Bool("dry-run", false, "Preview changes without modifying files")
 	renameCmd.MarkFlagRequired("spec")
 }
@@ -39,7 +39,7 @@ func runRename(cmd *cobra.Command, args []string) error {
 	specsDir := filepath.Join(cwd, "specs")
 
 	specArg, _ := cmd.Flags().GetString("spec")
-	slug, _ := cmd.Flags().GetString("slug")
+	slug := args[0]
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 
 	// Parse spec number

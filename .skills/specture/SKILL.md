@@ -122,14 +122,11 @@ Aliases: `setup`, `update`, `u`
 Rename a spec file and update all markdown links in the specs directory.
 
 ```bash
-# Rename spec 3, stripping the numeric prefix
-specture rename --spec 3
-
-# Rename spec 3 with a custom slug
-specture rename --spec 3 --slug status-command
+# Rename spec 3 to status-command.md
+specture rename --spec 3 status-command
 
 # Preview changes
-specture rename --spec 3 --dry-run
+specture rename --spec 3 status-command --dry-run
 ```
 
 ## Spec Status Workflow

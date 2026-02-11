@@ -52,19 +52,14 @@ func TestPlan_BasicRename(t *testing.T) {
 	}
 }
 
-func TestPlan_DefaultStripsPrefix(t *testing.T) {
+func TestPlan_EmptySlugError(t *testing.T) {
 	dir := setupSpecsDir(t, map[string]string{
 		"003-status-command.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
 	})
 
-	// No slug provided — should strip numeric prefix
-	result, err := Plan(dir, 3, "")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if filepath.Base(result.NewPath) != "status-command.md" {
-		t.Errorf("expected new path status-command.md, got %s", filepath.Base(result.NewPath))
+	_, err := Plan(dir, 3, "")
+	if err == nil {
+		t.Fatal("expected error for empty slug")
 	}
 }
 

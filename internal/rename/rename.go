@@ -35,10 +35,8 @@ func Plan(specsDir string, specNumber int, newSlug string) (*RenameResult, error
 
 	oldFilename := filepath.Base(oldPath)
 
-	// Determine new slug if not provided
 	if newSlug == "" {
-		// Strip numeric prefix from current filename
-		newSlug = stripNumericPrefix(oldFilename)
+		return nil, fmt.Errorf("slug is required")
 	}
 
 	newFilename := newSlug

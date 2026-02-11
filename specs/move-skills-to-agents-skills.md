@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: completed
 author: Addison Emig
 creation_date: 2026-02-11
 ---
@@ -61,4 +61,4 @@ We should move the skill installation target from `.skills/` to `.agents/skills/
 ### Update References
 
 - [x] Update `agent-prompt.md` template to reference `.agents/skills/specture/` instead of `.skills/specture/`
-- [ ] Update `AGENTS.md` and `CLAUDE.md` in this repo to reference the new path
+- [x] Update `AGENTS.md` and `CLAUDE.md` in this repo to reference the new path

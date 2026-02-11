@@ -2,7 +2,7 @@
 
 ## Specture System
 
-This project uses the [Specture System](https://github.com/specture-system/specture) for managing specs. See the `.skills/specture/` skill for the full workflow, or run `specture help` for CLI usage.
+This project uses the [Specture System](https://github.com/specture-system/specture) for managing specs. See the `.agents/skills/specture/` skill for the full workflow, or run `specture help` for CLI usage.
 
 ## Development Environment
 

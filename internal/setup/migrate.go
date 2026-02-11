@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -120,4 +121,84 @@ func insertNumberInFrontmatter(content []byte, number int) ([]byte, error) {
 	}
 
 	return nil, fmt.Errorf("no frontmatter found")
+}
+
+// MigrateSkillsDir moves .skills/specture/ to .agents/skills/specture/ if the
+// old path exists and the new one doesn't. Returns true if migration occurred
+// (or would occur in dry-run). After moving, removes .skills/ if empty.
+func MigrateSkillsDir(workDir string, dryRun bool) (bool, error) {
+	oldDir := filepath.Join(workDir, ".skills", "specture")
+	newDir := filepath.Join(workDir, ".agents", "skills", "specture")
+
+	// Check if old directory exists
+	if _, err := os.Stat(oldDir); os.IsNotExist(err) {
+		return false, nil
+	}
+
+	// Skip if new directory already exists
+	if _, err := os.Stat(newDir); err == nil {
+		return false, nil
+	}
+
+	if dryRun {
+		fmt.Printf("[dry-run] Would migrate %s to %s\n", oldDir, newDir)
+		return true, nil
+	}
+
+	// Create parent directory
+	if err := os.MkdirAll(filepath.Dir(newDir), 0755); err != nil {
+		return false, fmt.Errorf("failed to create directory %s: %w", filepath.Dir(newDir), err)
+	}
+
+	// Copy files from old to new (can't rename across directories reliably)
+	if err := copyDir(oldDir, newDir); err != nil {
+		return false, fmt.Errorf("failed to copy skills: %w", err)
+	}
+
+	// Remove old specture directory
+	if err := os.RemoveAll(oldDir); err != nil {
+		return false, fmt.Errorf("failed to remove old directory %s: %w", oldDir, err)
+	}
+
+	// Remove .skills/ if empty
+	skillsDir := filepath.Join(workDir, ".skills")
+	removeIfEmpty(skillsDir)
+
+	return true, nil
+}
+
+// copyDir recursively copies src to dst.
+func copyDir(src, dst string) error {
+	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+
+		if d.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0644)
+	})
+}
+
+// removeIfEmpty removes a directory if it contains no entries.
+func removeIfEmpty(dir string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	if len(entries) == 0 {
+		os.Remove(dir)
+	}
 }

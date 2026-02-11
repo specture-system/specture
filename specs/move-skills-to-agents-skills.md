@@ -52,10 +52,10 @@ We should move the skill installation target from `.skills/` to `.agents/skills/
 
 ### Migration
 
-- [ ] Add `MigrateSkillsDir` function that moves `.skills/specture/` to `.agents/skills/specture/` if the old path exists and the new one doesn't
-- [ ] Remove `.skills/` directory if empty after migration
-- [ ] Support dry-run flag in migration
-- [ ] Write tests for migration (old exists, new doesn't; both exist; old doesn't exist; non-empty `.skills/` after move)
+- [x] Add `MigrateSkillsDir` function that moves `.skills/specture/` to `.agents/skills/specture/` if the old path exists and the new one doesn't
+- [x] Remove `.skills/` directory if empty after migration
+- [x] Support dry-run flag in migration
+- [x] Write tests for migration (old exists, new doesn't; both exist; old doesn't exist; non-empty `.skills/` after move)
 - [ ] Call `MigrateSkillsDir` from `specture setup` before `InstallSkill`
 
 ### Update References

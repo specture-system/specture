@@ -9,9 +9,24 @@ Specture is a spec-driven development system. Specs are design documents in the 
 
 Spec numbers are stored in the YAML frontmatter `number` field. New specs use slug-only filenames (e.g., `my-feature.md`). Older specs may retain `NNN-slug.md` filenames — both naming patterns are valid.
 
+## Design Workflow
+
+When designing a spec (writing or refining a `draft` spec):
+
+1. Create a new branch for the spec design work (e.g., `spec/my-feature`)
+2. Write or refine the spec content — description, design decisions, task list
+3. Commit and push the spec changes
+4. Open a PR for review and discussion
+
 ## Implementation Workflow
 
-When implementing a spec, follow this loop:
+When starting implementation of an `approved` spec:
+
+1. **Update the spec status to `in-progress`** by editing the frontmatter `status` field
+2. **Create a new branch** for the implementation work (e.g., `impl/my-feature`)
+3. Commit the status change as the first commit on the branch
+
+Then follow this loop:
 
 1. Run `specture status` to see the current spec and next task
 2. Complete one or more tasks from the task list

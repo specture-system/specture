@@ -42,6 +42,7 @@ type Task struct {
 // frontmatter represents the YAML frontmatter of a spec.
 type frontmatter struct {
 	Status string `yaml:"status"`
+	Number *int   `yaml:"number"`
 }
 
 // Parse reads and parses a spec file, returning a fully populated SpecInfo.
@@ -60,9 +61,6 @@ func ParseContent(path string, content []byte) (*SpecInfo, error) {
 		Path: path,
 	}
 
-	// Extract number from filename
-	info.Number = extractNumber(filepath.Base(path))
-
 	// Parse with goldmark for frontmatter and title
 	md := goldmark.New(
 		goldmark.WithExtensions(
@@ -76,13 +74,22 @@ func ParseContent(path string, content []byte) (*SpecInfo, error) {
 
 	// Extract frontmatter
 	var fmStatus string
+	var fmNumber *int
 	fmData := gmfrontmatter.Get(ctx)
 	if fmData != nil {
 		var fm frontmatter
 		if err := fmData.Decode(&fm); err == nil {
 			fmStatus = fm.Status
+			fmNumber = fm.Number
 		}
 	}
+
+	// Resolve spec number exclusively from frontmatter
+	number, err := resolveNumber(fmNumber)
+	if err != nil {
+		return nil, err
+	}
+	info.Number = number
 
 	// Extract title (first H1 heading)
 	info.Name = extractTitle(doc, content)
@@ -141,16 +148,31 @@ func FindCurrent(specs []*SpecInfo) *SpecInfo {
 	return nil
 }
 
-// extractNumber extracts the spec number from a filename like "003-foo.md".
-func extractNumber(filename string) int {
+// resolveNumber determines the spec number exclusively from frontmatter.
+// Returns -1 if number is not present in frontmatter.
+// Returns an error if the frontmatter number is negative.
+func resolveNumber(fmNumber *int) (int, error) {
+	if fmNumber == nil {
+		return -1, nil
+	}
+	if *fmNumber < 0 {
+		return 0, fmt.Errorf("invalid spec number %d: must be a non-negative integer", *fmNumber)
+	}
+	return *fmNumber, nil
+}
+
+// extractNumberFromFilename extracts the spec number from a filename like "003-foo.md".
+// Returns -1 if the filename doesn't have a numeric prefix.
+// Used only by migration/setup, not by spec parsing.
+func extractNumberFromFilename(filename string) int {
 	re := regexp.MustCompile(`^(\d{3})-`)
 	matches := re.FindStringSubmatch(filename)
 	if len(matches) < 2 {
-		return 0
+		return -1
 	}
 	n, err := strconv.Atoi(matches[1])
 	if err != nil {
-		return 0
+		return -1
 	}
 	return n
 }
@@ -305,7 +327,8 @@ func inferStatus(fmStatus string, hasTaskList bool, completeCount, incompleteCou
 }
 
 // FindAll finds all spec files in the given specs directory.
-// Spec files match the pattern NNN-name.md (3-digit prefix).
+// Spec files are .md files excluding README.md.
+// Both NNN-slug.md and slug.md naming patterns are supported.
 func FindAll(specsDir string) ([]string, error) {
 	if _, err := os.Stat(specsDir); os.IsNotExist(err) {
 		return nil, fmt.Errorf("specs directory not found: %s", specsDir)
@@ -317,14 +340,13 @@ func FindAll(specsDir string) ([]string, error) {
 	}
 
 	var paths []string
-	specPattern := regexp.MustCompile(`^\d{3}-.*\.md$`)
-
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
 		}
-		if specPattern.MatchString(entry.Name()) {
-			paths = append(paths, filepath.Join(specsDir, entry.Name()))
+		name := entry.Name()
+		if strings.HasSuffix(name, ".md") && name != "README.md" {
+			paths = append(paths, filepath.Join(specsDir, name))
 		}
 	}
 
@@ -333,8 +355,10 @@ func FindAll(specsDir string) ([]string, error) {
 
 // ResolvePath resolves a spec argument to a file path.
 // Accepts:
-//   - Full path: specs/000-mvp.md
+//   - Full path: specs/000-mvp.md or specs/my-feature.md
 //   - Just number with or without leading zeros: 0, 00, 000
+//
+// Looks up by frontmatter number field.
 func ResolvePath(specsDir, arg string) (string, error) {
 	// If it's already a path that exists, use it
 	if _, err := os.Stat(arg); err == nil {
@@ -348,21 +372,21 @@ func ResolvePath(specsDir, arg string) (string, error) {
 		return "", fmt.Errorf("invalid spec reference: %s (expected number like 0, 00, or 000)", arg)
 	}
 
-	// Pad number to 3 digits with leading zeros
-	number := fmt.Sprintf("%03s", matches[1])
+	targetNum, _ := strconv.Atoi(matches[1])
 
-	// Look for a file starting with that number
-	entries, err := os.ReadDir(specsDir)
+	// Parse all specs and find by frontmatter number
+	paths, err := FindAll(specsDir)
 	if err != nil {
-		return "", fmt.Errorf("failed to read specs directory: %w", err)
+		return "", err
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() {
+	for _, p := range paths {
+		info, err := Parse(p)
+		if err != nil {
 			continue
 		}
-		if regexp.MustCompile(`^` + number + `-.*\.md$`).MatchString(entry.Name()) {
-			return filepath.Join(specsDir, entry.Name()), nil
+		if info.Number == targetNum {
+			return p, nil
 		}
 	}
 

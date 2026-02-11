@@ -1,5 +1,5 @@
 ---
-status: approved
+status: completed
 author: Addison Emig
 creation_date: 2026-02-05
 approved_by: Addison Emig
@@ -80,32 +80,32 @@ If a file has a `NNN-` prefix and a `number` field that disagree, `specture vali
 
 ### Core Changes
 
-- [ ] Tests for `number` parsing (present, missing, invalid values)
-- [ ] Add `number` field to spec parsing, read exclusively from frontmatter
-- [ ] Tests for all new validate rules (missing number, duplicates, number/filename mismatch)
-- [ ] `specture validate` rejects specs missing `number`
-- [ ] `specture validate` detects duplicate numbers across specs
-- [ ] `specture validate` warns on number/filename mismatch
-- [ ] Tests for new `specture new` behavior (auto-assign max+1, slug-only filename)
-- [ ] `specture new` assigns max+1 number in frontmatter
-- [ ] `specture new` generates slug-only filenames
+- [x] Tests for `number` parsing (present, missing, invalid values)
+- [x] Add `number` field to spec parsing, read exclusively from frontmatter
+- [x] Tests for all new validate rules (missing number, duplicates, number/filename mismatch)
+- [x] `specture validate` rejects specs missing `number`
+- [x] `specture validate` detects duplicate numbers across specs
+- [x] `specture validate` warns on number/filename mismatch
+- [x] Tests for new `specture new` behavior (auto-assign max+1, slug-only filename)
+- [x] `specture new` assigns max+1 number in frontmatter
+- [x] `specture new` generates slug-only filenames
 
 ### Rename
 
-- [ ] Tests for rename command (file rename, link updates, --slug, --dry-run)
-- [ ] `specture rename` renames file and updates all markdown links in specs directory
-- [ ] `--slug` flag sets target filename; default strips numeric prefix
-- [ ] `--dry-run` previews changes without modifying files
+- [x] Tests for rename command (file rename, link updates, --slug, --dry-run)
+- [x] `specture rename` renames file and updates all markdown links in specs directory
+- [x] Positional argument sets target filename (required)
+- [x] `--dry-run` previews changes without modifying files
 
 ### Migration
 
-- [ ] Tests for migration (adds number, skips existing, dry-run)
-- [ ] `specture setup` adds `number` to frontmatter of `NNN-slug.md` files
-- [ ] Migration respects existing `--dry-run` and `--yes` flags
+- [x] Tests for migration (adds number, skips existing, dry-run)
+- [x] `specture setup` adds `number` to frontmatter of `NNN-slug.md` files
+- [x] Migration respects existing `--dry-run` and `--yes` flags
 
 ### Documentation
 
-- [ ] Update `specs/README.md` template to reflect new file naming convention
-- [ ] Update `specture help` to describe numbering in frontmatter
-- [ ] Update spec template to include `number` field in frontmatter
-- [ ] Update `.skills/specture/SKILL.md` to document `number` frontmatter field and new filename conventions
+- [x] Update `specs/README.md` template to reflect new file naming convention
+- [x] Update `specture help` to describe numbering in frontmatter
+- [x] Update spec template to include `number` field in frontmatter
+- [x] Update `.skills/specture/SKILL.md` to document `number` frontmatter field and new filename conventions

@@ -22,6 +22,7 @@ var ValidStatus = []string{"draft", "approved", "in-progress", "completed", "rej
 type Frontmatter struct {
 	Status string `yaml:"status"`
 	Author string `yaml:"author"`
+	Number *int   `yaml:"number"`
 }
 
 // Spec represents a parsed spec file for validation purposes.

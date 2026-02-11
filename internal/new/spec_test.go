@@ -41,40 +41,48 @@ func TestToSlug(t *testing.T) {
 func TestFindNextSpecNumber(t *testing.T) {
 	tests := []struct {
 		name        string
-		setupDirs   []string
-		setupFiles  map[string]bool
+		setupFiles  map[string]string // filename -> content
 		expected    int
 		expectError bool
 	}{
 		{
-			name:      "empty_directory",
-			setupDirs: []string{},
-			expected:  0,
+			name:       "empty_directory",
+			setupFiles: map[string]string{},
+			expected:   0,
 		},
 		{
-			name:       "single_spec",
-			setupFiles: map[string]bool{"000-first.md": true},
-			expected:   1,
+			name: "single_spec_with_number",
+			setupFiles: map[string]string{
+				"first.md": "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
+			},
+			expected: 1,
 		},
 		{
-			name:       "multiple_specs",
-			setupFiles: map[string]bool{"000-first.md": true, "001-second.md": true, "002-third.md": true},
-			expected:   3,
+			name: "multiple_specs",
+			setupFiles: map[string]string{
+				"000-first.md":  "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
+				"001-second.md": "---\nnumber: 1\n---\n\n# Second\n\n## Task List\n",
+				"002-third.md":  "---\nnumber: 2\n---\n\n# Third\n\n## Task List\n",
+			},
+			expected: 3,
 		},
 		{
-			name:       "non_sequential_numbers",
-			setupFiles: map[string]bool{"000-first.md": true, "005-fifth.md": true, "002-third.md": true},
-			expected:   6,
+			name: "non_sequential_numbers",
+			setupFiles: map[string]string{
+				"first.md": "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
+				"fifth.md": "---\nnumber: 5\n---\n\n# Fifth\n\n## Task List\n",
+				"third.md": "---\nnumber: 2\n---\n\n# Third\n\n## Task List\n",
+			},
+			expected: 6,
 		},
 		{
-			name:       "ignore_non_spec_files",
-			setupFiles: map[string]bool{"README.md": true, "000-spec.md": true, "notes.txt": true},
-			expected:   1,
-		},
-		{
-			name:       "ignore_non_matching_names",
-			setupFiles: map[string]bool{"no-number.md": true, "000-spec.md": true},
-			expected:   1,
+			name: "ignores_files_without_number",
+			setupFiles: map[string]string{
+				"README.md":    "# Readme\n",
+				"000-spec.md":  "---\nnumber: 0\n---\n\n# Spec\n\n## Task List\n",
+				"notes.txt":    "some notes",
+			},
+			expected: 1,
 		},
 	}
 
@@ -83,9 +91,9 @@ func TestFindNextSpecNumber(t *testing.T) {
 			tmpDir := t.TempDir()
 
 			// Create setup files
-			for file := range tt.setupFiles {
+			for file, content := range tt.setupFiles {
 				filePath := filepath.Join(tmpDir, file)
-				if err := os.WriteFile(filePath, []byte(""), 0644); err != nil {
+				if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 					t.Fatalf("failed to create test file: %v", err)
 				}
 			}
@@ -103,7 +111,7 @@ func TestFindNextSpecNumber(t *testing.T) {
 
 func TestRenderSpec(t *testing.T) {
 	t.Run("renders_with_title_and_author", func(t *testing.T) {
-		result, err := RenderSpec("Test Feature", "Test Author")
+		result, err := RenderSpec("Test Feature", "Test Author", 5)
 		if err != nil {
 			t.Fatalf("RenderSpec() error = %v", err)
 		}
@@ -118,10 +126,13 @@ func TestRenderSpec(t *testing.T) {
 		if !strings.Contains(result, "status: draft") {
 			t.Errorf("rendered spec doesn't contain status")
 		}
+		if !strings.Contains(result, "number: 5") {
+			t.Errorf("rendered spec doesn't contain number")
+		}
 	})
 
 	t.Run("includes_creation_date", func(t *testing.T) {
-		result, err := RenderSpec("Test", "Author")
+		result, err := RenderSpec("Test", "Author", 0)
 		if err != nil {
 			t.Fatalf("RenderSpec() error = %v", err)
 		}
@@ -134,13 +145,16 @@ func TestRenderSpec(t *testing.T) {
 
 func TestGenerateFrontmatter(t *testing.T) {
 	t.Run("generates_valid_frontmatter", func(t *testing.T) {
-		frontmatter, err := GenerateFrontmatter("Test Spec", "Test Author")
+		frontmatter, err := GenerateFrontmatter("Test Spec", "Test Author", 5)
 		if err != nil {
 			t.Fatalf("GenerateFrontmatter() error = %v", err)
 		}
 
 		if !strings.Contains(frontmatter, "---") {
 			t.Errorf("frontmatter missing YAML delimiters")
+		}
+		if !strings.Contains(frontmatter, "number: 5") {
+			t.Errorf("frontmatter missing number")
 		}
 		if !strings.Contains(frontmatter, "status: draft") {
 			t.Errorf("frontmatter missing status")
@@ -150,6 +164,16 @@ func TestGenerateFrontmatter(t *testing.T) {
 		}
 		if !strings.Contains(frontmatter, "creation_date:") {
 			t.Errorf("frontmatter missing creation_date")
+		}
+	})
+
+	t.Run("number_zero", func(t *testing.T) {
+		frontmatter, err := GenerateFrontmatter("Test", "Author", 0)
+		if err != nil {
+			t.Fatalf("GenerateFrontmatter() error = %v", err)
+		}
+		if !strings.Contains(frontmatter, "number: 0") {
+			t.Errorf("frontmatter should contain 'number: 0', got:\n%s", frontmatter)
 		}
 	})
 }

@@ -250,14 +250,14 @@ func TestFindAll_MatchesOnlySpecFiles(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create spec files and non-spec files
+	// FindAll includes all .md files except README.md
 	files := map[string]bool{
 		"001-first.md":  true,
 		"002-second.md": true,
 		"010-tenth.md":  true,
+		"my-feature.md": true, // slug-only filename
 		"README.md":     false,
 		"notes.txt":     false,
-		"1-bad.md":      false, // not 3 digits
-		"abc-bad.md":    false,
 	}
 
 	for name := range files {
@@ -304,10 +304,10 @@ func TestFindAll_NonexistentDirectory(t *testing.T) {
 func TestResolvePath(t *testing.T) {
 	dir := t.TempDir()
 
-	// Create a spec file
+	// Create a spec file with number in frontmatter
 	specFile := "007-feature.md"
 	specPath := filepath.Join(dir, specFile)
-	if err := os.WriteFile(specPath, []byte("# Feature\n"), 0644); err != nil {
+	if err := os.WriteFile(specPath, []byte("---\nnumber: 7\n---\n\n# Feature\n"), 0644); err != nil {
 		t.Fatalf("failed to create spec file: %v", err)
 	}
 
@@ -368,11 +368,11 @@ func TestResolvePath(t *testing.T) {
 func TestParseAll_SortedByNumber(t *testing.T) {
 	dir := t.TempDir()
 
-	// Create specs out of order
+	// Create specs out of order, with number in frontmatter
 	specs := map[string]string{
-		"003-third.md":  "# Third\n",
-		"001-first.md":  "# First\n",
-		"002-second.md": "# Second\n",
+		"003-third.md":  "---\nnumber: 3\n---\n\n# Third\n",
+		"001-first.md":  "---\nnumber: 1\n---\n\n# First\n",
+		"002-second.md": "---\nnumber: 2\n---\n\n# Second\n",
 	}
 	for name, content := range specs {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
@@ -410,11 +410,11 @@ func TestFindCurrent_ReturnsFirstInProgress(t *testing.T) {
 	dir := t.TempDir()
 
 	// Spec 1: completed (all tasks done)
-	spec1 := buildSpec("", "First", "- [x] Done")
+	spec1 := buildSpec("number: 1", "First", "- [x] Done")
 	// Spec 2: in-progress (mixed tasks)
-	spec2 := buildSpec("", "Second", "- [x] Done\n- [ ] Not done")
+	spec2 := buildSpec("number: 2", "Second", "- [x] Done\n- [ ] Not done")
 	// Spec 3: also in-progress
-	spec3 := buildSpec("", "Third", "- [x] A\n- [ ] B")
+	spec3 := buildSpec("number: 3", "Third", "- [x] A\n- [ ] B")
 
 	files := map[string][]byte{
 		"001-first.md":  spec1,
@@ -445,9 +445,9 @@ func TestFindCurrent_NoInProgress(t *testing.T) {
 	dir := t.TempDir()
 
 	// Spec 1: completed
-	spec1 := buildSpec("", "First", "- [x] Done")
+	spec1 := buildSpec("number: 1", "First", "- [x] Done")
 	// Spec 2: draft (all incomplete)
-	spec2 := buildSpec("", "Second", "- [ ] Not started")
+	spec2 := buildSpec("number: 2", "Second", "- [ ] Not started")
 
 	files := map[string][]byte{
 		"001-first.md":  spec1,
@@ -491,20 +491,103 @@ func TestFindCurrent_MultipleInProgress_ReturnsLowest(t *testing.T) {
 // ---------- Additional edge case tests ----------
 
 func TestParseContent_ExtractsNumber(t *testing.T) {
+	// Number is read exclusively from frontmatter, not filename
 	tests := []struct {
+		name       string
 		path       string
+		content    []byte
 		wantNumber int
 	}{
-		{"000-mvp.md", 0},
-		{"001-feature.md", 1},
-		{"042-answer.md", 42},
-		{"100-big.md", 100},
-		{"bad-name.md", 0},
+		{"frontmatter number 0", "000-mvp.md", buildSpec("number: 0\nstatus: draft", "Test", ""), 0},
+		{"frontmatter number 1", "001-feature.md", buildSpec("number: 1\nstatus: draft", "Test", ""), 1},
+		{"frontmatter number 42", "042-answer.md", buildSpec("number: 42\nstatus: draft", "Test", ""), 42},
+		{"no frontmatter number", "100-big.md", []byte("# Test\n"), -1},
+		{"slug-only filename with number", "big-feature.md", buildSpec("number: 100\nstatus: draft", "Test", ""), 100},
+		{"no number anywhere", "bad-name.md", []byte("# Test\n"), -1},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
-			info, err := ParseContent(tt.path, []byte("# Test\n"))
+		t.Run(tt.name, func(t *testing.T) {
+			info, err := ParseContent(tt.path, tt.content)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if info.Number != tt.wantNumber {
+				t.Errorf("expected number %d, got %d", tt.wantNumber, info.Number)
+			}
+		})
+	}
+}
+
+// ---------- Number from frontmatter tests ----------
+
+func TestParseContent_NumberFromFrontmatter(t *testing.T) {
+	tests := []struct {
+		name       string
+		content    []byte
+		path       string
+		wantNumber int
+		wantErr    bool
+	}{
+		{
+			name:       "number present in frontmatter",
+			content:    buildSpec("number: 5\nstatus: draft", "Test", ""),
+			path:       "test.md",
+			wantNumber: 5,
+		},
+		{
+			name:       "number zero in frontmatter",
+			content:    buildSpec("number: 0\nstatus: draft", "Test", ""),
+			path:       "test.md",
+			wantNumber: 0,
+		},
+		{
+			name:       "large number in frontmatter",
+			content:    buildSpec("number: 999\nstatus: draft", "Test", ""),
+			path:       "test.md",
+			wantNumber: 999,
+		},
+		{
+			name:       "frontmatter number overrides filename number",
+			content:    buildSpec("number: 42\nstatus: draft", "Test", ""),
+			path:       "003-test.md",
+			wantNumber: 42,
+		},
+		{
+			name:       "missing number defaults to -1 even with numeric prefix filename",
+			content:    buildSpec("status: draft", "Test", ""),
+			path:       "007-test.md",
+			wantNumber: -1,
+		},
+		{
+			name:       "missing number without numeric prefix defaults to -1",
+			content:    buildSpec("status: draft", "Test", ""),
+			path:       "test.md",
+			wantNumber: -1,
+		},
+		{
+			name:       "negative number is invalid",
+			content:    buildSpec("number: -1\nstatus: draft", "Test", ""),
+			path:       "test.md",
+			wantErr:    true,
+		},
+		{
+			name:       "no frontmatter defaults to -1",
+			content:    []byte("# Test\n"),
+			path:       "005-test.md",
+			wantNumber: -1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			info, err := ParseContent(tt.path, tt.content)
+			if tt.wantErr {
+				if err == nil {
+					t.Error("expected error, got nil")
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

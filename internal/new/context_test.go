@@ -57,8 +57,8 @@ func TestNewContext_ErrorHandling(t *testing.T) {
 		if ctx.Number != 0 {
 			t.Errorf("NewContext() spec number = %d, want 0", ctx.Number)
 		}
-		if ctx.FileName != "000-my-first-spec.md" {
-			t.Errorf("NewContext() filename = %q, want %q", ctx.FileName, "000-my-first-spec.md")
+		if ctx.FileName != "my-first-spec.md" {
+			t.Errorf("NewContext() filename = %q, want %q", ctx.FileName, "my-first-spec.md")
 		}
 
 		// Branch name should include date suffix (YYYY-MM-DD)

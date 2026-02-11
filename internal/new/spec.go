@@ -3,12 +3,13 @@ package new
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
+	specpkg "github.com/specture-system/specture/internal/spec"
 	"github.com/specture-system/specture/internal/template"
 	"github.com/specture-system/specture/internal/templates"
 )
@@ -18,6 +19,7 @@ type SpecData struct {
 	Title        string
 	Author       string
 	CreationDate string
+	Number       int
 }
 
 // ToSlug converts a string to a URL-safe slug (kebab-case with special characters removed).
@@ -42,57 +44,55 @@ func ToSlug(s string) string {
 	return s
 }
 
-// FindNextSpecNumber returns the next available spec number (e.g., 001 for a new spec).
-// It searches the specs directory for existing specs and returns the next number.
+// FindNextSpecNumber returns the next available spec number as max(existing) + 1.
+// It reads numbers from spec frontmatter. Returns 0 if no specs exist.
 func FindNextSpecNumber(specsDir string) (int, error) {
+	// Check if directory exists
+	if _, err := os.Stat(specsDir); os.IsNotExist(err) {
+		return 0, nil
+	}
+
+	// Read all markdown files and parse numbers from frontmatter
 	entries, err := os.ReadDir(specsDir)
 	if err != nil {
-		// If directory doesn't exist, start with 0
-		if os.IsNotExist(err) {
-			return 0, nil
-		}
 		return 0, fmt.Errorf("failed to read specs directory: %w", err)
 	}
 
-	// Extract numbers from spec filenames (e.g., "000-name.md" -> 0)
 	var numbers []int
-	specFileRegex := regexp.MustCompile(`^(\d+)-`)
-
 	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".md") {
-			matches := specFileRegex.FindStringSubmatch(entry.Name())
-			if len(matches) > 1 {
-				num, err := strconv.Atoi(matches[1])
-				if err == nil {
-					numbers = append(numbers, num)
-				}
-			}
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+			continue
+		}
+		if entry.Name() == "README.md" {
+			continue
+		}
+
+		path := filepath.Join(specsDir, entry.Name())
+		info, err := specpkg.Parse(path)
+		if err != nil {
+			continue // Skip unparseable files
+		}
+		if info.Number >= 0 {
+			numbers = append(numbers, info.Number)
 		}
 	}
 
-	// If no specs found, return 0
 	if len(numbers) == 0 {
 		return 0, nil
 	}
 
-	// Find the maximum number and return next
 	sort.Ints(numbers)
 	return numbers[len(numbers)-1] + 1, nil
 }
 
 // GenerateFrontmatter generates the YAML frontmatter for a spec.
-func GenerateFrontmatter(title, author string) (string, error) {
-	data := SpecData{
-		Title:        title,
-		Author:       author,
-		CreationDate: time.Now().Format("2006-01-02"),
-	}
-
+func GenerateFrontmatter(title, author string, number int) (string, error) {
 	frontmatter := fmt.Sprintf(`---
+number: %d
 status: draft
 author: %s
 creation_date: %s
----`, data.Author, data.CreationDate)
+---`, number, author, time.Now().Format("2006-01-02"))
 
 	return frontmatter, nil
 }
@@ -143,7 +143,7 @@ func RenderDefaultBody(title string) (string, error) {
 
 // RenderSpec renders a complete spec file from the template (frontmatter + default body).
 // Kept for backward compatibility.
-func RenderSpec(title, author string) (string, error) {
+func RenderSpec(title, author string, number int) (string, error) {
 	tmpl, err := templates.GetSpecTemplate()
 	if err != nil {
 		return "", err
@@ -153,6 +153,7 @@ func RenderSpec(title, author string) (string, error) {
 		Title:        title,
 		Author:       author,
 		CreationDate: time.Now().Format("2006-01-02"),
+		Number:       number,
 	}
 
 	return template.RenderTemplate(tmpl, data)

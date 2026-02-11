@@ -81,17 +81,24 @@ func runValidate(cmd *cobra.Command, args []string) (invalidCount int, err error
 		return 0, nil
 	}
 
-	// Validate each spec
-	var validCount int
-
+	// Parse all specs
+	var specs []*validate.Spec
+	var parseErrors []string
 	for _, path := range specPaths {
-		result, err := validate.ValidateSpecFile(path)
+		s, err := validate.ParseSpec(path)
 		if err != nil {
 			cmd.PrintErrf("Error reading %s: %v\n", filepath.Base(path), err)
-			invalidCount++
+			parseErrors = append(parseErrors, path)
 			continue
 		}
+		specs = append(specs, s)
+	}
 
+	// Validate all specs (includes cross-spec checks like duplicate numbers)
+	results := validate.ValidateSpecs(specs)
+
+	var validCount int
+	for _, result := range results {
 		cmd.Print(validate.FormatValidationResult(result))
 
 		if result.IsValid() {
@@ -100,6 +107,7 @@ func runValidate(cmd *cobra.Command, args []string) (invalidCount int, err error
 			invalidCount++
 		}
 	}
+	invalidCount += len(parseErrors)
 
 	// Print summary
 	total := validCount + invalidCount

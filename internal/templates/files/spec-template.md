@@ -1,4 +1,5 @@
 ---
+number: {{.Number}}
 status: draft
 author: {{.Author}}
 creation_date: {{.CreationDate}}

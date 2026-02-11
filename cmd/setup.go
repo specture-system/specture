@@ -43,7 +43,7 @@ Actions:
 		cmd.Println("\nSetup will:")
 		cmd.Println("  • Create specs/ directory")
 		cmd.Println("  • Create specs/README.md with Specture System guidelines")
-		cmd.Println("  • Install Specture skill files into .skills/")
+		cmd.Println("  • Install Specture skill files into .agents/skills/")
 
 		// Get update flags
 		updateAgents, err := cmd.Flags().GetBool("update-agents")
@@ -102,6 +102,15 @@ Actions:
 		// Create specs/README.md
 		if err := ctx.CreateSpecsReadme(dryRun); err != nil {
 			return err
+		}
+
+		// Migrate .skills/specture/ to .agents/skills/specture/ if needed
+		migrated, err := setup.MigrateSkillsDir(cwd, dryRun)
+		if err != nil {
+			return err
+		}
+		if migrated && !dryRun {
+			cmd.Println("Migrated .skills/specture/ → .agents/skills/specture/")
 		}
 
 		// Install Specture skill files

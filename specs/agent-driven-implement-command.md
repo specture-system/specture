@@ -1,0 +1,127 @@
+---
+number: 9
+status: draft
+author: Addison Emig
+creation_date: 2026-03-12
+---
+
+# Agent-Driven Implement Command
+
+Add a new `implement` subcommand to the Specture CLI that orchestrates implementation of an `approved` or `in-progress` spec using agent CLIs.
+
+Unlike a single handoff command, this workflow should break implementation into remaining task-list sections, create a branch per section, run worker and review agents in a deterministic loop, update the spec file itself, and push completed section branches automatically.
+
+The command should prefer `opencode` when auto-detecting available agent CLIs, fall back to `codex`, and allow explicit override via `--agent`.
+
+## Design Decisions
+
+### Explicit spec selection with optional agent override
+
+- Chosen: Require `--spec` and make `--agent` optional
+  - Spec execution is high-impact and should target a specific spec explicitly
+  - Agent backend can be discovered automatically without adding user friction
+  - Auto-detection order is `opencode`, then `codex`
+- Considered: Auto-pick a spec when `--spec` is omitted
+  - Risky for a command that creates branches, commits, and pushes
+  - Makes failures harder to reason about when multiple specs are available
+
+### Multi-agent orchestration instead of a single implementation handoff
+
+- Chosen: Run repeated worker and review agent invocations for each remaining section and task
+  - Matches the desired workflow of task-by-task validation and deterministic commits
+  - Keeps commits small and traceable to specific spec tasks
+  - Allows a stricter review gate before each task and section is accepted
+- Considered: One-shot agent execution for the full spec
+  - Harder to verify progress incrementally
+  - More likely to drift from the spec or produce oversized changes
+
+### Same backend for worker and reviewer roles
+
+- Chosen: Use the same selected backend for both worker and review runs
+  - Keeps the command surface small in v1
+  - Avoids separate backend configuration and compatibility logic
+- Considered: Separate worker/reviewer agent flags
+  - Adds complexity without a clear need for the initial implementation
+
+### Section-based branch strategy
+
+- Chosen: Create a branch for each remaining section, with later section branches based on the previously completed section branch
+  - Preserves the exact workflow requested for staged section delivery
+  - Allows each completed section to be pushed immediately while carrying earlier work forward
+- Considered: Branch every section from the original base branch
+  - Would require replaying or merging prior section work into later branches
+  - Makes sequential implementation more cumbersome
+
+### Specture owns spec edits and commits
+
+- Chosen: Worker agents must not edit the spec or commit; the orchestrator updates the spec and creates deterministic commits
+  - Keeps workflow enforcement in one place
+  - Ensures spec checkbox updates are always committed together with implementation changes
+  - Makes commit messages and git mutations predictable
+- Considered: Let workers edit the spec and commit directly
+  - Harder to guarantee consistent spec/task bookkeeping
+  - Makes the orchestration loop less deterministic
+
+### Review retry policy
+
+- Chosen: Allow up to 3 worker passes per task, and only 1 retry for section-level review
+  - Gives tasks enough room to converge automatically
+  - Prevents section-level review loops from becoming nit-picky or over-optimized
+- Considered: Multiple section-level retries
+  - Increases runtime and churn with diminishing returns
+
+### Spec state updates during implementation
+
+- Chosen: Set `status: in-progress` when section execution begins if the spec was `approved`, then mark each task complete immediately after that task passes review
+  - Reflects active work as soon as implementation starts
+  - Preserves the Specture rule that spec updates ship with the implementation they describe
+- Additionally: Set `status: completed` in the final successful commit when all remaining tasks are checked off
+  - Keeps the spec lifecycle accurate at the end of orchestration
+- Considered: Delay checkbox updates until section completion
+  - Loses the per-task commit linkage required by the workflow
+
+## Task List
+
+### CLI Surface
+
+- [ ] Add `specture implement --spec N [--agent opencode|codex]`
+- [ ] Require `--spec` and make `--agent` optional with backend auto-detection order `opencode`, then `codex`
+- [ ] Exit early unless the target spec status is `approved` or `in-progress`
+
+### Orchestration Engine
+
+- [ ] Add an internal implementation package to load specs, enumerate remaining sections/tasks, and drive the orchestration loop
+- [ ] Create deterministic section branches named from the spec number and section slug
+- [ ] Base the first section branch on the current branch and each later section branch on the previously completed section branch
+- [ ] Update spec status to `in-progress` when implementation starts for an approved spec
+- [ ] Mark each task checkbox complete only after its review passes, and include that spec update in the same deterministic commit as the implementation changes
+- [ ] Update the spec status to `completed` in the final successful commit when all remaining tasks are done
+
+### Agent Execution
+
+- [ ] Implement worker-agent invocation that passes the current task, relevant section context, and spec file path
+- [ ] Instruct worker agents to use TDD when relevant and to avoid editing the spec or creating commits
+- [ ] Implement task-level review-agent invocation and rerun the worker up to 3 total passes when review fails
+- [ ] Implement section-level review with exactly 1 revision retry before failing the section
+- [ ] Stop on unresolved task or section failures and leave the current branch for manual follow-up
+
+### Backend Integration
+
+- [ ] Auto-detect installed agent CLIs in priority order `opencode`, then `codex`
+- [ ] Support explicit backend override via `--agent`
+- [ ] Use `codex exec` for worker runs and `codex review --uncommitted` for review runs where applicable
+- [ ] Use `opencode run` for both worker and review runs with role-specific prompts
+
+### Git and Commit Management
+
+- [ ] Generate deterministic conventional commit messages based on task or revision context
+- [ ] Push each successfully completed section branch automatically
+- [ ] Require a clean git worktree before starting implementation
+
+### Testing
+
+- [ ] Add tests for command validation, backend auto-detection, and backend override behavior
+- [ ] Add tests for remaining-section and remaining-task enumeration
+- [ ] Add tests for task retry limits and single-retry section review behavior
+- [ ] Add tests for spec status/checkbox updates and final completion status handling
+- [ ] Add tests for deterministic branch naming, commit generation, and push behavior

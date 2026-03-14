@@ -46,3 +46,72 @@ func TestCreateBranch(t *testing.T) {
 		}
 	})
 }
+
+func TestCheckoutBranch(t *testing.T) {
+	tmpDir := t.TempDir()
+	testhelpers.InitGitRepo(t, tmpDir)
+
+	cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
+	cmd.Dir = tmpDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to create initial commit: %v", err)
+	}
+
+	if err := CreateBranch(tmpDir, "feature/checkout-test"); err != nil {
+		t.Fatalf("failed to create test branch: %v", err)
+	}
+
+	if err := CheckoutBranch(tmpDir, "main"); err != nil {
+		if err := CheckoutBranch(tmpDir, "master"); err != nil {
+			t.Fatalf("failed to checkout default branch: %v", err)
+		}
+	}
+
+	if err := CheckoutBranch(tmpDir, "feature/checkout-test"); err != nil {
+		t.Fatalf("CheckoutBranch() error = %v", err)
+	}
+
+	cmd = exec.Command("git", "branch", "--show-current")
+	cmd.Dir = tmpDir
+	output, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("failed to get current branch: %v", err)
+	}
+
+	if string(output) != "feature/checkout-test\n" {
+		t.Fatalf("expected to be on feature/checkout-test, got %q", string(output))
+	}
+}
+
+func TestDeleteBranch(t *testing.T) {
+	tmpDir := t.TempDir()
+	testhelpers.InitGitRepo(t, tmpDir)
+
+	cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
+	cmd.Dir = tmpDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("failed to create initial commit: %v", err)
+	}
+
+	if err := CreateBranch(tmpDir, "feature/delete-test"); err != nil {
+		t.Fatalf("failed to create test branch: %v", err)
+	}
+
+	if err := CheckoutBranch(tmpDir, "main"); err != nil {
+		if err := CheckoutBranch(tmpDir, "master"); err != nil {
+			t.Fatalf("failed to checkout default branch: %v", err)
+		}
+	}
+
+	if err := DeleteBranch(tmpDir, "feature/delete-test"); err != nil {
+		t.Fatalf("DeleteBranch() error = %v", err)
+	}
+
+	exists, err := BranchExists(tmpDir, "feature/delete-test")
+	if err != nil {
+		t.Fatalf("failed to check branch existence: %v", err)
+	}
+	if exists {
+		t.Fatal("expected branch to be deleted")
+	}
+}

@@ -3,7 +3,6 @@ package new
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -149,22 +148,19 @@ func (c *NewCommandContext) Cleanup() error {
 
 	// Check if branch exists before trying to delete it
 	// (it won't exist if --no-branch was used)
-	branchExistsCmd := exec.Command("git", "rev-parse", "--verify", c.BranchName)
-	branchExistsCmd.Dir = c.WorkDir
-	branchExists := branchExistsCmd.Run() == nil
+	branchExists, err := gitpkg.BranchExists(c.WorkDir, c.BranchName)
+	if err != nil {
+		return fmt.Errorf("failed to inspect cleanup branch %q: %w", c.BranchName, err)
+	}
 
 	if branchExists {
 		// Checkout back to original branch
-		checkoutCmd := exec.Command("git", "checkout", c.OriginalBranch)
-		checkoutCmd.Dir = c.WorkDir
-		if err := checkoutCmd.Run(); err != nil {
+		if err := gitpkg.CheckoutBranch(c.WorkDir, c.OriginalBranch); err != nil {
 			return fmt.Errorf("failed to checkout original branch: %w", err)
 		}
 
 		// Delete the spec branch
-		deleteCmd := exec.Command("git", "branch", "-D", c.BranchName)
-		deleteCmd.Dir = c.WorkDir
-		if err := deleteCmd.Run(); err != nil {
+		if err := gitpkg.DeleteBranch(c.WorkDir, c.BranchName); err != nil {
 			return fmt.Errorf("failed to delete branch: %w", err)
 		}
 	}

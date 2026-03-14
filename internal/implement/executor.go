@@ -2,7 +2,6 @@ package implement
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -104,7 +103,7 @@ func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.T
 }
 
 func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, backend string, printf PrintfFunc, deps executeDeps) error {
-	sectionOrderByName := taskListSectionOrders(info.Path)
+	sectionOrderByName := specpkg.TaskListSectionOrders(info.Path)
 
 	for idx, section := range plan.Sections {
 		sectionNumber := idx + 1
@@ -197,44 +196,6 @@ func invokeAgentCLI(invocation AgentInvocation) (AgentResult, error) {
 		Output:         outputText,
 		CriticalIssues: strings.Contains(outputText, "REVIEW_CRITICAL"),
 	}, nil
-}
-func taskListSectionOrders(specPath string) map[string]int {
-	content, err := os.ReadFile(specPath)
-	if err != nil {
-		return map[string]int{}
-	}
-
-	lines := strings.Split(string(content), "\n")
-	orders := make(map[string]int)
-
-	inTaskList := false
-	order := 0
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		if trimmed == "## Task List" {
-			inTaskList = true
-			continue
-		}
-
-		if inTaskList && strings.HasPrefix(trimmed, "## ") && !strings.HasPrefix(trimmed, "### ") {
-			break
-		}
-
-		if !inTaskList || !strings.HasPrefix(trimmed, "### ") {
-			continue
-		}
-
-		sectionName := strings.TrimSpace(strings.TrimPrefix(trimmed, "### "))
-		if _, exists := orders[sectionName]; exists {
-			continue
-		}
-
-		order++
-		orders[sectionName] = order
-	}
-
-	return orders
 }
 
 func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task) string {

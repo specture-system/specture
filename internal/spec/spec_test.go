@@ -608,3 +608,58 @@ func TestParseContent_ExtractsName(t *testing.T) {
 		t.Errorf("expected name 'My Great Feature', got %q", info.Name)
 	}
 }
+
+func TestTaskListSectionOrders(t *testing.T) {
+	tmpDir := t.TempDir()
+	specPath := filepath.Join(tmpDir, "spec.md")
+
+	content := `---
+number: 7
+status: in-progress
+---
+
+# Test
+
+## Task List
+
+### CLI and Planning
+
+- [x] done
+
+### Branch and Task Execution
+
+- [ ] remaining
+
+### Branch and Task Execution
+
+- [ ] duplicate heading ignored
+
+## Notes
+
+### Outside Task List
+`
+
+	if err := os.WriteFile(specPath, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write spec file: %v", err)
+	}
+
+	orders := TaskListSectionOrders(specPath)
+	if len(orders) != 2 {
+		t.Fatalf("expected 2 section orders, got %d", len(orders))
+	}
+
+	if orders["CLI and Planning"] != 1 {
+		t.Fatalf("expected CLI and Planning to be order 1, got %d", orders["CLI and Planning"])
+	}
+
+	if orders["Branch and Task Execution"] != 2 {
+		t.Fatalf("expected Branch and Task Execution to be order 2, got %d", orders["Branch and Task Execution"])
+	}
+}
+
+func TestTaskListSectionOrders_MissingFileReturnsEmptyMap(t *testing.T) {
+	orders := TaskListSectionOrders("/tmp/does-not-exist/spec.md")
+	if len(orders) != 0 {
+		t.Fatalf("expected empty section order map, got %d entries", len(orders))
+	}
+}

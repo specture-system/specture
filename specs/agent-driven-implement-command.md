@@ -1,6 +1,6 @@
 ---
 number: 7
-status: in-progress
+status: completed
 author: Addison Emig
 creation_date: 2026-03-12
 approved_by: Addison Emig
@@ -154,8 +154,10 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 
 - [x] Add failing tests for `in-progress` transition, task checkbox updates, and deterministic task commits
 - [x] Implement spec status updates and task completion commits so each accepted task updates the spec in the same commit as its implementation
+- [x] Handle commit-hook failures for accepted tasks by looping worker-assisted fixes up to 5 times before aborting
 - [x] Add failing tests for section-level review, single-retry behavior, strict push gating, and push failure handling
 - [x] Implement section-level review with exactly 1 revision retry on critical issues, then push the completed section branch and stop immediately if that push fails
+- [x] Push the final section branch again after final cleanup so cleanup and completion-marker commits are published
 
 ### Task Structure and Validation
 

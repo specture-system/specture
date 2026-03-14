@@ -17,6 +17,7 @@ import (
 )
 
 const maxWorkerPassesPerTask = 3
+const maxCommitFixPassesPerTask = 5
 const maxSectionReviewPasses = 2
 
 const finalCleanupSectionName = "Final Cleanup"
@@ -214,12 +215,8 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 				return fmt.Errorf("failed to update spec progress for task %q: %w", task.Text, err)
 			}
 
-			if err := deps.stageAll(workDir); err != nil {
-				return fmt.Errorf("failed to stage accepted task %q: %w", task.Text, err)
-			}
-
-			if err := deps.commit(workDir, taskCommitMessage(info.Number, task.Text)); err != nil {
-				return fmt.Errorf("failed to commit accepted task %q: %w", task.Text, err)
+			if err := commitAcceptedTaskWithRetries(workDir, info, section.Name, backend, task, printf, deps); err != nil {
+				return err
 			}
 
 			if nextStatus == StatusInProgress {
@@ -247,6 +244,9 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 	if len(plan.Sections) > 0 {
 		if err := executeFinalCleanupPass(workDir, info, plan.Sections, backend, parentBranch, lastSectionParentBranch, printf, deps); err != nil {
 			return err
+		}
+		if err := deps.pushBranch(workDir, parentBranch); err != nil {
+			return fmt.Errorf("failed to push final section branch %q after cleanup: %w", parentBranch, err)
 		}
 	}
 
@@ -373,6 +373,72 @@ func executeSectionReview(workDir string, info *specpkg.SpecInfo, backend string
 	}
 
 	return nil
+}
+
+func commitAcceptedTaskWithRetries(workDir string, info *specpkg.SpecInfo, sectionName, backend string, task specpkg.Task, printf PrintfFunc, deps executeDeps) error {
+	if err := deps.stageAll(workDir); err != nil {
+		return fmt.Errorf("failed to stage accepted task %q: %w", task.Text, err)
+	}
+
+	commitMessage := taskCommitMessage(info.Number, task.Text)
+	commitErr := deps.commit(workDir, commitMessage)
+	if commitErr == nil {
+		return nil
+	}
+
+	lastErr := commitErr
+	for pass := 1; pass <= maxCommitFixPassesPerTask; pass++ {
+		commitFailure := strings.TrimSpace(lastErr.Error())
+		if printf != nil {
+			printf("    commit failed for task %q; worker fix pass %d/%d started\n", task.Text, pass, maxCommitFixPassesPerTask)
+		}
+
+		changedFiles, err := collectChangedFiles(deps.changedFiles, workDir, task.Text, pass, "before commit-failure worker")
+		if err != nil {
+			return err
+		}
+
+		workerPrompt, err := buildWorkerPrompt(
+			info.Path,
+			sectionName,
+			task,
+			fmt.Sprintf("Commit failed after task acceptance. Fix the underlying issue and ensure commit hooks pass.\n\nCommit failure output:\n%s", commitFailure),
+			changedFiles,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to build worker prompt for task %q after commit failure: %w", task.Text, err)
+		}
+
+		if _, err := deps.invokeAgent(AgentInvocation{
+			Backend:     backend,
+			Role:        AgentRoleWorker,
+			SpecPath:    info.Path,
+			SectionName: sectionName,
+			TaskText:    task.Text,
+			Attempt:     maxWorkerPassesPerTask + pass,
+			Prompt:      workerPrompt,
+		}); err != nil {
+			return fmt.Errorf("worker fix pass %d failed for task %q after commit failure: %w", pass, task.Text, err)
+		}
+		if printf != nil {
+			printf("    commit-failure worker fix pass %d/%d completed for task: %s\n", pass, maxCommitFixPassesPerTask, task.Text)
+		}
+
+		if err := deps.stageAll(workDir); err != nil {
+			return fmt.Errorf("failed to stage commit-failure fixes for task %q: %w", task.Text, err)
+		}
+
+		commitErr = deps.commit(workDir, commitMessage)
+		if commitErr == nil {
+			if printf != nil {
+				printf("    commit succeeded after %d commit-failure fix pass(es) for task: %s\n", pass, task.Text)
+			}
+			return nil
+		}
+		lastErr = commitErr
+	}
+
+	return fmt.Errorf("failed to commit accepted task %q after %d commit-failure fix passes: %w", task.Text, maxCommitFixPassesPerTask, lastErr)
 }
 
 func executeFinalCleanupPass(workDir string, info *specpkg.SpecInfo, sections []RemainingSection, backend, currentBranch, parentBranch string, printf PrintfFunc, deps executeDeps) error {

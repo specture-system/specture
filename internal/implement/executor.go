@@ -200,7 +200,7 @@ func invokeAgentCLI(invocation AgentInvocation) (AgentResult, error) {
 
 func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task) string {
 	return fmt.Sprintf(
-		"Implement the following Specture task.\n\nSpec Path: %s\nSection: %s\nTask: %s\n\nConstraints:\n- You must not edit the spec file.\n- You must not create commits.\n- Focus only on changes needed for this task.",
+		"Implement the following Specture task.\n\nSpec Path: %s\nSection: %s\nTask: %s\n\nConstraints:\n- You must not edit the spec file.\n- You must not create commits.\n- When the task is amenable to automated testing, follow test-driven development: write failing tests first, then implement until the tests pass, then refactor.\n- Focus only on changes needed for this task.",
 		specPath,
 		displaySectionName(sectionName),
 		task.Text,
@@ -209,7 +209,7 @@ func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task) string {
 
 func buildReviewPrompt(specPath, sectionName string, task specpkg.Task) string {
 	return fmt.Sprintf(
-		"Review the latest implementation changes for this Specture task.\n\nSpec Path: %s\nSection: %s\nTask: %s\n\nOnly block on critical issues (correctness, security, data loss, build/test breakage). Ignore nits.\nRespond with REVIEW_CRITICAL if critical issues remain, otherwise REVIEW_OK.",
+		"Review the latest implementation changes for this Specture task.\n\nSpec Path: %s\nSection: %s\nTask: %s\n\nVerify that the changes correctly and completely address the task described above. Only block on critical issues (task not fulfilled, correctness, security, data loss, build/test breakage). Ignore nits.\nRespond with REVIEW_CRITICAL if critical issues remain, otherwise REVIEW_OK.",
 		specPath,
 		displaySectionName(sectionName),
 		task.Text,

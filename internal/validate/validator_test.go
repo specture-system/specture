@@ -284,7 +284,7 @@ status: draft
 
 	found := false
 	for _, e := range result.Errors {
-		if e.Field == "task list" && strings.Contains(e.Message, "must appear under a '###' section") {
+		if e.Field == "task list" && strings.Contains(e.Message, "must be organized into '###' sections") {
 			found = true
 			break
 		}
@@ -321,7 +321,7 @@ status: draft
 
 	result := ValidateSpec(spec)
 	for _, e := range result.Errors {
-		if e.Field == "task list" && strings.Contains(e.Message, "must appear under a '###' section") {
+		if e.Field == "task list" && strings.Contains(e.Message, "must be organized into '###' sections") {
 			t.Fatalf("unexpected sectioning error: %v", e)
 		}
 	}

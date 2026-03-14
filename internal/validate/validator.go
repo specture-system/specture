@@ -104,7 +104,7 @@ func ValidateSpec(spec *Spec) *ValidationResult {
 	} else if !allTopLevelTaskCheckboxesAreSectioned(spec.Source) {
 		result.Errors = append(result.Errors, ValidationError{
 			Field:   "task list",
-			Message: "every top-level checkbox in '## Task List' must appear under a '###' section",
+			Message: "'## Task List' must be organized into '###' sections (every top-level checkbox must be under a section)",
 		})
 	}
 

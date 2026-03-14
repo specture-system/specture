@@ -89,9 +89,9 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
   - Matches the workflow expectation that each completed task produces a deterministic commit with the corresponding spec checkbox update
   - Keeps task review and retry loops focused on a single unit of progress
 - Additionally: The commit-sized orchestration unit is the top-level checkbox in a task-list section
-  - Nested checkboxes and nested bullets are part of the parent task's acceptance criteria, not separate orchestration units
-  - Worker and reviewer prompts must include the full nested subtree for the parent task
-  - Accepting a parent task means marking its full nested subtree complete in the same spec update
+  - Nested checkboxes and nested bullets at any depth are part of the parent task's acceptance criteria, not separate orchestration units
+  - Worker and reviewer prompts must include the full nested subtree for the parent task across all nesting levels
+  - Accepting a parent task means marking its full nested subtree complete in the same spec update, including descendants at every depth
 - Considered: Allow arbitrarily large tasks to span many commits
   - Weakens the task-to-commit linkage that the command is designed to enforce
 
@@ -161,8 +161,8 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 
 - [ ] Update the `implement` command to support nested checkboxes in the task list
   - [ ] Treat each top-level checkbox as one implementation, review, and commit unit
-  - [ ] Include nested checkboxes and nested bullets in the worker and reviewer context for the parent top-level task
-  - [ ] Mark the full nested subtree complete when the parent top-level task is accepted
+  - [ ] Include nested checkboxes and nested bullets at every depth in the worker and reviewer context for the parent top-level task
+  - [ ] Mark the full nested subtree complete when the parent top-level task is accepted, including descendants at every depth
 - [ ] Update the `validate` command to require every top-level task-list checkbox to appear under a `###` section
 
 ### CLI Polish

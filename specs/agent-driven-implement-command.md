@@ -101,48 +101,31 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 
 ## Task List
 
-### CLI Surface
+### CLI and Planning
 
-- [ ] Add `specture implement --spec N [--agent opencode|codex]`
-- [ ] Require `--spec` and make `--agent` optional with backend auto-detection order `opencode`, then `codex`
-- [ ] Exit early unless the target spec status is `approved` or `in-progress`
+- [ ] Add failing tests for `implement` command validation and allowed spec statuses
+- [ ] Add `specture implement --spec N [--agent opencode|codex]` to satisfy those tests
+- [ ] Add failing tests for loading a spec and enumerating remaining sections and tasks
+- [ ] Implement remaining-section and remaining-task planning
+- [ ] Add failing tests for backend auto-detection and `--agent` override
+- [ ] Implement backend selection with priority order `opencode`, then `codex`
 
-### Orchestration Engine
+### Branch and Task Execution
 
-- [ ] Add an internal implementation package to load specs, enumerate remaining sections/tasks, and drive the orchestration loop
-- [ ] Create deterministic section branches named from the spec number and section slug
-- [ ] Base the first section branch on the current branch and each later section branch on the previously completed section branch
-- [ ] Fail closed on rerun unless the expected section branch and checked task state match unambiguously, and abort on dirty worktree or other ambiguous partial state
-- [ ] Update spec status to `in-progress` when implementation starts for an approved spec
-- [ ] Mark each task checkbox complete only after its review passes, and include that spec update in the same deterministic commit as the implementation changes
-- [ ] Update the spec status to `completed` in the final successful commit when all remaining tasks are done
-
-### Agent Execution
-
-- [ ] Implement worker-agent invocation that passes the current task, relevant section context, and spec file path
-- [ ] Instruct worker agents to use TDD when relevant and to avoid editing the spec or creating commits
+- [ ] Add failing tests for deterministic section branch naming, clean-worktree checks, and fail-closed rerun behavior
+- [ ] Implement section branch creation, clean-worktree enforcement, and rerun validation
+- [ ] Add failing tests for worker invocation and task-level retry behavior when review finds critical issues
+- [ ] Implement worker-agent invocation that passes the current task, section context, and spec path, and instructs workers to avoid editing the spec or creating commits
 - [ ] Implement task-level review-agent invocation and rerun the worker up to 3 total passes only when review finds critical issues
-- [ ] Implement section-level review with exactly 1 revision retry before failing the section, where only critical issues count as failure
-- [ ] Stop on unresolved task or section failures and leave the current branch for manual follow-up
 
-### Backend Integration
+### Spec Updates and Section Delivery
 
-- [ ] Auto-detect installed agent CLIs in priority order `opencode`, then `codex`
-- [ ] Support explicit backend override via `--agent`
-- [ ] Use `codex exec` for worker runs and `codex review --uncommitted` for review runs where applicable
-- [ ] Use `opencode run` for both worker and review runs with role-specific prompts
+- [ ] Add failing tests for `in-progress` transition, task checkbox updates, and deterministic task commits
+- [ ] Implement spec status updates and task completion commits so each accepted task updates the spec in the same commit as its implementation
+- [ ] Add failing tests for section-level review, single-retry behavior, strict push gating, and push failure handling
+- [ ] Implement section-level review with exactly 1 revision retry on critical issues, then push the completed section branch and stop immediately if that push fails
 
-### Git and Commit Management
+### Completion
 
-- [ ] Generate deterministic conventional commit messages based on task or revision context
-- [ ] Push each successfully completed section branch automatically and stop immediately if that push fails
-- [ ] Require a clean git worktree before starting implementation
-
-### Testing
-
-- [ ] Add tests for command validation, backend auto-detection, and backend override behavior
-- [ ] Add tests for remaining-section and remaining-task enumeration
-- [ ] Add tests for fail-closed rerun behavior and ambiguous partial-state detection
-- [ ] Add tests for task retry limits and single-retry section review behavior
-- [ ] Add tests for spec status/checkbox updates and final completion status handling
-- [ ] Add tests for deterministic branch naming, commit generation, strict push gating, and push failure behavior
+- [ ] Add failing tests for final `completed` status handling
+- [ ] Implement the final completion update when all remaining tasks are done

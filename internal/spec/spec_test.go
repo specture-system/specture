@@ -99,6 +99,22 @@ func TestParseTasks_IndentedSubTasksSkipped(t *testing.T) {
 	}
 }
 
+func TestParseTasks_TopLevelTasksIncludeNestedSubtree(t *testing.T) {
+	content := buildSpec("", "Test", "- [ ] Top-level task\n  - [ ] Sub-task 1\n    - Nested bullet detail\n  - [x] Sub-task 2\n- [ ] Another top-level")
+	info, err := ParseContent("001-test.md", content)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(info.IncompleteTasks) != 2 {
+		t.Fatalf("expected 2 incomplete top-level tasks, got %d", len(info.IncompleteTasks))
+	}
+
+	wantSubtree := "- [ ] Top-level task\n  - [ ] Sub-task 1\n    - Nested bullet detail\n  - [x] Sub-task 2"
+	if info.IncompleteTasks[0].Subtree != wantSubtree {
+		t.Fatalf("unexpected subtree:\n--- got ---\n%s\n--- want ---\n%s", info.IncompleteTasks[0].Subtree, wantSubtree)
+	}
+}
+
 func TestParseTasks_SectionField(t *testing.T) {
 	content := buildSpec("", "Test", "### Phase 1\n\n- [x] Task A\n- [ ] Task B\n\n### Phase 2\n\n- [ ] Task C")
 	info, err := ParseContent("001-test.md", content)

@@ -88,8 +88,38 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 - Chosen: Specs intended for `implement` should define tasks as roughly one commit-sized unit of work
   - Matches the workflow expectation that each completed task produces a deterministic commit with the corresponding spec checkbox update
   - Keeps task review and retry loops focused on a single unit of progress
+- Additionally: The commit-sized orchestration unit is the top-level checkbox in a task-list section
+  - Nested checkboxes and nested bullets are part of the parent task's acceptance criteria, not separate orchestration units
+  - Worker and reviewer prompts must include the full nested subtree for the parent task
+  - Accepting a parent task means marking its full nested subtree complete in the same spec update
 - Considered: Allow arbitrarily large tasks to span many commits
   - Weakens the task-to-commit linkage that the command is designed to enforce
+
+### Sectioned task-list requirement
+
+- Chosen: Require every top-level task-list checkbox to appear under a `###` section
+  - Keeps section planning and branch sequencing deterministic
+  - Prevents ambiguous unsectioned tasks from bypassing section-based orchestration
+  - Allows nested checkbox trees while still assigning each top-level task to one section
+- Considered: Allow unsectioned top-level tasks in `## Task List`
+  - Makes section-based planning and validation less reliable
+
+### Dry-run scope
+
+- Chosen: `implement --dry-run` computes and prints the execution plan, then exits before making any changes
+  - Preserves the safety expectation that dry-run mode performs no git mutations, agent invocations, spec edits, commits, or pushes
+  - Still lets users validate backend selection and remaining work before execution
+- Considered: Simulate the full orchestration loop while only suppressing writes
+  - Adds complexity without improving the core planning preview use case
+
+### Final cleanup pass
+
+- Chosen: After all sections are complete, run one final cleanup review and one cleanup worker pass, then create a final refactor commit
+  - Provides one bounded opportunity to simplify or polish the completed implementation
+  - Keeps cleanup deterministic by avoiding retries and follow-up review loops
+  - Focuses cleanup on unnecessary abstraction, clear `AGENTS.md` guideline violations, and low-risk maintainability improvements
+- Considered: Reuse the same retry-and-review loop as section execution
+  - Turns final cleanup into another open-ended gate instead of a bounded polish pass
 
 ### Spec state updates during implementation
 
@@ -127,15 +157,30 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 - [x] Add failing tests for section-level review, single-retry behavior, strict push gating, and push failure handling
 - [x] Implement section-level review with exactly 1 revision retry on critical issues, then push the completed section branch and stop immediately if that push fails
 
-### Clean Up and Polish
+### Task Structure and Validation
 
-- [ ] Improve help message for the `implement` command
+- [ ] Update the `implement` command to support nested checkboxes in the task list
+  - [ ] Treat each top-level checkbox as one implementation, review, and commit unit
+  - [ ] Include nested checkboxes and nested bullets in the worker and reviewer context for the parent top-level task
+  - [ ] Mark the full nested subtree complete when the parent top-level task is accepted
+- [ ] Update the `validate` command to require every top-level task-list checkbox to appear under a `###` section
+
+### CLI Polish
+
+- [ ] Improve the help message for the `implement` command
   - [ ] Mention that it is an agent orchestrator
   - [ ] Include example usage
-- [ ] Add `--dry-run` support to `implement` command
-- [ ] Improving naming of new template files
-  - [ ] `task-` prefix
-  - [ ] `section-` prefix
+- [ ] Add `--dry-run` support to `implement` so it prints the execution plan and exits before making changes
+- [ ] Rename the new implement prompt templates to use `task-` and `section-` prefixes, and update related code
+
+### Final Cleanup
+
+- [ ] Add a final "clean up" stage after all sections are completed
+  - [ ] Run one final cleanup review for refactor opportunities in the completed work
+  - [ ] Focus the cleanup review on unnecessary abstraction, clear `AGENTS.md` guideline violations, and low-risk maintainability improvements
+  - [ ] Run one cleanup worker pass to implement the recommended refactors
+  - [ ] Create a final refactor commit for the cleanup pass
+  - [ ] Do not retry or re-review after the cleanup pass
 
 ### Completion
 

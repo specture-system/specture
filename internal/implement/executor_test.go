@@ -172,6 +172,9 @@ func TestExecuteTaskWithReview_InvokesWorkerAndReviewerWithContext(t *testing.T)
 	if !strings.Contains(invocations[0].Prompt, "Task Subtree:") {
 		t.Fatalf("worker prompt missing task subtree header: %s", invocations[0].Prompt)
 	}
+	if strings.Contains(invocations[0].Prompt, "Prior critical review findings:") {
+		t.Fatalf("worker prompt should not include prior critical findings on first pass: %s", invocations[0].Prompt)
+	}
 	if !strings.Contains(invocations[0].Prompt, "  - [ ] Include nested checkbox context") {
 		t.Fatalf("worker prompt missing nested checkbox context: %s", invocations[0].Prompt)
 	}
@@ -215,6 +218,38 @@ func TestExecuteTaskWithReview_RetriesWorkerUpToThreePassesOnCriticalReview(t *t
 	}
 	if reviewCalls != 3 {
 		t.Fatalf("expected 3 review calls, got %d", reviewCalls)
+	}
+}
+
+func TestExecuteTaskWithReview_PassesPriorCriticalReviewFeedbackToNextWorkerPass(t *testing.T) {
+	task := specpkg.Task{Text: "Implement retry behavior"}
+	var workerPrompts []string
+	reviewCalls := 0
+
+	err := ExecuteTaskWithReview("specs/agent.md", "Branch and Task Execution", BackendOpencode, task, nil, func(invocation AgentInvocation) (AgentResult, error) {
+		if invocation.Role == AgentRoleWorker {
+			workerPrompts = append(workerPrompts, invocation.Prompt)
+			return AgentResult{}, nil
+		}
+
+		reviewCalls++
+		if reviewCalls == 1 {
+			return AgentResult{CriticalIssues: true, Output: "REVIEW_CRITICAL: missing tests"}, nil
+		}
+		return AgentResult{CriticalIssues: false, Output: "REVIEW_OK"}, nil
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(workerPrompts) != 2 {
+		t.Fatalf("expected 2 worker prompts, got %d", len(workerPrompts))
+	}
+	if strings.Contains(workerPrompts[0], "Prior critical review findings:") {
+		t.Fatalf("first worker prompt should not include prior critical findings: %s", workerPrompts[0])
+	}
+	if !strings.Contains(workerPrompts[1], "Prior critical review findings:\nREVIEW_CRITICAL: missing tests") {
+		t.Fatalf("second worker prompt missing prior critical findings context: %s", workerPrompts[1])
 	}
 }
 

@@ -64,12 +64,14 @@ func SectionBranchName(specNumber int, sectionName string, sectionNumber int) st
 }
 
 func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.Task, printf PrintfFunc, invokeAgent func(invocation AgentInvocation) (AgentResult, error)) error {
+	priorCriticalReviewOutput := ""
+
 	for pass := 1; pass <= maxWorkerPassesPerTask; pass++ {
 		if printf != nil {
 			printf("    worker pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
 		}
 
-		workerPrompt, err := buildWorkerPrompt(specPath, sectionName, task)
+		workerPrompt, err := buildWorkerPrompt(specPath, sectionName, task, priorCriticalReviewOutput)
 		if err != nil {
 			return fmt.Errorf("failed to build worker prompt for task %q: %w", task.Text, err)
 		}
@@ -117,6 +119,7 @@ func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.T
 			}
 			return nil
 		}
+		priorCriticalReviewOutput = reviewResult.Output
 
 		if printf != nil {
 			printf("  critical issues found for task %q on pass %d; retrying\n", task.Text, pass)
@@ -357,12 +360,12 @@ func invokeAgentCLI(invocation AgentInvocation) (AgentResult, error) {
 	}, nil
 }
 
-func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task) (string, error) {
-	return renderPromptTemplate(templatespkg.GetImplementWorkerPromptTemplate, specPath, sectionName, task)
+func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task, reviewOutput string) (string, error) {
+	return renderPromptTemplate(templatespkg.GetImplementWorkerPromptTemplate, specPath, sectionName, task, reviewOutput)
 }
 
 func buildReviewPrompt(specPath, sectionName string, task specpkg.Task) (string, error) {
-	return renderPromptTemplate(templatespkg.GetImplementReviewPromptTemplate, specPath, sectionName, task)
+	return renderPromptTemplate(templatespkg.GetImplementReviewPromptTemplate, specPath, sectionName, task, "")
 }
 
 func buildSectionReviewPrompt(specPath, sectionName string, tasks []specpkg.Task) (string, error) {
@@ -401,22 +404,24 @@ func buildSectionWorkerPrompt(specPath, sectionName string, tasks []specpkg.Task
 	})
 }
 
-func renderPromptTemplate(loadTemplate func() (string, error), specPath, sectionName string, task specpkg.Task) (string, error) {
+func renderPromptTemplate(loadTemplate func() (string, error), specPath, sectionName string, task specpkg.Task, reviewOutput string) (string, error) {
 	promptTemplate, err := loadTemplate()
 	if err != nil {
 		return "", err
 	}
 
 	return templatepkg.RenderTemplate(promptTemplate, struct {
-		SpecPath    string
-		SectionName string
-		TaskText    string
-		TaskSubtree string
+		SpecPath     string
+		SectionName  string
+		TaskText     string
+		TaskSubtree  string
+		ReviewOutput string
 	}{
-		SpecPath:    specPath,
-		SectionName: displaySectionName(sectionName),
-		TaskText:    task.Text,
-		TaskSubtree: task.Subtree,
+		SpecPath:     specPath,
+		SectionName:  displaySectionName(sectionName),
+		TaskText:     task.Text,
+		TaskSubtree:  task.Subtree,
+		ReviewOutput: strings.TrimSpace(reviewOutput),
 	})
 }
 

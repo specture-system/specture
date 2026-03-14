@@ -6,6 +6,11 @@ Task: {{.TaskText}}
 Task Subtree:
 {{.TaskSubtree}}
 
+{{- if .ReviewOutput}}
+Prior critical review findings:
+{{.ReviewOutput}}
+{{- end}}
+
 Instructions:
 - Treat the current checkout as the source of truth. Preserve existing accepted changes already present in the branch.
 - Implement only the work required for this task. Do not intentionally modify unrelated behavior or refactor unrelated code.

@@ -218,35 +218,28 @@ func TestExecuteTaskWithReview_RetriesWorkerUpToThreePassesOnCriticalReview(t *t
 	}
 }
 
-func TestExecuteTaskWithReview_PrintsWorkerAndReviewPassProgress(t *testing.T) {
+func TestExecuteTaskWithReview_UsesImplementingAndReviewingWording(t *testing.T) {
 	task := specpkg.Task{Text: "Implement retry behavior"}
 	var logs strings.Builder
 
-	err := ExecuteTaskWithReview(
-		"specs/agent.md",
-		"Branch and Task Execution",
-		BackendOpencode,
-		task,
-		func(format string, args ...any) {
-			logs.WriteString(fmt.Sprintf(format, args...))
-		},
-		func(invocation AgentInvocation) (AgentResult, error) {
-			if invocation.Role == AgentRoleReviewer {
-				return AgentResult{CriticalIssues: false}, nil
-			}
-			return AgentResult{}, nil
-		},
-	)
+	err := ExecuteTaskWithReview("specs/agent.md", "Branch and Task Execution", BackendOpencode, task, func(format string, args ...any) {
+		logs.WriteString(fmt.Sprintf(format, args...))
+	}, func(invocation AgentInvocation) (AgentResult, error) {
+		if invocation.Role == AgentRoleReviewer {
+			return AgentResult{CriticalIssues: false}, nil
+		}
+		return AgentResult{}, nil
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	output := logs.String()
 	expected := []string{
-		"worker pass 1/3 started for task: Implement retry behavior",
-		"worker pass 1/3 completed for task: Implement retry behavior",
-		"review pass 1/3 started for task: Implement retry behavior",
-		"review pass 1/3 completed for task: Implement retry behavior",
+		"implementing pass 1/3 started for task: Implement retry behavior",
+		"implementing pass 1/3 completed for task: Implement retry behavior",
+		"reviewing pass 1/3 started for task: Implement retry behavior",
+		"reviewing pass 1/3 completed for task: Implement retry behavior",
 		"task review feedback (pass 1):",
 		"(no reviewer output)",
 		"task accepted after 1 pass(es): Implement retry behavior",

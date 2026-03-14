@@ -66,7 +66,7 @@ func SectionBranchName(specNumber int, sectionName string, sectionNumber int) st
 func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.Task, printf PrintfFunc, invokeAgent func(invocation AgentInvocation) (AgentResult, error)) error {
 	for pass := 1; pass <= maxWorkerPassesPerTask; pass++ {
 		if printf != nil {
-			printf("    worker pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
+			printf("    implementing pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
 		}
 
 		workerPrompt, err := buildWorkerPrompt(specPath, sectionName, task)
@@ -86,14 +86,18 @@ func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.T
 			return fmt.Errorf("worker pass %d failed for task %q: %w", pass, task.Text, err)
 		}
 		if printf != nil {
-			printf("    worker pass %d/%d completed for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
-			printf("    review pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
+			printf("    implementing pass %d/%d completed for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
+			printf("    reviewing pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
 		}
 
 		reviewPrompt, err := buildReviewPrompt(specPath, sectionName, task)
 		if err != nil {
 			return fmt.Errorf("failed to build review prompt for task %q: %w", task.Text, err)
 		}
+		if printf != nil {
+			printf("    reviewing pass %d/%d for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
+		}
+
 		reviewResult, err := invokeAgent(AgentInvocation{
 			Backend:     backend,
 			Role:        AgentRoleReviewer,
@@ -107,7 +111,7 @@ func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.T
 			return fmt.Errorf("review pass %d failed for task %q: %w", pass, task.Text, err)
 		}
 		if printf != nil {
-			printf("    review pass %d/%d completed for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
+			printf("    reviewing pass %d/%d completed for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
 			printReviewFeedback(printf, "task", pass, reviewResult.Output)
 		}
 
@@ -154,7 +158,7 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 
 		for taskIdx, task := range section.Tasks {
 			if printf != nil {
-				printf("  running task %d/%d: %s\n", taskIdx+1, len(section.Tasks), task.Text)
+				printf("  implementing task %d/%d: %s\n", taskIdx+1, len(section.Tasks), task.Text)
 			}
 
 			if err := ExecuteTaskWithReview(info.Path, section.Name, backend, task, printf, deps.invokeAgent); err != nil {

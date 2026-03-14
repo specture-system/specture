@@ -11,6 +11,8 @@ func TestImplementPromptTemplatesUseTaskAndSectionPrefixes(t *testing.T) {
 		{name: "task review", filename: "task-review-prompt.md"},
 		{name: "section worker", filename: "section-worker-prompt.md"},
 		{name: "section review", filename: "section-review-prompt.md"},
+		{name: "cleanup worker", filename: "cleanup-worker-prompt.md"},
+		{name: "cleanup review", filename: "cleanup-review-prompt.md"},
 	}
 
 	for _, tt := range tests {

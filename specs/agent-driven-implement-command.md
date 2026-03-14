@@ -48,6 +48,7 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 - Chosen: Create a branch for each remaining section, with later section branches based on the previously completed section branch
   - Preserves the exact workflow requested for staged section delivery
   - Allows each completed section to be pushed immediately while carrying earlier work forward
+  - Reruns fail closed by default and only resume when the expected section branch and checked task state match unambiguously
 - Considered: Branch every section from the original base branch
   - Would require replaying or merging prior section work into later branches
   - Makes sequential implementation more cumbersome
@@ -67,8 +68,26 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 - Chosen: Allow up to 3 worker passes per task, and only 1 retry for section-level review
   - Gives tasks enough room to converge automatically
   - Prevents section-level review loops from becoming nit-picky or over-optimized
+  - Review failure only means critical issues were found; minor concerns and nitpicks do not block progress
 - Considered: Multiple section-level retries
   - Increases runtime and churn with diminishing returns
+
+### Strict push gating between sections
+
+- Chosen: Require each completed section branch to push successfully before starting the next section
+  - Keeps local and remote branch progression aligned for PR review as implementation advances
+  - Avoids later section branches depending on unpublished local history
+- Considered: Continue to later sections after a push failure
+  - Leaves remote review state out of sync with local section sequencing
+  - Makes staged PR review less reliable
+
+### Task sizing for deterministic commits
+
+- Chosen: Specs intended for `implement` should define tasks as roughly one commit-sized unit of work
+  - Matches the workflow expectation that each completed task produces a deterministic commit with the corresponding spec checkbox update
+  - Keeps task review and retry loops focused on a single unit of progress
+- Considered: Allow arbitrarily large tasks to span many commits
+  - Weakens the task-to-commit linkage that the command is designed to enforce
 
 ### Spec state updates during implementation
 
@@ -93,6 +112,7 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 - [ ] Add an internal implementation package to load specs, enumerate remaining sections/tasks, and drive the orchestration loop
 - [ ] Create deterministic section branches named from the spec number and section slug
 - [ ] Base the first section branch on the current branch and each later section branch on the previously completed section branch
+- [ ] Fail closed on rerun unless the expected section branch and checked task state match unambiguously, and abort on dirty worktree or other ambiguous partial state
 - [ ] Update spec status to `in-progress` when implementation starts for an approved spec
 - [ ] Mark each task checkbox complete only after its review passes, and include that spec update in the same deterministic commit as the implementation changes
 - [ ] Update the spec status to `completed` in the final successful commit when all remaining tasks are done
@@ -101,8 +121,8 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 
 - [ ] Implement worker-agent invocation that passes the current task, relevant section context, and spec file path
 - [ ] Instruct worker agents to use TDD when relevant and to avoid editing the spec or creating commits
-- [ ] Implement task-level review-agent invocation and rerun the worker up to 3 total passes when review fails
-- [ ] Implement section-level review with exactly 1 revision retry before failing the section
+- [ ] Implement task-level review-agent invocation and rerun the worker up to 3 total passes only when review finds critical issues
+- [ ] Implement section-level review with exactly 1 revision retry before failing the section, where only critical issues count as failure
 - [ ] Stop on unresolved task or section failures and leave the current branch for manual follow-up
 
 ### Backend Integration
@@ -115,13 +135,14 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 ### Git and Commit Management
 
 - [ ] Generate deterministic conventional commit messages based on task or revision context
-- [ ] Push each successfully completed section branch automatically
+- [ ] Push each successfully completed section branch automatically and stop immediately if that push fails
 - [ ] Require a clean git worktree before starting implementation
 
 ### Testing
 
 - [ ] Add tests for command validation, backend auto-detection, and backend override behavior
 - [ ] Add tests for remaining-section and remaining-task enumeration
+- [ ] Add tests for fail-closed rerun behavior and ambiguous partial-state detection
 - [ ] Add tests for task retry limits and single-retry section review behavior
 - [ ] Add tests for spec status/checkbox updates and final completion status handling
-- [ ] Add tests for deterministic branch naming, commit generation, and push behavior
+- [ ] Add tests for deterministic branch naming, commit generation, strict push gating, and push failure behavior

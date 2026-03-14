@@ -566,10 +566,10 @@ func TestParseContent_NumberFromFrontmatter(t *testing.T) {
 			wantNumber: -1,
 		},
 		{
-			name:       "negative number is invalid",
-			content:    buildSpec("number: -1\nstatus: draft", "Test", ""),
-			path:       "test.md",
-			wantErr:    true,
+			name:    "negative number is invalid",
+			content: buildSpec("number: -1\nstatus: draft", "Test", ""),
+			path:    "test.md",
+			wantErr: true,
 		},
 		{
 			name:       "no frontmatter defaults to -1",

@@ -1,8 +1,10 @@
 ---
 number: 7
-status: draft
+status: approved
 author: Addison Emig
 creation_date: 2026-03-12
+approved_by: Addison Emig
+approval_date: 2025-03-14
 ---
 
 # Agent-Driven Implement Command
@@ -103,12 +105,12 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 
 ### CLI and Planning
 
-- [ ] Add failing tests for `implement` command validation and allowed spec statuses
-- [ ] Add `specture implement --spec N [--agent opencode|codex]` to satisfy those tests
-- [ ] Add failing tests for loading a spec and enumerating remaining sections and tasks
-- [ ] Implement remaining-section and remaining-task planning
-- [ ] Add failing tests for backend auto-detection and `--agent` override
-- [ ] Implement backend selection with priority order `opencode`, then `codex`
+- [x] Add failing tests for `implement` command validation and allowed spec statuses
+- [x] Add `specture implement --spec N [--agent opencode|codex]` to satisfy those tests
+- [x] Add failing tests for loading a spec and enumerating remaining sections and tasks
+- [x] Implement remaining-section and remaining-task planning
+- [x] Add failing tests for backend auto-detection and `--agent` override
+- [x] Implement backend selection with priority order `opencode`, then `codex`
 
 ### Branch and Task Execution
 

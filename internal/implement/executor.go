@@ -76,7 +76,16 @@ func executeTaskWithReviewWithContext(workDir, specPath, sectionName, backend st
 			printf("    worker pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
 		}
 
-		workerPrompt, err := buildWorkerPrompt(specPath, sectionName, task, priorCriticalReviewOutput)
+		taskChangedFiles := []string{}
+		if changedFiles != nil {
+			files, err := changedFiles(workDir)
+			if err != nil {
+				return fmt.Errorf("failed to collect changed files for task %q before worker pass %d: %w", task.Text, pass, err)
+			}
+			taskChangedFiles = files
+		}
+
+		workerPrompt, err := buildWorkerPrompt(specPath, sectionName, task, priorCriticalReviewOutput, taskChangedFiles)
 		if err != nil {
 			return fmt.Errorf("failed to build worker prompt for task %q: %w", task.Text, err)
 		}
@@ -97,7 +106,7 @@ func executeTaskWithReviewWithContext(workDir, specPath, sectionName, backend st
 			printf("    review pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
 		}
 
-		taskChangedFiles := []string{}
+		taskChangedFiles = []string{}
 		if changedFiles != nil {
 			files, err := changedFiles(workDir)
 			if err != nil {
@@ -378,8 +387,8 @@ func invokeAgentCLI(invocation AgentInvocation) (AgentResult, error) {
 	}, nil
 }
 
-func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task, reviewOutput string) (string, error) {
-	return renderPromptTemplate(templatespkg.GetImplementWorkerPromptTemplate, specPath, sectionName, task, reviewOutput, nil)
+func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task, reviewOutput string, changedFiles []string) (string, error) {
+	return renderPromptTemplate(templatespkg.GetImplementWorkerPromptTemplate, specPath, sectionName, task, reviewOutput, changedFiles)
 }
 
 func buildReviewPrompt(specPath, sectionName string, task specpkg.Task, changedFiles []string) (string, error) {

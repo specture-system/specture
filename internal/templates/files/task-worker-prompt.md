@@ -5,6 +5,13 @@ Section: {{.SectionName}}
 Task: {{.TaskText}}
 Task Subtree:
 {{.TaskSubtree}}
+Current changed files in working tree:
+{{- if .ChangedFiles}}
+{{range .ChangedFiles}}- {{.}}
+{{end}}
+{{- else}}
+- (none detected)
+{{- end}}
 
 {{- if .ReviewOutput}}
 Prior critical review findings:

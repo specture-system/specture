@@ -172,6 +172,9 @@ func TestExecuteTaskWithReview_InvokesWorkerAndReviewerWithContext(t *testing.T)
 	if !strings.Contains(invocations[0].Prompt, "Task Subtree:") {
 		t.Fatalf("worker prompt missing task subtree header: %s", invocations[0].Prompt)
 	}
+	if !strings.Contains(invocations[0].Prompt, "Current changed files in working tree:\n- (none detected)") {
+		t.Fatalf("worker prompt missing changed files fallback: %s", invocations[0].Prompt)
+	}
 	if strings.Contains(invocations[0].Prompt, "Prior critical review findings:") {
 		t.Fatalf("worker prompt should not include prior critical findings on first pass: %s", invocations[0].Prompt)
 	}
@@ -288,8 +291,20 @@ func TestExecuteTaskWithReview_WithContextPassesChangedFilesToReviewer(t *testin
 	if len(invocations) != 2 {
 		t.Fatalf("expected 2 invocations, got %d", len(invocations))
 	}
+	if invocations[0].Role != AgentRoleWorker {
+		t.Fatalf("expected first invocation to be worker, got %s", invocations[0].Role)
+	}
 	if invocations[1].Role != AgentRoleReviewer {
 		t.Fatalf("expected second invocation to be reviewer, got %s", invocations[1].Role)
+	}
+	if !strings.Contains(invocations[0].Prompt, "Current changed files in working tree:") {
+		t.Fatalf("worker prompt missing changed-files header: %s", invocations[0].Prompt)
+	}
+	if !strings.Contains(invocations[0].Prompt, "- cmd/implement.go") {
+		t.Fatalf("worker prompt missing first changed file: %s", invocations[0].Prompt)
+	}
+	if !strings.Contains(invocations[0].Prompt, "- internal/implement/executor.go") {
+		t.Fatalf("worker prompt missing second changed file: %s", invocations[0].Prompt)
 	}
 	if !strings.Contains(invocations[1].Prompt, "Files changed in current task pass:") {
 		t.Fatalf("review prompt missing changed-files header: %s", invocations[1].Prompt)

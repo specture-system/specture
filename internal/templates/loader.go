@@ -50,6 +50,16 @@ func GetImplementSectionWorkerPromptTemplate() (string, error) {
 	return readTemplate("section-worker-prompt.md", "implement section worker prompt template")
 }
 
+// GetImplementCleanupReviewPromptTemplate returns the final cleanup review prompt template.
+func GetImplementCleanupReviewPromptTemplate() (string, error) {
+	return readTemplate("cleanup-review-prompt.md", "implement cleanup review prompt template")
+}
+
+// GetImplementCleanupWorkerPromptTemplate returns the final cleanup worker prompt template.
+func GetImplementCleanupWorkerPromptTemplate() (string, error) {
+	return readTemplate("cleanup-worker-prompt.md", "implement cleanup worker prompt template")
+}
+
 // GetSpecsReadmeTemplate returns the specs README template.
 func GetSpecsReadmeTemplate() (string, error) {
 	return readTemplate("specs-readme.md", "specs readme template")

@@ -167,6 +167,7 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 		return fmt.Errorf("failed to determine current branch before execution: %w", err)
 	}
 	parentBranch := initialBranch
+	lastSectionParentBranch := initialBranch
 
 	for idx, section := range plan.Sections {
 		sectionNumber := idx + 1
@@ -237,7 +238,14 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 		if err := deps.pushBranch(workDir, branchName); err != nil {
 			return fmt.Errorf("failed to push completed section branch %q: %w", branchName, err)
 		}
+		lastSectionParentBranch = parentBranch
 		parentBranch = branchName
+	}
+
+	if len(plan.Sections) > 0 {
+		if err := executeFinalCleanupPass(workDir, info, plan.Sections, backend, parentBranch, lastSectionParentBranch, printf, deps); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -365,6 +373,80 @@ func executeSectionReview(workDir string, info *specpkg.SpecInfo, backend string
 	return nil
 }
 
+func executeFinalCleanupPass(workDir string, info *specpkg.SpecInfo, sections []RemainingSection, backend, currentBranch, parentBranch string, printf PrintfFunc, deps executeDeps) error {
+	if printf != nil {
+		printf("Final cleanup review started\n")
+	}
+
+	reviewPrompt, err := buildFinalCleanupReviewPrompt(info.Path, sections, currentBranch, parentBranch)
+	if err != nil {
+		return fmt.Errorf("failed to build final cleanup review prompt: %w", err)
+	}
+
+	reviewResult, err := deps.invokeAgent(AgentInvocation{
+		Backend:     backend,
+		Role:        AgentRoleReviewer,
+		SpecPath:    info.Path,
+		SectionName: "Final Cleanup",
+		Attempt:     1,
+		Prompt:      reviewPrompt,
+	})
+	if err != nil {
+		return fmt.Errorf("final cleanup review failed: %w", err)
+	}
+
+	if printf != nil {
+		printf("Final cleanup review completed\n")
+		printReviewFeedback(printf, "final cleanup", 1, reviewResult.Output)
+		printf("Final cleanup worker pass started\n")
+	}
+
+	workerPrompt, err := buildFinalCleanupWorkerPrompt(info.Path, sections, currentBranch, reviewResult.Output)
+	if err != nil {
+		return fmt.Errorf("failed to build final cleanup worker prompt: %w", err)
+	}
+
+	if _, err := deps.invokeAgent(AgentInvocation{
+		Backend:     backend,
+		Role:        AgentRoleWorker,
+		SpecPath:    info.Path,
+		SectionName: "Final Cleanup",
+		Attempt:     1,
+		Prompt:      workerPrompt,
+	}); err != nil {
+		return fmt.Errorf("final cleanup worker pass failed: %w", err)
+	}
+
+	if printf != nil {
+		printf("Final cleanup worker pass completed\n")
+	}
+
+	hasChanges, err := deps.hasUncommittedChanges(workDir)
+	if err != nil {
+		return fmt.Errorf("failed to inspect final cleanup changes: %w", err)
+	}
+	if !hasChanges {
+		if printf != nil {
+			printf("Final cleanup produced no changes; skipping cleanup commit\n")
+		}
+		return nil
+	}
+
+	if err := deps.stageAll(workDir); err != nil {
+		return fmt.Errorf("failed to stage final cleanup changes: %w", err)
+	}
+
+	if err := deps.commit(workDir, finalCleanupCommitMessage(info.Number)); err != nil {
+		return fmt.Errorf("failed to commit final cleanup changes: %w", err)
+	}
+
+	if printf != nil {
+		printf("Final cleanup commit created\n")
+	}
+
+	return nil
+}
+
 func ensureSectionBranch(workDir, branchName string, deps executeDeps) error {
 	hasChanges, err := deps.hasUncommittedChanges(workDir)
 	if err != nil {
@@ -467,6 +549,44 @@ func buildSectionWorkerPrompt(specPath, sectionName string, tasks []specpkg.Task
 	})
 }
 
+func buildFinalCleanupReviewPrompt(specPath string, sections []RemainingSection, currentBranch, parentBranch string) (string, error) {
+	promptTemplate, err := templatespkg.GetImplementCleanupReviewPromptTemplate()
+	if err != nil {
+		return "", err
+	}
+
+	return templatepkg.RenderTemplate(promptTemplate, struct {
+		SpecPath      string
+		CurrentBranch string
+		ParentBranch  string
+		Sections      []string
+	}{
+		SpecPath:      specPath,
+		CurrentBranch: currentBranch,
+		ParentBranch:  parentBranch,
+		Sections:      sectionNames(sections),
+	})
+}
+
+func buildFinalCleanupWorkerPrompt(specPath string, sections []RemainingSection, currentBranch, reviewOutput string) (string, error) {
+	promptTemplate, err := templatespkg.GetImplementCleanupWorkerPromptTemplate()
+	if err != nil {
+		return "", err
+	}
+
+	return templatepkg.RenderTemplate(promptTemplate, struct {
+		SpecPath      string
+		CurrentBranch string
+		Sections      []string
+		ReviewOutput  string
+	}{
+		SpecPath:      specPath,
+		CurrentBranch: currentBranch,
+		Sections:      sectionNames(sections),
+		ReviewOutput:  strings.TrimSpace(reviewOutput),
+	})
+}
+
 func renderPromptTemplate(loadTemplate func() (string, error), specPath, sectionName string, task specpkg.Task, reviewOutput string, changedFiles []string) (string, error) {
 	promptTemplate, err := loadTemplate()
 	if err != nil {
@@ -518,6 +638,19 @@ func taskCommitMessage(specNumber int, taskText string) string {
 
 func sectionReviewCommitMessage(specNumber int, sectionName string, sectionNumber int) string {
 	return fmt.Sprintf("fix: address spec %03d section %02d review: %s", specNumber, sectionNumber, displaySectionName(sectionName))
+}
+
+func finalCleanupCommitMessage(specNumber int) string {
+	return fmt.Sprintf("refactor: final cleanup for spec %03d", specNumber)
+}
+
+func sectionNames(sections []RemainingSection) []string {
+	names := make([]string, 0, len(sections))
+	for _, section := range sections {
+		names = append(names, displaySectionName(section.Name))
+	}
+
+	return names
 }
 
 func taskTexts(tasks []specpkg.Task) []string {

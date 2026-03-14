@@ -177,12 +177,12 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 
 ### Final Cleanup
 
-- [ ] Add a final "clean up" stage after all sections are completed
-  - [ ] Run one final cleanup review for refactor opportunities in the completed work
-  - [ ] Focus the cleanup review on unnecessary abstraction, clear `AGENTS.md` guideline violations, and low-risk maintainability improvements
-  - [ ] Run one cleanup worker pass to implement the recommended refactors
-  - [ ] Create a final refactor commit for the cleanup pass
-  - [ ] Do not retry or re-review after the cleanup pass
+- [x] Add a final "clean up" stage after all sections are completed
+  - [x] Run one final cleanup review for refactor opportunities in the completed work
+  - [x] Focus the cleanup review on unnecessary abstraction, clear `AGENTS.md` guideline violations, and low-risk maintainability improvements
+  - [x] Run one cleanup worker pass to implement the recommended refactors
+  - [x] Create a final refactor commit for the cleanup pass
+  - [x] Do not retry or re-review after the cleanup pass
 
 ### Completion
 

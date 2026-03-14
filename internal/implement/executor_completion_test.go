@@ -170,3 +170,144 @@ status: in-progress
 		t.Fatalf("expected spec status to transition to completed when all remaining tasks are done, got:\n%s", updatedText)
 	}
 }
+
+func TestExecutePlan_RetriesTaskCommitFailuresWithWorkerFixes(t *testing.T) {
+	tmpDir := t.TempDir()
+	specPath := filepath.Join(tmpDir, "spec.md")
+	specBody := `---
+number: 7
+status: approved
+---
+
+# Test Spec
+
+## Task List
+
+### Spec Updates and Section Delivery
+
+- [ ] First task
+`
+
+	if err := os.WriteFile(specPath, []byte(specBody), 0644); err != nil {
+		t.Fatalf("failed to write spec: %v", err)
+	}
+
+	info := &specpkg.SpecInfo{Number: 7, Path: specPath, Status: StatusApproved}
+	plan := Plan{
+		Sections: []RemainingSection{{
+			Name:  "Spec Updates and Section Delivery",
+			Tasks: []specpkg.Task{{Text: "First task", Section: "Spec Updates and Section Delivery"}},
+		}},
+	}
+
+	currentBranch := "main"
+	commitCalls := 0
+	commitFixWorkerCalls := 0
+
+	err := executePlanWithDeps(tmpDir, info, plan, BackendOpencode, nil, executeDeps{
+		hasUncommittedChanges: func(dir string) (bool, error) { return false, nil },
+		getCurrentBranch:      func(dir string) (string, error) { return currentBranch, nil },
+		createBranch: func(dir, branchName string) error {
+			currentBranch = branchName
+			return nil
+		},
+		branchExists: func(dir, branchName string) (bool, error) { return false, nil },
+		stageAll:     func(dir string) error { return nil },
+		commit: func(dir, message string) error {
+			commitCalls++
+			if message == "feat: complete spec 007 task: First task" && commitCalls == 1 {
+				return os.ErrPermission
+			}
+			return nil
+		},
+		pushBranch: func(dir, branchName string) error { return nil },
+		invokeAgent: func(invocation AgentInvocation) (AgentResult, error) {
+			if invocation.Role == AgentRoleWorker && invocation.TaskText == "First task" && invocation.Attempt > maxWorkerPassesPerTask {
+				commitFixWorkerCalls++
+				if !strings.Contains(invocation.Prompt, "Commit failure output:") {
+					t.Fatalf("commit-fix worker prompt missing commit failure context: %s", invocation.Prompt)
+				}
+				if !strings.Contains(invocation.Prompt, os.ErrPermission.Error()) {
+					t.Fatalf("commit-fix worker prompt missing commit error detail: %s", invocation.Prompt)
+				}
+			}
+			return AgentResult{CriticalIssues: false}, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if commitFixWorkerCalls != 1 {
+		t.Fatalf("expected one commit-fix worker call, got %d", commitFixWorkerCalls)
+	}
+	if commitCalls < 2 {
+		t.Fatalf("expected at least two commit attempts, got %d", commitCalls)
+	}
+}
+
+func TestExecutePlan_FailsTaskCommitAfterFiveWorkerFixPasses(t *testing.T) {
+	tmpDir := t.TempDir()
+	specPath := filepath.Join(tmpDir, "spec.md")
+	specBody := `---
+number: 7
+status: approved
+---
+
+# Test Spec
+
+## Task List
+
+### Spec Updates and Section Delivery
+
+- [ ] First task
+`
+
+	if err := os.WriteFile(specPath, []byte(specBody), 0644); err != nil {
+		t.Fatalf("failed to write spec: %v", err)
+	}
+
+	info := &specpkg.SpecInfo{Number: 7, Path: specPath, Status: StatusApproved}
+	plan := Plan{
+		Sections: []RemainingSection{{
+			Name:  "Spec Updates and Section Delivery",
+			Tasks: []specpkg.Task{{Text: "First task", Section: "Spec Updates and Section Delivery"}},
+		}},
+	}
+
+	currentBranch := "main"
+	commitFixWorkerCalls := 0
+
+	err := executePlanWithDeps(tmpDir, info, plan, BackendOpencode, nil, executeDeps{
+		hasUncommittedChanges: func(dir string) (bool, error) { return false, nil },
+		getCurrentBranch:      func(dir string) (string, error) { return currentBranch, nil },
+		createBranch: func(dir, branchName string) error {
+			currentBranch = branchName
+			return nil
+		},
+		branchExists: func(dir, branchName string) (bool, error) { return false, nil },
+		stageAll:     func(dir string) error { return nil },
+		commit: func(dir, message string) error {
+			if message == "feat: complete spec 007 task: First task" {
+				return os.ErrPermission
+			}
+			return nil
+		},
+		pushBranch: func(dir, branchName string) error { return nil },
+		invokeAgent: func(invocation AgentInvocation) (AgentResult, error) {
+			if invocation.Role == AgentRoleWorker && invocation.TaskText == "First task" && invocation.Attempt > maxWorkerPassesPerTask {
+				commitFixWorkerCalls++
+			}
+			return AgentResult{CriticalIssues: false}, nil
+		},
+	})
+	if err == nil {
+		t.Fatal("expected error after exhausting commit-failure fix passes")
+	}
+	if !strings.Contains(err.Error(), "after 5 commit-failure fix passes") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if commitFixWorkerCalls != maxCommitFixPassesPerTask {
+		t.Fatalf("expected %d commit-fix worker calls, got %d", maxCommitFixPassesPerTask, commitFixWorkerCalls)
+	}
+}

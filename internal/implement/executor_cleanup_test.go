@@ -123,13 +123,17 @@ status: in-progress
 		t.Fatalf("unexpected cleanup commit message: %q", commits[1])
 	}
 
-	pushIdx := -1
+	firstPushIdx := -1
+	lastPushIdx := -1
 	cleanupReviewIdx := -1
 	cleanupWorkerIdx := -1
 	for i, event := range events {
 		switch event {
 		case "push":
-			pushIdx = i
+			if firstPushIdx == -1 {
+				firstPushIdx = i
+			}
+			lastPushIdx = i
 		case "cleanup-review":
 			cleanupReviewIdx = i
 		case "cleanup-worker":
@@ -137,11 +141,24 @@ status: in-progress
 		}
 	}
 
-	if pushIdx == -1 || cleanupReviewIdx == -1 || cleanupWorkerIdx == -1 {
-		t.Fatalf("expected push and cleanup events, got %v", events)
+	if firstPushIdx == -1 || lastPushIdx == -1 || cleanupReviewIdx == -1 || cleanupWorkerIdx == -1 {
+		t.Fatalf("expected pushes and cleanup events, got %v", events)
 	}
-	if !(pushIdx < cleanupReviewIdx && cleanupReviewIdx < cleanupWorkerIdx) {
-		t.Fatalf("expected cleanup to run after push in review->worker order, got %v", events)
+	if firstPushIdx != lastPushIdx && !(cleanupWorkerIdx < lastPushIdx) {
+		t.Fatalf("expected final push to happen after cleanup worker, got %v", events)
+	}
+	if !(firstPushIdx < cleanupReviewIdx && cleanupReviewIdx < cleanupWorkerIdx) {
+		t.Fatalf("expected cleanup to run after initial push in review->worker order, got %v", events)
+	}
+
+	pushCount := 0
+	for _, event := range events {
+		if event == "push" {
+			pushCount++
+		}
+	}
+	if pushCount != 2 {
+		t.Fatalf("expected exactly two pushes (section delivery + final cleanup push), got %d (%v)", pushCount, events)
 	}
 }
 

@@ -245,6 +245,9 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 		if err := executeFinalCleanupPass(workDir, info, plan.Sections, backend, parentBranch, lastSectionParentBranch, printf, deps); err != nil {
 			return err
 		}
+		if err := deps.pushBranch(workDir, parentBranch); err != nil {
+			return fmt.Errorf("failed to push final section branch %q after cleanup: %w", parentBranch, err)
+		}
 	}
 
 	return nil

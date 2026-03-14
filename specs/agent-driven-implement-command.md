@@ -157,6 +157,7 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 - [x] Handle commit-hook failures for accepted tasks by looping worker-assisted fixes up to 5 times before aborting
 - [x] Add failing tests for section-level review, single-retry behavior, strict push gating, and push failure handling
 - [x] Implement section-level review with exactly 1 revision retry on critical issues, then push the completed section branch and stop immediately if that push fails
+- [x] Push the final section branch again after final cleanup so cleanup and completion-marker commits are published
 
 ### Task Structure and Validation
 

@@ -104,7 +104,9 @@ status: approved
 		}
 	}
 
-	if len(pushes) != 1 || pushes[0] != "implement/007-01-spec-updates-and-section-delivery" {
+	if len(pushes) != 2 ||
+		pushes[0] != "implement/007-01-spec-updates-and-section-delivery" ||
+		pushes[1] != "implement/007-01-spec-updates-and-section-delivery" {
 		t.Fatalf("unexpected pushes: %v", pushes)
 	}
 }

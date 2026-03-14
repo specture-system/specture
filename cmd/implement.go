@@ -13,6 +13,7 @@ import (
 )
 
 var implementLookPath = exec.LookPath
+var implementExecutePlan = implementpkg.ExecutePlan
 
 var implementCmd = &cobra.Command{
 	Use:   "implement",
@@ -20,7 +21,8 @@ var implementCmd = &cobra.Command{
 	Long: `Plan and orchestrate implementation of an approved or in-progress spec.
 
 The command currently validates inputs, checks spec eligibility, detects the
-agent backend, and computes remaining section/task planning.`,
+agent backend, computes remaining section/task planning, and runs the
+worker/review orchestration loop for each remaining task.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runImplement(cmd, args)
 	},
@@ -96,6 +98,19 @@ func runImplement(cmd *cobra.Command, args []string) error {
 
 	cmd.Println()
 	cmd.Println("Planning complete.")
+
+	if plan.TaskCount == 0 {
+		return nil
+	}
+
+	cmd.Println()
+	cmd.Println("Starting implementation execution...")
+
+	if err := implementExecutePlan(cwd, info, plan, backend, cmd.Printf); err != nil {
+		return err
+	}
+
+	cmd.Println("Implementation execution complete.")
 
 	return nil
 }

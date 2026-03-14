@@ -107,6 +107,18 @@ func ParseContent(path string, content []byte) (*SpecInfo, error) {
 	return info, nil
 }
 
+// TaskListSectionOrders returns 1-based section order by section name from the
+// spec's ## Task List headings.
+func TaskListSectionOrders(path string) map[string]int {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return map[string]int{}
+	}
+
+	lines := strings.Split(string(content), "\n")
+	return extractTaskListSectionOrders(lines)
+}
+
 // ParseAll finds and parses all specs in the given directory, sorted by ascending number.
 func ParseAll(specsDir string) ([]*SpecInfo, error) {
 	paths, err := FindAll(specsDir)
@@ -292,6 +304,39 @@ func parseTasks(content []byte) (bool, []Task, []Task, string, string) {
 	}
 
 	return true, completeTasks, incompleteTasks, currentTask, currentTaskSection
+}
+
+func extractTaskListSectionOrders(lines []string) map[string]int {
+	orders := make(map[string]int)
+	inTaskList := false
+	order := 0
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if trimmed == "## Task List" {
+			inTaskList = true
+			continue
+		}
+
+		if inTaskList && strings.HasPrefix(trimmed, "## ") && !strings.HasPrefix(trimmed, "### ") {
+			break
+		}
+
+		if !inTaskList || !strings.HasPrefix(trimmed, "### ") {
+			continue
+		}
+
+		sectionName := strings.TrimSpace(strings.TrimPrefix(trimmed, "### "))
+		if _, exists := orders[sectionName]; exists {
+			continue
+		}
+
+		order++
+		orders[sectionName] = order
+	}
+
+	return orders
 }
 
 // inferStatus determines the spec status based on frontmatter and task state.

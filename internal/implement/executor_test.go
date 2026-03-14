@@ -165,10 +165,13 @@ func TestExecuteTaskWithReview_InvokesWorkerAndReviewerWithContext(t *testing.T)
 	if !strings.Contains(invocations[0].Prompt, "Task: Implement section branch creation") {
 		t.Fatalf("worker prompt missing task text: %s", invocations[0].Prompt)
 	}
-	if !strings.Contains(invocations[0].Prompt, "must not edit the spec file") {
+	if !strings.Contains(invocations[0].Prompt, "Preserve existing accepted changes already present in the branch") {
+		t.Fatalf("worker prompt missing branch-baseline instruction: %s", invocations[0].Prompt)
+	}
+	if !strings.Contains(invocations[0].Prompt, "Do not edit the spec file") {
 		t.Fatalf("worker prompt missing spec-edit restriction: %s", invocations[0].Prompt)
 	}
-	if !strings.Contains(invocations[0].Prompt, "must not create commits") {
+	if !strings.Contains(invocations[0].Prompt, "Do not create commits") {
 		t.Fatalf("worker prompt missing commit restriction: %s", invocations[0].Prompt)
 	}
 }

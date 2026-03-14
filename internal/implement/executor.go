@@ -8,6 +8,8 @@ import (
 
 	gitpkg "github.com/specture-system/specture/internal/git"
 	specpkg "github.com/specture-system/specture/internal/spec"
+	templatepkg "github.com/specture-system/specture/internal/template"
+	templatespkg "github.com/specture-system/specture/internal/templates"
 )
 
 const maxWorkerPassesPerTask = 3
@@ -59,8 +61,11 @@ func SectionBranchName(specNumber int, sectionName string, sectionNumber int) st
 
 func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.Task, printf PrintfFunc, invokeAgent func(invocation AgentInvocation) (AgentResult, error)) error {
 	for pass := 1; pass <= maxWorkerPassesPerTask; pass++ {
-		workerPrompt := buildWorkerPrompt(specPath, sectionName, task)
-		_, err := invokeAgent(AgentInvocation{
+		workerPrompt, err := buildWorkerPrompt(specPath, sectionName, task)
+		if err != nil {
+			return fmt.Errorf("failed to build worker prompt for task %q: %w", task.Text, err)
+		}
+		_, err = invokeAgent(AgentInvocation{
 			Backend:     backend,
 			Role:        AgentRoleWorker,
 			SpecPath:    specPath,
@@ -73,7 +78,10 @@ func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.T
 			return fmt.Errorf("worker pass %d failed for task %q: %w", pass, task.Text, err)
 		}
 
-		reviewPrompt := buildReviewPrompt(specPath, sectionName, task)
+		reviewPrompt, err := buildReviewPrompt(specPath, sectionName, task)
+		if err != nil {
+			return fmt.Errorf("failed to build review prompt for task %q: %w", task.Text, err)
+		}
 		reviewResult, err := invokeAgent(AgentInvocation{
 			Backend:     backend,
 			Role:        AgentRoleReviewer,
@@ -198,22 +206,29 @@ func invokeAgentCLI(invocation AgentInvocation) (AgentResult, error) {
 	}, nil
 }
 
-func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task) string {
-	return fmt.Sprintf(
-		"Implement the following Specture task.\n\nSpec Path: %s\nSection: %s\nTask: %s\n\nConstraints:\n- You must not edit the spec file.\n- You must not create commits.\n- When the task is amenable to automated testing, follow test-driven development: write failing tests first, then implement until the tests pass, then refactor.\n- Focus only on changes needed for this task.",
-		specPath,
-		displaySectionName(sectionName),
-		task.Text,
-	)
+func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task) (string, error) {
+	return renderPromptTemplate(templatespkg.GetImplementWorkerPromptTemplate, specPath, sectionName, task)
 }
 
-func buildReviewPrompt(specPath, sectionName string, task specpkg.Task) string {
-	return fmt.Sprintf(
-		"Review the latest implementation changes for this Specture task.\n\nSpec Path: %s\nSection: %s\nTask: %s\n\nVerify that the changes correctly and completely address the task described above. Only block on critical issues (task not fulfilled, correctness, security, data loss, build/test breakage). Ignore nits.\nRespond with REVIEW_CRITICAL if critical issues remain, otherwise REVIEW_OK.",
-		specPath,
-		displaySectionName(sectionName),
-		task.Text,
-	)
+func buildReviewPrompt(specPath, sectionName string, task specpkg.Task) (string, error) {
+	return renderPromptTemplate(templatespkg.GetImplementReviewPromptTemplate, specPath, sectionName, task)
+}
+
+func renderPromptTemplate(loadTemplate func() (string, error), specPath, sectionName string, task specpkg.Task) (string, error) {
+	promptTemplate, err := loadTemplate()
+	if err != nil {
+		return "", err
+	}
+
+	return templatepkg.RenderTemplate(promptTemplate, struct {
+		SpecPath    string
+		SectionName string
+		TaskText    string
+	}{
+		SpecPath:    specPath,
+		SectionName: displaySectionName(sectionName),
+		TaskText:    task.Text,
+	})
 }
 
 func sectionSlug(sectionName string) string {

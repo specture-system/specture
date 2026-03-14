@@ -1,7 +1,9 @@
 Run one final cleanup review across all completed Specture sections.
 
 Spec Path: {{.SpecPath}}
-Current branch: {{.CurrentBranch}}
+Branch context:
+- Current branch: {{.CurrentBranch}}
+- Parent branch: {{.ParentBranch}}
 Completed sections:
 {{range .Sections}}- {{.}}
 {{end}}

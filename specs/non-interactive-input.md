@@ -1,5 +1,5 @@
 ---
-number: 2
+number: 1
 status: completed
 author: Addison Emig
 creation_date: 2026-01-06
@@ -88,7 +88,7 @@ We should improve all the commands implemented in [spec #000](/specs/basic-cli.m
 
 ### Documentation
 
-Well written command help text is critical for both humans and AI agents to understand how to use the specture CLI.  
+Well written command help text is critical for both humans and AI agents to understand how to use the specture CLI.
 Describing the various nuances is essential for the best CLI user experience.
 
 - [x] Update `specture setup` help text with new flags and behaviors

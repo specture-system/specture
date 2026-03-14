@@ -7,13 +7,21 @@ export CGO_ENABLED := "0"
 default:
   @just --list
 
+# Install Go dependencies
+deps:
+  go mod download
+
+# Set up development environment
+setup: deps
+  pre-commit install
+
 # Build the CLI binary
 build:
   go build -o specture .
 
-# Run the CLI with arguments (usage: just run-dev setup --help)
+# Run the CLI with arguments (usage: just run setup --help)
 [positional-arguments]
-run-dev *args:
+run *args:
    go run . "$@"
 
 # Run tests
@@ -31,14 +39,6 @@ lint:
 # Tidy dependencies
 tidy:
   go mod tidy
-
-# Install Go dependencies
-deps:
-  go mod download
-
-# Set up development environment
-setup: deps
-  pre-commit install
 
 # Check code (format, lint, test)
 check: format lint test

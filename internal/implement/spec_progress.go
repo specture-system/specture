@@ -24,6 +24,12 @@ func applyTaskProgress(specPath, sectionName, taskText, status string) error {
 		return err
 	}
 
+	if !taskListHasIncompleteTasks(lines) {
+		if err := updateFrontmatterStatus(lines, StatusCompleted); err != nil {
+			return err
+		}
+	}
+
 	updated := strings.Join(lines, "\n")
 	if err := os.WriteFile(specPath, []byte(updated), 0644); err != nil {
 		return fmt.Errorf("failed to write spec file: %w", err)
@@ -112,4 +118,31 @@ func markNestedTaskSubtreeComplete(lines []string, parentIdx int) {
 			lines[i] = strings.Replace(line, "[ ]", "[x]", 1)
 		}
 	}
+}
+
+func taskListHasIncompleteTasks(lines []string) bool {
+	inTaskList := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if trimmed == "## Task List" {
+			inTaskList = true
+			continue
+		}
+
+		if !inTaskList {
+			continue
+		}
+
+		if strings.HasPrefix(trimmed, "## ") && trimmed != "## Task List" {
+			break
+		}
+
+		if strings.HasPrefix(trimmed, "- [ ] ") {
+			return true
+		}
+	}
+
+	return false
 }

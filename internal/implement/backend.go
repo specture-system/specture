@@ -44,3 +44,14 @@ func isSupportedBackend(name string) bool {
 
 	return false
 }
+
+func backendInvocationArgs(invocation AgentInvocation) ([]string, error) {
+	switch invocation.Backend {
+	case BackendOpencode:
+		return []string{"run", invocation.Prompt}, nil
+	case BackendCodex:
+		return []string{"exec", invocation.Prompt}, nil
+	default:
+		return nil, fmt.Errorf("unsupported agent backend %q for invocation", invocation.Backend)
+	}
+}

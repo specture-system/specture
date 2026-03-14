@@ -1,8 +1,8 @@
 package implement
 
 import (
-	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -49,13 +49,13 @@ func ExecutePlan(workDir string, info *specpkg.SpecInfo, plan Plan, backend stri
 	return executePlanWithDeps(workDir, info, plan, backend, printf, defaultExecuteDeps())
 }
 
-func SectionBranchName(specNumber int, sectionName string, sectionIndex int) string {
+func SectionBranchName(specNumber int, sectionName string, sectionNumber int) string {
 	slug := sectionSlug(sectionName)
 	if slug == "" {
 		slug = "unsectioned"
 	}
 
-	return fmt.Sprintf("implement/%03d-%02d-%s", specNumber, sectionIndex+1, slug)
+	return fmt.Sprintf("implement/%03d-%02d-%s", specNumber, sectionNumber, slug)
 }
 
 func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.Task, printf PrintfFunc, invokeAgent func(invocation AgentInvocation) (AgentResult, error)) error {
@@ -104,8 +104,15 @@ func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.T
 }
 
 func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, backend string, printf PrintfFunc, deps executeDeps) error {
+	sectionOrderByName := taskListSectionOrders(info.Path)
+
 	for idx, section := range plan.Sections {
-		branchName := SectionBranchName(info.Number, section.Name, idx)
+		sectionNumber := idx + 1
+		if order, ok := sectionOrderByName[section.Name]; ok {
+			sectionNumber = order
+		}
+
+		branchName := SectionBranchName(info.Number, section.Name, sectionNumber)
 
 		if err := ensureSectionBranch(workDir, branchName, deps); err != nil {
 			return err
@@ -135,7 +142,7 @@ func defaultExecuteDeps() executeDeps {
 		hasUncommittedChanges: gitpkg.HasUncommittedChanges,
 		getCurrentBranch:      gitpkg.GetCurrentBranch,
 		createBranch:          gitpkg.CreateBranch,
-		branchExists:          gitBranchExists,
+		branchExists:          gitpkg.BranchExists,
 		invokeAgent:           invokeAgentCLI,
 	}
 }
@@ -191,40 +198,43 @@ func invokeAgentCLI(invocation AgentInvocation) (AgentResult, error) {
 		CriticalIssues: strings.Contains(outputText, "REVIEW_CRITICAL"),
 	}, nil
 }
-
-func backendInvocationArgs(invocation AgentInvocation) ([]string, error) {
-	switch invocation.Backend {
-	case BackendOpencode:
-		return []string{"run", invocation.Prompt}, nil
-	case BackendCodex:
-		return []string{"exec", invocation.Prompt}, nil
-	default:
-		return nil, fmt.Errorf("unsupported agent backend %q for invocation", invocation.Backend)
-	}
-}
-
-func gitBranchExists(dir, branchName string) (bool, error) {
-	cmd := exec.Command("git", "show-ref", "--verify", "--quiet", "refs/heads/"+branchName)
-	cmd.Dir = dir
-	err := cmd.Run()
-	if err == nil {
-		return true, nil
+func taskListSectionOrders(specPath string) map[string]int {
+	content, err := os.ReadFile(specPath)
+	if err != nil {
+		return map[string]int{}
 	}
 
-	if isExitCodeOne(err) {
-		return false, nil
+	lines := strings.Split(string(content), "\n")
+	orders := make(map[string]int)
+
+	inTaskList := false
+	order := 0
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if trimmed == "## Task List" {
+			inTaskList = true
+			continue
+		}
+
+		if inTaskList && strings.HasPrefix(trimmed, "## ") && !strings.HasPrefix(trimmed, "### ") {
+			break
+		}
+
+		if !inTaskList || !strings.HasPrefix(trimmed, "### ") {
+			continue
+		}
+
+		sectionName := strings.TrimSpace(strings.TrimPrefix(trimmed, "### "))
+		if _, exists := orders[sectionName]; exists {
+			continue
+		}
+
+		order++
+		orders[sectionName] = order
 	}
 
-	return false, fmt.Errorf("failed to check branch existence: %w", err)
-}
-
-func isExitCodeOne(err error) bool {
-	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) {
-		return false
-	}
-
-	return exitErr.ExitCode() == 1
+	return orders
 }
 
 func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task) string {

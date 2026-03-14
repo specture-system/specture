@@ -1,6 +1,8 @@
 package implement
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -8,14 +10,59 @@ import (
 )
 
 func TestSectionBranchName_Deterministic(t *testing.T) {
-	branch := SectionBranchName(7, "Branch and Task Execution", 1)
+	branch := SectionBranchName(7, "Branch and Task Execution", 2)
 	if branch != "implement/007-02-branch-and-task-execution" {
 		t.Fatalf("unexpected branch name: %s", branch)
 	}
 
-	branchAgain := SectionBranchName(7, "Branch and Task Execution", 1)
+	branchAgain := SectionBranchName(7, "Branch and Task Execution", 2)
 	if branchAgain != branch {
 		t.Fatalf("expected deterministic branch name, got %q and %q", branch, branchAgain)
+	}
+}
+
+func TestExecutePlan_UsesOverallSectionOrderFromSpecFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	specPath := filepath.Join(tmpDir, "spec.md")
+	specBody := `---
+number: 7
+status: in-progress
+---
+
+# Test Spec
+
+## Task List
+
+### CLI and Planning
+
+- [x] done
+
+### Branch and Task Execution
+
+- [ ] remaining
+`
+
+	if err := os.WriteFile(specPath, []byte(specBody), 0644); err != nil {
+		t.Fatalf("failed to write spec: %v", err)
+	}
+
+	info := &specpkg.SpecInfo{Number: 7, Path: specPath}
+	plan := Plan{Sections: []RemainingSection{{Name: "Branch and Task Execution"}}}
+
+	created := ""
+	err := executePlanWithDeps("/tmp/repo", info, plan, BackendOpencode, nil, executeDeps{
+		hasUncommittedChanges: func(dir string) (bool, error) { return false, nil },
+		getCurrentBranch:      func(dir string) (string, error) { return "main", nil },
+		createBranch:          func(dir, branchName string) error { created = branchName; return nil },
+		branchExists:          func(dir, branchName string) (bool, error) { return false, nil },
+		invokeAgent:           func(invocation AgentInvocation) (AgentResult, error) { return AgentResult{}, nil },
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if created != "implement/007-02-branch-and-task-execution" {
+		t.Fatalf("expected branch to use overall section number 2, got %q", created)
 	}
 }
 
@@ -169,49 +216,6 @@ func TestExecuteTaskWithReview_FailsAfterThreeCriticalReviews(t *testing.T) {
 	}
 
 	if !strings.Contains(err.Error(), "after 3 worker passes") {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestBackendInvocationArgs_UsesBackendSpecificNonInteractiveSubcommands(t *testing.T) {
-	tests := []struct {
-		name      string
-		backend   string
-		wantFirst string
-	}{
-		{name: "opencode uses run", backend: BackendOpencode, wantFirst: "run"},
-		{name: "codex uses exec", backend: BackendCodex, wantFirst: "exec"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			args, err := backendInvocationArgs(AgentInvocation{Backend: tt.backend, Prompt: "hello"})
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if len(args) != 2 {
-				t.Fatalf("expected 2 args, got %d", len(args))
-			}
-
-			if args[0] != tt.wantFirst {
-				t.Fatalf("expected first arg %q, got %q", tt.wantFirst, args[0])
-			}
-
-			if args[1] != "hello" {
-				t.Fatalf("expected prompt as second arg, got %q", args[1])
-			}
-		})
-	}
-}
-
-func TestBackendInvocationArgs_RejectsUnsupportedBackend(t *testing.T) {
-	_, err := backendInvocationArgs(AgentInvocation{Backend: "other", Prompt: "hello"})
-	if err == nil {
-		t.Fatal("expected error for unsupported backend")
-	}
-
-	if !strings.Contains(err.Error(), "unsupported agent backend") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

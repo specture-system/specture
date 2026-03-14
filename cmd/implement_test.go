@@ -46,6 +46,7 @@ func execImplement(t *testing.T, tmpDir string, flags map[string]string) (string
 		implementExecutePlan = originalExecutePlan
 		implementCmd.Flags().Set("spec", "")
 		implementCmd.Flags().Set("agent", "")
+		implementCmd.Flags().Set("dry-run", "false")
 	})
 
 	implementExecutePlan = func(workDir string, info *specpkg.SpecInfo, plan implementpkg.Plan, backend string, printf implementpkg.PrintfFunc) error {
@@ -280,5 +281,37 @@ func TestImplementCommand_HelpMentionsOrchestratorAndExample(t *testing.T) {
 
 	if !strings.Contains(implementCmd.Long, "specture implement --spec 7") {
 		t.Fatalf("expected implement help to include example usage, got:\n%s", implementCmd.Long)
+	}
+}
+
+func TestImplementCommand_DryRunSkipsExecution(t *testing.T) {
+	tmpDir := setupImplementTest(t, map[string]string{
+		"007-agent.md": implementApprovedSpec,
+	})
+
+	implementLookPath = func(file string) (string, error) {
+		if file == "opencode" {
+			return "/usr/bin/opencode", nil
+		}
+		return "", errors.New("missing")
+	}
+
+	called := false
+	implementExecutePlan = func(workDir string, info *specpkg.SpecInfo, plan implementpkg.Plan, backend string, printf implementpkg.PrintfFunc) error {
+		called = true
+		return nil
+	}
+
+	output, err := execImplement(t, tmpDir, map[string]string{"spec": "7", "dry-run": "true"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if called {
+		t.Fatal("expected dry run to skip execution")
+	}
+
+	if strings.Contains(output, "Starting implementation execution...") {
+		t.Fatalf("expected dry run output not to contain execution start, got:\n%s", output)
 	}
 }

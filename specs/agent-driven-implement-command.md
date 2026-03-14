@@ -170,7 +170,7 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 - [x] Improve the help message for the `implement` command
   - [x] Mention that it is an agent orchestrator
   - [x] Include example usage
-- [ ] Add `--dry-run` support to `implement` so it prints the execution plan and exits before making changes
+- [x] Add `--dry-run` support to `implement` so it prints the execution plan and exits before making changes
 - [ ] Rename the new implement prompt templates to use `task-` and `section-` prefixes, and update related code
 
 ### Final Cleanup

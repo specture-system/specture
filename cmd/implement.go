@@ -36,6 +36,7 @@ Examples:
 func init() {
 	implementCmd.Flags().StringP("spec", "s", "", "Spec number to implement (required)")
 	implementCmd.Flags().String("agent", "", "Agent backend override: opencode or codex")
+	implementCmd.Flags().Bool("dry-run", false, "Print execution plan and exit before making changes")
 	implementCmd.MarkFlagRequired("spec")
 }
 
@@ -51,6 +52,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	}
 
 	agentOverride, _ := cmd.Flags().GetString("agent")
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
 
 	specsDir := filepath.Join(cwd, "specs")
 	specPath, err := specpkg.ResolvePath(specsDir, specArg)
@@ -103,6 +105,11 @@ func runImplement(cmd *cobra.Command, args []string) error {
 
 	cmd.Println()
 	cmd.Println("Planning complete.")
+	if dryRun {
+		cmd.Println()
+		cmd.Println("Dry run enabled; exiting before implementation execution.")
+		return nil
+	}
 
 	if plan.TaskCount == 0 {
 		return nil

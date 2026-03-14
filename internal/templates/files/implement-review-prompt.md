@@ -3,6 +3,8 @@ Review the repository's current working tree for one Specture task.
 Spec Path: {{.SpecPath}}
 Section: {{.SectionName}}
 Task: {{.TaskText}}
+Task Subtree:
+{{.TaskSubtree}}
 
 Review rules:
 - Evaluate whether the current repository state correctly and completely satisfies this task.

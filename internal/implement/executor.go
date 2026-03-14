@@ -387,10 +387,12 @@ func renderPromptTemplate(loadTemplate func() (string, error), specPath, section
 		SpecPath    string
 		SectionName string
 		TaskText    string
+		TaskSubtree string
 	}{
 		SpecPath:    specPath,
 		SectionName: displaySectionName(sectionName),
 		TaskText:    task.Text,
+		TaskSubtree: task.Subtree,
 	})
 }
 

@@ -1,11 +1,13 @@
 package validate
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
+	"strings"
 )
 
 // ValidationError represents a single validation error
@@ -99,9 +101,58 @@ func ValidateSpec(spec *Spec) *ValidationResult {
 			Field:   "task list",
 			Message: "missing '## Task List' heading",
 		})
+	} else if !allTopLevelTaskCheckboxesAreSectioned(spec.Source) {
+		result.Errors = append(result.Errors, ValidationError{
+			Field:   "task list",
+			Message: "'## Task List' must be organized into '###' sections (every top-level checkbox must be under a section)",
+		})
 	}
 
 	return result
+}
+
+func allTopLevelTaskCheckboxesAreSectioned(source []byte) bool {
+	lines := strings.Split(string(source), "\n")
+	inTaskList := false
+	seenSection := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if trimmed == "## Task List" {
+			inTaskList = true
+			seenSection = false
+			continue
+		}
+
+		if !inTaskList {
+			continue
+		}
+
+		if strings.HasPrefix(trimmed, "## ") && !strings.HasPrefix(trimmed, "### ") {
+			break
+		}
+
+		if strings.HasPrefix(trimmed, "### ") {
+			seenSection = true
+			continue
+		}
+
+		if isTopLevelCheckboxLine(line) && !seenSection {
+			return false
+		}
+	}
+
+	return true
+}
+
+func isTopLevelCheckboxLine(line string) bool {
+	trimmedLeft := bytes.TrimLeft([]byte(line), " \t")
+	if len(trimmedLeft) != len(line) {
+		return false
+	}
+
+	return strings.HasPrefix(line, "- [ ] ") || strings.HasPrefix(line, "- [x] ")
 }
 
 // ValidateSpecs validates multiple specs, including cross-spec checks like duplicate numbers.

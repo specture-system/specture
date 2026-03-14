@@ -3,6 +3,8 @@ Implement exactly one Specture task.
 Spec Path: {{.SpecPath}}
 Section: {{.SectionName}}
 Task: {{.TaskText}}
+Task Subtree:
+{{.TaskSubtree}}
 
 Instructions:
 - Treat the current checkout as the source of truth. Preserve existing accepted changes already present in the branch.

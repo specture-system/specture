@@ -37,6 +37,7 @@ type Task struct {
 	Text     string
 	Complete bool
 	Section  string
+	Subtree  string
 }
 
 // frontmatter represents the YAML frontmatter of a spec.
@@ -252,43 +253,41 @@ func parseTasks(content []byte) (bool, []Task, []Task, string, string) {
 
 	for i := taskListStart; i < taskListEnd; i++ {
 		line := lines[i]
-
-		// Track ### section headers
 		trimmed := strings.TrimSpace(line)
+
 		if strings.HasPrefix(trimmed, "### ") {
 			currentSection = strings.TrimPrefix(trimmed, "### ")
 			continue
 		}
 
-		// Skip indented lines (sub-tasks)
-		if len(line) > 0 && (line[0] == ' ' || line[0] == '\t') {
+		if !isTopLevelTaskLine(line) {
 			continue
 		}
 
-		// Check for complete task
-		if strings.HasPrefix(line, "- [x] ") {
+		subtreeEnd := findTaskSubtreeEnd(lines, i, taskListEnd)
+		taskSubtree := strings.Join(lines[i:subtreeEnd], "\n")
+
+		switch {
+		case strings.HasPrefix(line, "- [x] "):
 			taskText := strings.TrimPrefix(line, "- [x] ")
 			completeTasks = append(completeTasks, Task{
 				Text:     taskText,
 				Complete: true,
 				Section:  currentSection,
+				Subtree:  taskSubtree,
 			})
-			continue
-		}
-
-		// Check for incomplete task
-		if strings.HasPrefix(line, "- [ ] ") {
+		case strings.HasPrefix(line, "- [ ] "):
 			taskText := strings.TrimPrefix(line, "- [ ] ")
 			incompleteTasks = append(incompleteTasks, Task{
 				Text:     taskText,
 				Complete: false,
 				Section:  currentSection,
+				Subtree:  taskSubtree,
 			})
 			if currentTask == "" {
 				currentTask = taskText
 				firstIncompleteIdx = i
 			}
-			continue
 		}
 	}
 
@@ -304,6 +303,28 @@ func parseTasks(content []byte) (bool, []Task, []Task, string, string) {
 	}
 
 	return true, completeTasks, incompleteTasks, currentTask, currentTaskSection
+}
+
+func isTopLevelTaskLine(line string) bool {
+	if len(line) > 0 && (line[0] == ' ' || line[0] == '\t') {
+		return false
+	}
+
+	return strings.HasPrefix(line, "- [x] ") || strings.HasPrefix(line, "- [ ] ")
+}
+
+func findTaskSubtreeEnd(lines []string, start, taskListEnd int) int {
+	for i := start + 1; i < taskListEnd; i++ {
+		trimmed := strings.TrimSpace(lines[i])
+		if strings.HasPrefix(trimmed, "### ") {
+			return i
+		}
+		if isTopLevelTaskLine(lines[i]) {
+			return i
+		}
+	}
+
+	return taskListEnd
 }
 
 func extractTaskListSectionOrders(lines []string) map[string]int {

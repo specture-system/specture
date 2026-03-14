@@ -131,7 +131,10 @@ func TestExecutePlan_CreatesSectionBranchWhenMissing(t *testing.T) {
 }
 
 func TestExecuteTaskWithReview_InvokesWorkerAndReviewerWithContext(t *testing.T) {
-	task := specpkg.Task{Text: "Implement section branch creation"}
+	task := specpkg.Task{
+		Text:    "Implement section branch creation",
+		Subtree: "- [ ] Implement section branch creation\n  - [ ] Include nested checkbox context\n    - Nested bullet detail",
+	}
 	invocations := make([]AgentInvocation, 0, 2)
 
 	err := ExecuteTaskWithReview("specs/agent.md", "Branch and Task Execution", BackendOpencode, task, nil, func(invocation AgentInvocation) (AgentResult, error) {
@@ -165,6 +168,12 @@ func TestExecuteTaskWithReview_InvokesWorkerAndReviewerWithContext(t *testing.T)
 	if !strings.Contains(invocations[0].Prompt, "Task: Implement section branch creation") {
 		t.Fatalf("worker prompt missing task text: %s", invocations[0].Prompt)
 	}
+	if !strings.Contains(invocations[0].Prompt, "Task Subtree:") {
+		t.Fatalf("worker prompt missing task subtree header: %s", invocations[0].Prompt)
+	}
+	if !strings.Contains(invocations[0].Prompt, "  - [ ] Include nested checkbox context") {
+		t.Fatalf("worker prompt missing nested checkbox context: %s", invocations[0].Prompt)
+	}
 	if !strings.Contains(invocations[0].Prompt, "Preserve existing accepted changes already present in the branch") {
 		t.Fatalf("worker prompt missing branch-baseline instruction: %s", invocations[0].Prompt)
 	}
@@ -173,6 +182,9 @@ func TestExecuteTaskWithReview_InvokesWorkerAndReviewerWithContext(t *testing.T)
 	}
 	if !strings.Contains(invocations[0].Prompt, "Do not create commits") {
 		t.Fatalf("worker prompt missing commit restriction: %s", invocations[0].Prompt)
+	}
+	if !strings.Contains(invocations[1].Prompt, "Task Subtree:") {
+		t.Fatalf("review prompt missing task subtree header: %s", invocations[1].Prompt)
 	}
 }
 

@@ -85,9 +85,31 @@ func markTaskComplete(lines []string, sectionName, taskText string) error {
 		prefix := "- [ ] "
 		if strings.HasPrefix(trimmed, prefix) && strings.TrimPrefix(trimmed, prefix) == taskText {
 			lines[i] = strings.Replace(line, "[ ]", "[x]", 1)
+			markNestedTaskSubtreeComplete(lines, i)
 			return nil
 		}
 	}
 
 	return fmt.Errorf("failed to find incomplete task %q in section %q", taskText, sectionName)
+}
+
+func markNestedTaskSubtreeComplete(lines []string, parentIdx int) {
+	for i := parentIdx + 1; i < len(lines); i++ {
+		line := lines[i]
+		trimmed := strings.TrimSpace(line)
+
+		if strings.HasPrefix(trimmed, "## ") && trimmed != "## Task List" {
+			break
+		}
+		if strings.HasPrefix(trimmed, "### ") {
+			break
+		}
+		if strings.HasPrefix(line, "- [ ] ") || strings.HasPrefix(line, "- [x] ") {
+			break
+		}
+
+		if strings.HasPrefix(trimmed, "- [ ] ") {
+			lines[i] = strings.Replace(line, "[ ]", "[x]", 1)
+		}
+	}
 }

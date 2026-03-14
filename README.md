@@ -13,7 +13,13 @@ Specture is a spec-driven software architecture and project management system.
 
 See [specs/README.md](/specs/README.md) for a full description of the Specture System.
 
-### Status
+## Install
+
+```sh
+go install github.com/specture-system/specture@latest
+```
+
+## Status
 
 This project is in its early stages. Documentation and tooling are a work-in-progress.
 

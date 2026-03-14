@@ -39,6 +39,12 @@ type AgentResult struct {
 	CriticalIssues bool
 }
 
+type sectionBranchContext struct {
+	CurrentBranch         string
+	ExpectedSectionBranch string
+	ParentBranch          string
+}
+
 type executeDeps struct {
 	hasUncommittedChanges func(dir string) (bool, error)
 	changedFiles          func(dir string) ([]string, error)
@@ -156,6 +162,11 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 	deps = withExecuteDepDefaults(deps)
 	sectionOrderByName := specpkg.TaskListSectionOrders(info.Path)
 	currentStatus := info.Status
+	initialBranch, err := deps.getCurrentBranch(workDir)
+	if err != nil {
+		return fmt.Errorf("failed to determine current branch before execution: %w", err)
+	}
+	parentBranch := initialBranch
 
 	for idx, section := range plan.Sections {
 		sectionNumber := idx + 1
@@ -167,6 +178,10 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 
 		if err := ensureSectionBranch(workDir, branchName, deps); err != nil {
 			return err
+		}
+		currentBranch, err := deps.getCurrentBranch(workDir)
+		if err != nil {
+			return fmt.Errorf("failed to determine current branch for section %q: %w", section.Name, err)
 		}
 
 		if printf != nil {
@@ -210,13 +225,19 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 			}
 		}
 
-		if err := executeSectionReview(workDir, info, backend, section, sectionNumber, printf, deps); err != nil {
+		branchContext := sectionBranchContext{
+			CurrentBranch:         currentBranch,
+			ExpectedSectionBranch: branchName,
+			ParentBranch:          parentBranch,
+		}
+		if err := executeSectionReview(workDir, info, backend, section, sectionNumber, branchContext, printf, deps); err != nil {
 			return err
 		}
 
 		if err := deps.pushBranch(workDir, branchName); err != nil {
 			return fmt.Errorf("failed to push completed section branch %q: %w", branchName, err)
 		}
+		parentBranch = branchName
 	}
 
 	return nil
@@ -253,13 +274,22 @@ func withExecuteDepDefaults(deps executeDeps) executeDeps {
 	return deps
 }
 
-func executeSectionReview(workDir string, info *specpkg.SpecInfo, backend string, section RemainingSection, sectionNumber int, printf PrintfFunc, deps executeDeps) error {
+func executeSectionReview(workDir string, info *specpkg.SpecInfo, backend string, section RemainingSection, sectionNumber int, branchContext sectionBranchContext, printf PrintfFunc, deps executeDeps) error {
 	for pass := 1; pass <= maxSectionReviewPasses; pass++ {
+		currentBranch, err := deps.getCurrentBranch(workDir)
+		if err != nil {
+			return fmt.Errorf("failed to determine current branch before section review for %q: %w", section.Name, err)
+		}
+		if currentBranch != branchContext.ExpectedSectionBranch {
+			return fmt.Errorf("section review for %q requires current branch %q, but got %q", section.Name, branchContext.ExpectedSectionBranch, currentBranch)
+		}
+		branchContext.CurrentBranch = currentBranch
+
 		if printf != nil {
 			printf("  section review pass %d/%d started: %s\n", pass, maxSectionReviewPasses, section.Name)
 		}
 
-		reviewPrompt, err := buildSectionReviewPrompt(info.Path, section.Name, section.Tasks)
+		reviewPrompt, err := buildSectionReviewPrompt(info.Path, section.Name, section.Tasks, branchContext)
 		if err != nil {
 			return fmt.Errorf("failed to build section review prompt for %q: %w", section.Name, err)
 		}
@@ -395,20 +425,26 @@ func buildReviewPrompt(specPath, sectionName string, task specpkg.Task, changedF
 	return renderPromptTemplate(templatespkg.GetImplementReviewPromptTemplate, specPath, sectionName, task, "", changedFiles)
 }
 
-func buildSectionReviewPrompt(specPath, sectionName string, tasks []specpkg.Task) (string, error) {
+func buildSectionReviewPrompt(specPath, sectionName string, tasks []specpkg.Task, branchContext sectionBranchContext) (string, error) {
 	promptTemplate, err := templatespkg.GetImplementSectionReviewPromptTemplate()
 	if err != nil {
 		return "", err
 	}
 
 	return templatepkg.RenderTemplate(promptTemplate, struct {
-		SpecPath    string
-		SectionName string
-		Tasks       []string
+		SpecPath              string
+		SectionName           string
+		Tasks                 []string
+		CurrentBranch         string
+		ExpectedSectionBranch string
+		ParentBranch          string
 	}{
-		SpecPath:    specPath,
-		SectionName: displaySectionName(sectionName),
-		Tasks:       taskTexts(tasks),
+		SpecPath:              specPath,
+		SectionName:           displaySectionName(sectionName),
+		Tasks:                 taskTexts(tasks),
+		CurrentBranch:         branchContext.CurrentBranch,
+		ExpectedSectionBranch: branchContext.ExpectedSectionBranch,
+		ParentBranch:          branchContext.ParentBranch,
 	})
 }
 

@@ -464,13 +464,17 @@ status: approved
 
 	var commits []string
 	var pushes []string
+	currentBranch := "main"
 
 	err := executePlanWithDeps(tmpDir, info, plan, BackendOpencode, nil, executeDeps{
 		hasUncommittedChanges: func(dir string) (bool, error) { return false, nil },
-		getCurrentBranch:      func(dir string) (string, error) { return "main", nil },
-		createBranch:          func(dir, branchName string) error { return nil },
-		branchExists:          func(dir, branchName string) (bool, error) { return false, nil },
-		stageAll:              func(dir string) error { return nil },
+		getCurrentBranch:      func(dir string) (string, error) { return currentBranch, nil },
+		createBranch: func(dir, branchName string) error {
+			currentBranch = branchName
+			return nil
+		},
+		branchExists: func(dir, branchName string) (bool, error) { return false, nil },
+		stageAll:     func(dir string) error { return nil },
 		commit: func(dir, message string) error {
 			commits = append(commits, message)
 			return nil
@@ -556,6 +560,7 @@ status: in-progress
 	var sectionReviewCalls int
 	var sectionWorkerCalls int
 	dirtyChecks := 0
+	currentBranch := "main"
 
 	err := executePlanWithDeps(tmpDir, info, plan, BackendOpencode, nil, executeDeps{
 		hasUncommittedChanges: func(dir string) (bool, error) {
@@ -565,10 +570,13 @@ status: in-progress
 			}
 			return true, nil
 		},
-		getCurrentBranch: func(dir string) (string, error) { return "main", nil },
-		createBranch:     func(dir, branchName string) error { return nil },
-		branchExists:     func(dir, branchName string) (bool, error) { return false, nil },
-		stageAll:         func(dir string) error { return nil },
+		getCurrentBranch: func(dir string) (string, error) { return currentBranch, nil },
+		createBranch: func(dir, branchName string) error {
+			currentBranch = branchName
+			return nil
+		},
+		branchExists: func(dir, branchName string) (bool, error) { return false, nil },
+		stageAll:     func(dir string) error { return nil },
 		commit: func(dir, message string) error {
 			commits = append(commits, message)
 			return nil
@@ -585,6 +593,15 @@ status: in-progress
 
 			if invocation.Role == AgentRoleReviewer && invocation.TaskText == "" {
 				sectionReviewCalls++
+				if !strings.Contains(invocation.Prompt, "Branch context:") {
+					t.Fatalf("section review prompt missing branch context header: %s", invocation.Prompt)
+				}
+				if !strings.Contains(invocation.Prompt, "Current branch: implement/007-01-spec-updates-and-section-delivery") {
+					t.Fatalf("section review prompt missing current branch: %s", invocation.Prompt)
+				}
+				if !strings.Contains(invocation.Prompt, "Parent branch: main") {
+					t.Fatalf("section review prompt missing parent branch: %s", invocation.Prompt)
+				}
 				if sectionReviewCalls == 1 {
 					return AgentResult{CriticalIssues: true, Output: "REVIEW_CRITICAL: integration broke"}, nil
 				}
@@ -654,12 +671,14 @@ status: in-progress
 
 	createdBranches := 0
 	pushes := 0
+	currentBranch := "main"
 
 	err := executePlanWithDeps(tmpDir, info, plan, BackendOpencode, nil, executeDeps{
 		hasUncommittedChanges: func(dir string) (bool, error) { return false, nil },
-		getCurrentBranch:      func(dir string) (string, error) { return "main", nil },
+		getCurrentBranch:      func(dir string) (string, error) { return currentBranch, nil },
 		createBranch: func(dir, branchName string) error {
 			createdBranches++
+			currentBranch = branchName
 			return nil
 		},
 		branchExists: func(dir, branchName string) (bool, error) { return false, nil },

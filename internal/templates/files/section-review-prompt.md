@@ -5,6 +5,9 @@ Section: {{.SectionName}}
 Tasks:
 {{range .Tasks}}- {{.}}
 {{end}}
+Branch context:
+- Current branch: {{.CurrentBranch}}
+- Parent branch: {{.ParentBranch}}
 
 Review rules:
 - Evaluate whether the current repository state correctly and completely satisfies the full section.

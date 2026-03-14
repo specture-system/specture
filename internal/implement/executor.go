@@ -13,6 +13,7 @@ import (
 )
 
 const maxWorkerPassesPerTask = 3
+const maxSectionReviewPasses = 2
 
 type PrintfFunc func(format string, args ...any)
 
@@ -43,6 +44,9 @@ type executeDeps struct {
 	getCurrentBranch      func(dir string) (string, error)
 	createBranch          func(dir, branchName string) error
 	branchExists          func(dir, branchName string) (bool, error)
+	stageAll              func(dir string) error
+	commit                func(dir, message string) error
+	pushBranch            func(dir, branchName string) error
 	invokeAgent           func(invocation AgentInvocation) (AgentResult, error)
 }
 
@@ -111,7 +115,9 @@ func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.T
 }
 
 func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, backend string, printf PrintfFunc, deps executeDeps) error {
+	deps = withExecuteDepDefaults(deps)
 	sectionOrderByName := specpkg.TaskListSectionOrders(info.Path)
+	currentStatus := info.Status
 
 	for idx, section := range plan.Sections {
 		sectionNumber := idx + 1
@@ -130,6 +136,10 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 			printf("  branch: %s\n", branchName)
 		}
 
+		if len(section.Tasks) == 0 {
+			continue
+		}
+
 		for _, task := range section.Tasks {
 			if printf != nil {
 				printf("  running task: %s\n", task.Text)
@@ -138,6 +148,36 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 			if err := ExecuteTaskWithReview(info.Path, section.Name, backend, task, printf, deps.invokeAgent); err != nil {
 				return err
 			}
+
+			nextStatus := ""
+			if currentStatus == StatusApproved {
+				nextStatus = StatusInProgress
+			}
+
+			if err := applyTaskProgress(info.Path, section.Name, task.Text, nextStatus); err != nil {
+				return fmt.Errorf("failed to update spec progress for task %q: %w", task.Text, err)
+			}
+
+			if err := deps.stageAll(workDir); err != nil {
+				return fmt.Errorf("failed to stage accepted task %q: %w", task.Text, err)
+			}
+
+			if err := deps.commit(workDir, taskCommitMessage(info.Number, task.Text)); err != nil {
+				return fmt.Errorf("failed to commit accepted task %q: %w", task.Text, err)
+			}
+
+			if nextStatus == StatusInProgress {
+				currentStatus = StatusInProgress
+				info.Status = StatusInProgress
+			}
+		}
+
+		if err := executeSectionReview(workDir, info, backend, section, sectionNumber, printf, deps); err != nil {
+			return err
+		}
+
+		if err := deps.pushBranch(workDir, branchName); err != nil {
+			return fmt.Errorf("failed to push completed section branch %q: %w", branchName, err)
 		}
 	}
 
@@ -150,8 +190,95 @@ func defaultExecuteDeps() executeDeps {
 		getCurrentBranch:      gitpkg.GetCurrentBranch,
 		createBranch:          gitpkg.CreateBranch,
 		branchExists:          gitpkg.BranchExists,
+		stageAll:              gitpkg.StageAll,
+		commit:                gitpkg.Commit,
+		pushBranch:            gitpkg.PushBranch,
 		invokeAgent:           invokeAgentCLI,
 	}
+}
+
+func withExecuteDepDefaults(deps executeDeps) executeDeps {
+	if deps.stageAll == nil {
+		deps.stageAll = func(dir string) error { return nil }
+	}
+	if deps.commit == nil {
+		deps.commit = func(dir, message string) error { return nil }
+	}
+	if deps.pushBranch == nil {
+		deps.pushBranch = func(dir, branchName string) error { return nil }
+	}
+
+	return deps
+}
+
+func executeSectionReview(workDir string, info *specpkg.SpecInfo, backend string, section RemainingSection, sectionNumber int, printf PrintfFunc, deps executeDeps) error {
+	for pass := 1; pass <= maxSectionReviewPasses; pass++ {
+		reviewPrompt, err := buildSectionReviewPrompt(info.Path, section.Name, section.Tasks)
+		if err != nil {
+			return fmt.Errorf("failed to build section review prompt for %q: %w", section.Name, err)
+		}
+
+		reviewResult, err := deps.invokeAgent(AgentInvocation{
+			Backend:     backend,
+			Role:        AgentRoleReviewer,
+			SpecPath:    info.Path,
+			SectionName: section.Name,
+			Attempt:     pass,
+			Prompt:      reviewPrompt,
+		})
+		if err != nil {
+			return fmt.Errorf("section review pass %d failed for %q: %w", pass, section.Name, err)
+		}
+
+		if !reviewResult.CriticalIssues {
+			if printf != nil {
+				printf("  section accepted after %d review pass(es): %s\n", pass, section.Name)
+			}
+			return nil
+		}
+
+		if pass == maxSectionReviewPasses {
+			return fmt.Errorf("section %q failed review after %d passes due to critical issues", section.Name, maxSectionReviewPasses)
+		}
+
+		if printf != nil {
+			printf("  section review found critical issues for %q; retrying once\n", section.Name)
+		}
+
+		workerPrompt, err := buildSectionWorkerPrompt(info.Path, section.Name, section.Tasks, reviewResult.Output)
+		if err != nil {
+			return fmt.Errorf("failed to build section worker prompt for %q: %w", section.Name, err)
+		}
+
+		if _, err := deps.invokeAgent(AgentInvocation{
+			Backend:     backend,
+			Role:        AgentRoleWorker,
+			SpecPath:    info.Path,
+			SectionName: section.Name,
+			Attempt:     pass + 1,
+			Prompt:      workerPrompt,
+		}); err != nil {
+			return fmt.Errorf("section worker retry failed for %q: %w", section.Name, err)
+		}
+
+		hasChanges, err := deps.hasUncommittedChanges(workDir)
+		if err != nil {
+			return fmt.Errorf("failed to inspect section retry changes for %q: %w", section.Name, err)
+		}
+		if !hasChanges {
+			continue
+		}
+
+		if err := deps.stageAll(workDir); err != nil {
+			return fmt.Errorf("failed to stage section retry changes for %q: %w", section.Name, err)
+		}
+
+		if err := deps.commit(workDir, sectionReviewCommitMessage(info.Number, section.Name, sectionNumber)); err != nil {
+			return fmt.Errorf("failed to commit section retry changes for %q: %w", section.Name, err)
+		}
+	}
+
+	return nil
 }
 
 func ensureSectionBranch(workDir, branchName string, deps executeDeps) error {
@@ -214,6 +341,42 @@ func buildReviewPrompt(specPath, sectionName string, task specpkg.Task) (string,
 	return renderPromptTemplate(templatespkg.GetImplementReviewPromptTemplate, specPath, sectionName, task)
 }
 
+func buildSectionReviewPrompt(specPath, sectionName string, tasks []specpkg.Task) (string, error) {
+	promptTemplate, err := templatespkg.GetImplementSectionReviewPromptTemplate()
+	if err != nil {
+		return "", err
+	}
+
+	return templatepkg.RenderTemplate(promptTemplate, struct {
+		SpecPath    string
+		SectionName string
+		Tasks       []string
+	}{
+		SpecPath:    specPath,
+		SectionName: displaySectionName(sectionName),
+		Tasks:       taskTexts(tasks),
+	})
+}
+
+func buildSectionWorkerPrompt(specPath, sectionName string, tasks []specpkg.Task, reviewOutput string) (string, error) {
+	promptTemplate, err := templatespkg.GetImplementSectionWorkerPromptTemplate()
+	if err != nil {
+		return "", err
+	}
+
+	return templatepkg.RenderTemplate(promptTemplate, struct {
+		SpecPath     string
+		SectionName  string
+		Tasks        []string
+		ReviewOutput string
+	}{
+		SpecPath:     specPath,
+		SectionName:  displaySectionName(sectionName),
+		Tasks:        taskTexts(tasks),
+		ReviewOutput: strings.TrimSpace(reviewOutput),
+	})
+}
+
 func renderPromptTemplate(loadTemplate func() (string, error), specPath, sectionName string, task specpkg.Task) (string, error) {
 	promptTemplate, err := loadTemplate()
 	if err != nil {
@@ -251,4 +414,21 @@ func displaySectionName(name string) string {
 	}
 
 	return name
+}
+
+func taskCommitMessage(specNumber int, taskText string) string {
+	return fmt.Sprintf("feat: complete spec %03d task: %s", specNumber, taskText)
+}
+
+func sectionReviewCommitMessage(specNumber int, sectionName string, sectionNumber int) string {
+	return fmt.Sprintf("fix: address spec %03d section %02d review: %s", specNumber, sectionNumber, displaySectionName(sectionName))
+}
+
+func taskTexts(tasks []specpkg.Task) []string {
+	texts := make([]string, 0, len(tasks))
+	for _, task := range tasks {
+		texts = append(texts, task.Text)
+	}
+
+	return texts
 }

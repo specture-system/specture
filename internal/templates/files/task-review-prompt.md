@@ -5,6 +5,13 @@ Section: {{.SectionName}}
 Task: {{.TaskText}}
 Task Subtree:
 {{.TaskSubtree}}
+Files changed in current task pass:
+{{- if .ChangedFiles}}
+{{range .ChangedFiles}}- {{.}}
+{{end}}
+{{- else}}
+- (none detected)
+{{- end}}
 
 Review rules:
 - Evaluate whether the current repository state correctly and completely satisfies this task.

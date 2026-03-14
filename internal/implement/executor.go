@@ -41,6 +41,7 @@ type AgentResult struct {
 
 type executeDeps struct {
 	hasUncommittedChanges func(dir string) (bool, error)
+	changedFiles          func(dir string) ([]string, error)
 	getCurrentBranch      func(dir string) (string, error)
 	createBranch          func(dir, branchName string) error
 	branchExists          func(dir, branchName string) (bool, error)
@@ -64,6 +65,10 @@ func SectionBranchName(specNumber int, sectionName string, sectionNumber int) st
 }
 
 func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.Task, printf PrintfFunc, invokeAgent func(invocation AgentInvocation) (AgentResult, error)) error {
+	return executeTaskWithReviewWithContext("", specPath, sectionName, backend, task, printf, nil, invokeAgent)
+}
+
+func executeTaskWithReviewWithContext(workDir, specPath, sectionName, backend string, task specpkg.Task, printf PrintfFunc, changedFiles func(dir string) ([]string, error), invokeAgent func(invocation AgentInvocation) (AgentResult, error)) error {
 	priorCriticalReviewOutput := ""
 
 	for pass := 1; pass <= maxWorkerPassesPerTask; pass++ {
@@ -92,7 +97,16 @@ func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.T
 			printf("    review pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
 		}
 
-		reviewPrompt, err := buildReviewPrompt(specPath, sectionName, task)
+		taskChangedFiles := []string{}
+		if changedFiles != nil {
+			files, err := changedFiles(workDir)
+			if err != nil {
+				return fmt.Errorf("failed to collect changed files for task %q on pass %d: %w", task.Text, pass, err)
+			}
+			taskChangedFiles = files
+		}
+
+		reviewPrompt, err := buildReviewPrompt(specPath, sectionName, task, taskChangedFiles)
 		if err != nil {
 			return fmt.Errorf("failed to build review prompt for task %q: %w", task.Text, err)
 		}
@@ -160,7 +174,7 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 				printf("  running task %d/%d: %s\n", taskIdx+1, len(section.Tasks), task.Text)
 			}
 
-			if err := ExecuteTaskWithReview(info.Path, section.Name, backend, task, printf, deps.invokeAgent); err != nil {
+			if err := executeTaskWithReviewWithContext(workDir, info.Path, section.Name, backend, task, printf, deps.changedFiles, deps.invokeAgent); err != nil {
 				return err
 			}
 
@@ -202,6 +216,7 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 func defaultExecuteDeps() executeDeps {
 	return executeDeps{
 		hasUncommittedChanges: gitpkg.HasUncommittedChanges,
+		changedFiles:          gitpkg.ChangedFiles,
 		getCurrentBranch:      gitpkg.GetCurrentBranch,
 		createBranch:          gitpkg.CreateBranch,
 		branchExists:          gitpkg.BranchExists,
@@ -215,6 +230,9 @@ func defaultExecuteDeps() executeDeps {
 func withExecuteDepDefaults(deps executeDeps) executeDeps {
 	if deps.stageAll == nil {
 		deps.stageAll = func(dir string) error { return nil }
+	}
+	if deps.changedFiles == nil {
+		deps.changedFiles = func(dir string) ([]string, error) { return []string{}, nil }
 	}
 	if deps.commit == nil {
 		deps.commit = func(dir, message string) error { return nil }
@@ -361,11 +379,11 @@ func invokeAgentCLI(invocation AgentInvocation) (AgentResult, error) {
 }
 
 func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task, reviewOutput string) (string, error) {
-	return renderPromptTemplate(templatespkg.GetImplementWorkerPromptTemplate, specPath, sectionName, task, reviewOutput)
+	return renderPromptTemplate(templatespkg.GetImplementWorkerPromptTemplate, specPath, sectionName, task, reviewOutput, nil)
 }
 
-func buildReviewPrompt(specPath, sectionName string, task specpkg.Task) (string, error) {
-	return renderPromptTemplate(templatespkg.GetImplementReviewPromptTemplate, specPath, sectionName, task, "")
+func buildReviewPrompt(specPath, sectionName string, task specpkg.Task, changedFiles []string) (string, error) {
+	return renderPromptTemplate(templatespkg.GetImplementReviewPromptTemplate, specPath, sectionName, task, "", changedFiles)
 }
 
 func buildSectionReviewPrompt(specPath, sectionName string, tasks []specpkg.Task) (string, error) {
@@ -404,7 +422,7 @@ func buildSectionWorkerPrompt(specPath, sectionName string, tasks []specpkg.Task
 	})
 }
 
-func renderPromptTemplate(loadTemplate func() (string, error), specPath, sectionName string, task specpkg.Task, reviewOutput string) (string, error) {
+func renderPromptTemplate(loadTemplate func() (string, error), specPath, sectionName string, task specpkg.Task, reviewOutput string, changedFiles []string) (string, error) {
 	promptTemplate, err := loadTemplate()
 	if err != nil {
 		return "", err
@@ -416,12 +434,14 @@ func renderPromptTemplate(loadTemplate func() (string, error), specPath, section
 		TaskText     string
 		TaskSubtree  string
 		ReviewOutput string
+		ChangedFiles []string
 	}{
 		SpecPath:     specPath,
 		SectionName:  displaySectionName(sectionName),
 		TaskText:     task.Text,
 		TaskSubtree:  task.Subtree,
 		ReviewOutput: strings.TrimSpace(reviewOutput),
+		ChangedFiles: changedFiles,
 	})
 }
 

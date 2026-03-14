@@ -190,6 +190,9 @@ func TestExecuteTaskWithReview_InvokesWorkerAndReviewerWithContext(t *testing.T)
 	if !strings.Contains(invocations[1].Prompt, "Task Subtree:") {
 		t.Fatalf("review prompt missing task subtree header: %s", invocations[1].Prompt)
 	}
+	if !strings.Contains(invocations[1].Prompt, "Files changed in current task pass:\n- (none detected)") {
+		t.Fatalf("review prompt missing changed files fallback: %s", invocations[1].Prompt)
+	}
 }
 
 func TestExecuteTaskWithReview_RetriesWorkerUpToThreePassesOnCriticalReview(t *testing.T) {
@@ -250,6 +253,52 @@ func TestExecuteTaskWithReview_PassesPriorCriticalReviewFeedbackToNextWorkerPass
 	}
 	if !strings.Contains(workerPrompts[1], "Prior critical review findings:\nREVIEW_CRITICAL: missing tests") {
 		t.Fatalf("second worker prompt missing prior critical findings context: %s", workerPrompts[1])
+	}
+}
+
+func TestExecuteTaskWithReview_WithContextPassesChangedFilesToReviewer(t *testing.T) {
+	task := specpkg.Task{Text: "Implement retry behavior"}
+	invocations := make([]AgentInvocation, 0, 2)
+
+	err := executeTaskWithReviewWithContext(
+		"/tmp/repo",
+		"specs/agent.md",
+		"Branch and Task Execution",
+		BackendOpencode,
+		task,
+		nil,
+		func(dir string) ([]string, error) {
+			if dir != "/tmp/repo" {
+				t.Fatalf("unexpected work dir: %s", dir)
+			}
+			return []string{"cmd/implement.go", "internal/implement/executor.go"}, nil
+		},
+		func(invocation AgentInvocation) (AgentResult, error) {
+			invocations = append(invocations, invocation)
+			if invocation.Role == AgentRoleReviewer {
+				return AgentResult{CriticalIssues: false}, nil
+			}
+			return AgentResult{}, nil
+		},
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(invocations) != 2 {
+		t.Fatalf("expected 2 invocations, got %d", len(invocations))
+	}
+	if invocations[1].Role != AgentRoleReviewer {
+		t.Fatalf("expected second invocation to be reviewer, got %s", invocations[1].Role)
+	}
+	if !strings.Contains(invocations[1].Prompt, "Files changed in current task pass:") {
+		t.Fatalf("review prompt missing changed-files header: %s", invocations[1].Prompt)
+	}
+	if !strings.Contains(invocations[1].Prompt, "- cmd/implement.go") {
+		t.Fatalf("review prompt missing first changed file: %s", invocations[1].Prompt)
+	}
+	if !strings.Contains(invocations[1].Prompt, "- internal/implement/executor.go") {
+		t.Fatalf("review prompt missing second changed file: %s", invocations[1].Prompt)
 	}
 }
 

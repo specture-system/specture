@@ -186,5 +186,5 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 
 ### Completion
 
-- [ ] Add failing tests for final `completed` status handling
-- [ ] Implement the final completion update when all remaining tasks are done
+- [x] Add failing tests for final `completed` status handling
+- [x] Implement the final completion update when all remaining tasks are done

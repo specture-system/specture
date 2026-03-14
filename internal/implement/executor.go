@@ -1,7 +1,11 @@
 package implement
 
 import (
+	"bufio"
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -481,22 +485,100 @@ func ensureSectionBranch(workDir, branchName string, deps executeDeps) error {
 }
 
 func invokeAgentCLI(invocation AgentInvocation) (AgentResult, error) {
-	args, err := backendInvocationArgs(invocation)
+	codexOutputPath := ""
+	if invocation.Backend == BackendCodex {
+		file, err := os.CreateTemp("", "specture-codex-last-message-*.txt")
+		if err != nil {
+			return AgentResult{}, fmt.Errorf("failed to create codex output file: %w", err)
+		}
+		codexOutputPath = file.Name()
+		if err := file.Close(); err != nil {
+			return AgentResult{}, fmt.Errorf("failed to close codex output file: %w", err)
+		}
+		defer os.Remove(codexOutputPath)
+	}
+
+	args, err := backendInvocationArgs(invocation, codexOutputPath)
 	if err != nil {
 		return AgentResult{}, err
 	}
 
 	cmd := exec.Command(invocation.Backend, args...)
-	output, err := cmd.CombinedOutput()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err = cmd.Run()
 	if err != nil {
-		return AgentResult{}, fmt.Errorf("%s agent invocation failed: %w", invocation.Role, err)
+		detail := strings.TrimSpace(stderr.String())
+		if detail == "" {
+			detail = strings.TrimSpace(stdout.String())
+		}
+		if detail == "" {
+			return AgentResult{}, fmt.Errorf("%s agent invocation failed: %w", invocation.Role, err)
+		}
+
+		return AgentResult{}, fmt.Errorf("%s agent invocation failed: %w: %s", invocation.Role, err, detail)
 	}
 
-	outputText := string(output)
+	var outputText string
+	switch invocation.Backend {
+	case BackendOpencode:
+		outputText, err = parseOpencodeRunJSONOutput(stdout.String())
+		if err != nil {
+			return AgentResult{}, fmt.Errorf("failed to parse opencode JSON output: %w", err)
+		}
+	case BackendCodex:
+		content, readErr := os.ReadFile(codexOutputPath)
+		if readErr != nil {
+			return AgentResult{}, fmt.Errorf("failed to read codex final message output: %w", readErr)
+		}
+		outputText = string(content)
+	default:
+		return AgentResult{}, fmt.Errorf("unsupported agent backend %q for invocation", invocation.Backend)
+	}
+
 	return AgentResult{
 		Output:         outputText,
-		CriticalIssues: strings.Contains(outputText, "REVIEW_CRITICAL"),
+		CriticalIssues: strings.HasPrefix(strings.TrimSpace(outputText), "REVIEW_CRITICAL:"),
 	}, nil
+}
+
+func parseOpencodeRunJSONOutput(stdout string) (string, error) {
+	type opencodeEvent struct {
+		Type string `json:"type"`
+		Part struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"part"`
+	}
+
+	var parts []string
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	scanner.Buffer(make([]byte, 0, 64*1024), 2*1024*1024)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+
+		var event opencodeEvent
+		if err := json.Unmarshal([]byte(line), &event); err != nil {
+			return "", fmt.Errorf("invalid JSONL event %q: %w", line, err)
+		}
+
+		if event.Type == "text" && event.Part.Text != "" {
+			parts = append(parts, event.Part.Text)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("failed to read opencode JSON output: %w", err)
+	}
+	if len(parts) == 0 {
+		return "", fmt.Errorf("opencode returned no text events")
+	}
+
+	return strings.Join(parts, ""), nil
 }
 
 func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task, reviewOutput string, changedFiles []string) (string, error) {

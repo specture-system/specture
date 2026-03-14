@@ -108,43 +108,72 @@ func TestSelectBackend_NoBackendFound(t *testing.T) {
 
 func TestBackendInvocationArgs_UsesBackendSpecificNonInteractiveSubcommands(t *testing.T) {
 	tests := []struct {
-		name      string
-		backend   string
-		wantFirst string
+		name         string
+		backend      string
+		outputPath   string
+		wantArgCount int
+		wantPrefix   []string
+		wantLastArg  string
 	}{
-		{name: "opencode uses run", backend: BackendOpencode, wantFirst: "run"},
-		{name: "codex uses exec", backend: BackendCodex, wantFirst: "exec"},
+		{
+			name:         "opencode uses run with json format",
+			backend:      BackendOpencode,
+			wantArgCount: 4,
+			wantPrefix:   []string{"run", "--format", "json"},
+			wantLastArg:  "hello",
+		},
+		{
+			name:         "codex uses exec with output file",
+			backend:      BackendCodex,
+			outputPath:   "/tmp/last-message.txt",
+			wantArgCount: 4,
+			wantPrefix:   []string{"exec", "--output-last-message", "/tmp/last-message.txt"},
+			wantLastArg:  "hello",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args, err := backendInvocationArgs(AgentInvocation{Backend: tt.backend, Prompt: "hello"})
+			args, err := backendInvocationArgs(AgentInvocation{Backend: tt.backend, Prompt: "hello"}, tt.outputPath)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if len(args) != 2 {
-				t.Fatalf("expected 2 args, got %d", len(args))
+			if len(args) != tt.wantArgCount {
+				t.Fatalf("expected %d args, got %d", tt.wantArgCount, len(args))
 			}
 
-			if args[0] != tt.wantFirst {
-				t.Fatalf("expected first arg %q, got %q", tt.wantFirst, args[0])
+			for idx, want := range tt.wantPrefix {
+				if args[idx] != want {
+					t.Fatalf("expected arg[%d] %q, got %q", idx, want, args[idx])
+				}
 			}
 
-			if args[1] != "hello" {
-				t.Fatalf("expected prompt as second arg, got %q", args[1])
+			if args[len(args)-1] != tt.wantLastArg {
+				t.Fatalf("expected prompt as last arg, got %q", args[len(args)-1])
 			}
 		})
 	}
 }
 
 func TestBackendInvocationArgs_RejectsUnsupportedBackend(t *testing.T) {
-	_, err := backendInvocationArgs(AgentInvocation{Backend: "other", Prompt: "hello"})
+	_, err := backendInvocationArgs(AgentInvocation{Backend: "other", Prompt: "hello"}, "")
 	if err == nil {
 		t.Fatal("expected error for unsupported backend")
 	}
 
 	if !strings.Contains(err.Error(), "unsupported agent backend") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestBackendInvocationArgs_RejectsCodexWithoutOutputPath(t *testing.T) {
+	_, err := backendInvocationArgs(AgentInvocation{Backend: BackendCodex, Prompt: "hello"}, "")
+	if err == nil {
+		t.Fatal("expected error for missing codex output path")
+	}
+
+	if !strings.Contains(err.Error(), "requires output path") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

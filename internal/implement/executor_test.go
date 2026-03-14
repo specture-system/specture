@@ -1,6 +1,7 @@
 package implement
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -214,6 +215,44 @@ func TestExecuteTaskWithReview_RetriesWorkerUpToThreePassesOnCriticalReview(t *t
 	}
 	if reviewCalls != 3 {
 		t.Fatalf("expected 3 review calls, got %d", reviewCalls)
+	}
+}
+
+func TestExecuteTaskWithReview_PrintsWorkerAndReviewPassProgress(t *testing.T) {
+	task := specpkg.Task{Text: "Implement retry behavior"}
+	var logs strings.Builder
+
+	err := ExecuteTaskWithReview(
+		"specs/agent.md",
+		"Branch and Task Execution",
+		BackendOpencode,
+		task,
+		func(format string, args ...any) {
+			logs.WriteString(fmt.Sprintf(format, args...))
+		},
+		func(invocation AgentInvocation) (AgentResult, error) {
+			if invocation.Role == AgentRoleReviewer {
+				return AgentResult{CriticalIssues: false}, nil
+			}
+			return AgentResult{}, nil
+		},
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := logs.String()
+	expected := []string{
+		"worker pass 1/3 started for task: Implement retry behavior",
+		"worker pass 1/3 completed for task: Implement retry behavior",
+		"review pass 1/3 started for task: Implement retry behavior",
+		"review pass 1/3 completed for task: Implement retry behavior",
+		"task accepted after 1 pass(es): Implement retry behavior",
+	}
+	for _, needle := range expected {
+		if !strings.Contains(output, needle) {
+			t.Fatalf("expected output to contain %q, got:\n%s", needle, output)
+		}
 	}
 }
 

@@ -172,6 +172,8 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
   - [x] Include example usage
 - [x] Add `--dry-run` support to `implement` so it prints the execution plan and exits before making changes
 - [x] Rename the new implement prompt templates to use `task-` and `section-` prefixes, and update related code
+- [x] Improve task execution progress output so worker and reviewer passes are visible while `implement` runs
+- [ ] Show reviewer feedback output for each pass so multi-pass retries are diagnosable from CLI logs
 
 ### Final Cleanup
 

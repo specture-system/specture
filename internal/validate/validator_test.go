@@ -20,6 +20,8 @@ This is a description.
 
 ## Task List
 
+### Phase 1
+
 - [ ] Task 1
 - [x] Task 2
 `)
@@ -41,6 +43,8 @@ func TestValidateSpec_MissingFrontmatter(t *testing.T) {
 Description.
 
 ## Task List
+
+### Phase 1
 
 - [ ] Task 1
 `)
@@ -72,6 +76,8 @@ author: Test Author
 # My Feature
 
 ## Task List
+
+### Phase 1
 
 - [ ] Task 1
 `)
@@ -119,6 +125,8 @@ status: ` + tt.status + `
 
 ## Task List
 
+### Phase 1
+
 - [ ] Task 1
 `)
 
@@ -157,6 +165,8 @@ status: ` + status + `
 # My Feature
 
 ## Task List
+
+### Phase 1
 
 - [ ] Task 1
 `)
@@ -245,6 +255,78 @@ Description without Task List heading.
 	}
 }
 
+func TestValidateSpec_TopLevelTaskCheckboxesMustBeUnderSection(t *testing.T) {
+	content := []byte(`---
+number: 7
+status: draft
+---
+
+# My Feature
+
+## Task List
+
+- [ ] Top-level task without section
+
+### Proper Section
+
+- [ ] Properly sectioned task
+`)
+
+	spec, err := ParseSpecContent("test.md", content)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+
+	result := ValidateSpec(spec)
+	if result.IsValid() {
+		t.Fatal("expected validation to fail")
+	}
+
+	found := false
+	for _, e := range result.Errors {
+		if e.Field == "task list" && strings.Contains(e.Message, "must appear under a '###' section") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected top-level sectioning validation error, got: %v", result.Errors)
+	}
+}
+
+func TestValidateSpec_AllTopLevelTaskCheckboxesSectioned(t *testing.T) {
+	content := []byte(`---
+number: 7
+status: draft
+---
+
+# My Feature
+
+## Task List
+
+### Task Structure and Validation
+
+- [ ] Parent task
+  - [ ] Nested checkbox
+
+### CLI Polish
+
+- [ ] Another parent task
+`)
+
+	spec, err := ParseSpecContent("test.md", content)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+
+	result := ValidateSpec(spec)
+	for _, e := range result.Errors {
+		if e.Field == "task list" && strings.Contains(e.Message, "must appear under a '###' section") {
+			t.Fatalf("unexpected sectioning error: %v", e)
+		}
+	}
+}
+
 func TestValidateSpec_MultipleErrors(t *testing.T) {
 	// Missing everything
 	content := []byte(`Just some text without structure.`)
@@ -280,6 +362,8 @@ author: File Author
 Description here.
 
 ## Task List
+
+### Phase 1
 
 - [ ] A task
 `)

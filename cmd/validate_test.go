@@ -38,6 +38,8 @@ Description.
 
 ## Task List
 
+### Phase 1
+
 - [ ] Task 1
 `
 	if err := os.WriteFile(filepath.Join(specsDir, "000-test.md"), []byte(validSpec), 0644); err != nil {
@@ -133,6 +135,8 @@ status: draft
 
 ## Task List
 
+### Phase 1
+
 - [ ] Task
 `
 	validSpec1 := `---
@@ -143,6 +147,8 @@ status: draft
 # Spec One
 
 ## Task List
+
+### Phase 1
 
 - [ ] Task
 `
@@ -203,6 +209,8 @@ status: approved
 # Test
 
 ## Task List
+
+### Completed
 
 - [x] Done
 `
@@ -342,6 +350,8 @@ status: draft
 # Valid
 
 ## Task List
+
+### Phase 1
 
 - [ ] Task
 `

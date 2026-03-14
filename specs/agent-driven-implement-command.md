@@ -163,7 +163,7 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
   - [x] Treat each top-level checkbox as one implementation, review, and commit unit
   - [x] Include nested checkboxes and nested bullets at every depth in the worker and reviewer context for the parent top-level task
   - [x] Mark the full nested subtree complete when the parent top-level task is accepted, including descendants at every depth
-- [ ] Update the `validate` command to require every top-level task-list checkbox to appear under a `###` section
+- [x] Update the `validate` command to require every top-level task-list checkbox to appear under a `###` section
 
 ### CLI Polish
 

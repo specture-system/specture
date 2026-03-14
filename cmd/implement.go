@@ -20,9 +20,14 @@ var implementCmd = &cobra.Command{
 	Short: "Plan and orchestrate implementation of a spec",
 	Long: `Plan and orchestrate implementation of an approved or in-progress spec.
 
-The command currently validates inputs, checks spec eligibility, detects the
-agent backend, computes remaining section/task planning, and runs the
-worker/review orchestration loop for each remaining task.`,
+The implement command is an agent orchestrator. It validates inputs, checks
+spec eligibility, detects the agent backend, computes remaining section/task
+planning, and runs the worker/review orchestration loop for each remaining
+task.
+
+Examples:
+  specture implement --spec 7
+  specture implement --spec 7 --agent codex`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runImplement(cmd, args)
 	},

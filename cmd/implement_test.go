@@ -272,3 +272,13 @@ func TestImplementCommand_AgentOverrideBeatsAutoDetect(t *testing.T) {
 		t.Fatalf("expected codex backend, got:\n%s", output)
 	}
 }
+
+func TestImplementCommand_HelpMentionsOrchestratorAndExample(t *testing.T) {
+	if !strings.Contains(implementCmd.Long, "agent orchestrator") {
+		t.Fatalf("expected implement help to mention agent orchestrator, got:\n%s", implementCmd.Long)
+	}
+
+	if !strings.Contains(implementCmd.Long, "specture implement --spec 7") {
+		t.Fatalf("expected implement help to include example usage, got:\n%s", implementCmd.Long)
+	}
+}

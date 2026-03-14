@@ -20,9 +20,14 @@ var implementCmd = &cobra.Command{
 	Short: "Plan and orchestrate implementation of a spec",
 	Long: `Plan and orchestrate implementation of an approved or in-progress spec.
 
-The command currently validates inputs, checks spec eligibility, detects the
-agent backend, computes remaining section/task planning, and runs the
-worker/review orchestration loop for each remaining task.`,
+The implement command is an agent orchestrator. It validates inputs, checks
+spec eligibility, detects the agent backend, computes remaining section/task
+planning, and runs the worker/review orchestration loop for each remaining
+task.
+
+Examples:
+  specture implement --spec 7
+  specture implement --spec 7 --agent codex`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runImplement(cmd, args)
 	},
@@ -31,6 +36,7 @@ worker/review orchestration loop for each remaining task.`,
 func init() {
 	implementCmd.Flags().StringP("spec", "s", "", "Spec number to implement (required)")
 	implementCmd.Flags().String("agent", "", "Agent backend override: opencode or codex")
+	implementCmd.Flags().Bool("dry-run", false, "Print execution plan and exit before making changes")
 	implementCmd.MarkFlagRequired("spec")
 }
 
@@ -46,6 +52,7 @@ func runImplement(cmd *cobra.Command, args []string) error {
 	}
 
 	agentOverride, _ := cmd.Flags().GetString("agent")
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
 
 	specsDir := filepath.Join(cwd, "specs")
 	specPath, err := specpkg.ResolvePath(specsDir, specArg)
@@ -98,6 +105,11 @@ func runImplement(cmd *cobra.Command, args []string) error {
 
 	cmd.Println()
 	cmd.Println("Planning complete.")
+	if dryRun {
+		cmd.Println()
+		cmd.Println("Dry run enabled; exiting before implementation execution.")
+		return nil
+	}
 
 	if plan.TaskCount == 0 {
 		return nil

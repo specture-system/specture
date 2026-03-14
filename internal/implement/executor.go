@@ -65,6 +65,10 @@ func SectionBranchName(specNumber int, sectionName string, sectionNumber int) st
 
 func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.Task, printf PrintfFunc, invokeAgent func(invocation AgentInvocation) (AgentResult, error)) error {
 	for pass := 1; pass <= maxWorkerPassesPerTask; pass++ {
+		if printf != nil {
+			printf("    worker pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
+		}
+
 		workerPrompt, err := buildWorkerPrompt(specPath, sectionName, task)
 		if err != nil {
 			return fmt.Errorf("failed to build worker prompt for task %q: %w", task.Text, err)
@@ -80,6 +84,10 @@ func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.T
 		})
 		if err != nil {
 			return fmt.Errorf("worker pass %d failed for task %q: %w", pass, task.Text, err)
+		}
+		if printf != nil {
+			printf("    worker pass %d/%d completed for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
+			printf("    review pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
 		}
 
 		reviewPrompt, err := buildReviewPrompt(specPath, sectionName, task)
@@ -97,6 +105,10 @@ func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.T
 		})
 		if err != nil {
 			return fmt.Errorf("review pass %d failed for task %q: %w", pass, task.Text, err)
+		}
+		if printf != nil {
+			printf("    review pass %d/%d completed for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
+			printReviewFeedback(printf, "task", pass, reviewResult.Output)
 		}
 
 		if !reviewResult.CriticalIssues {
@@ -140,9 +152,9 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 			continue
 		}
 
-		for _, task := range section.Tasks {
+		for taskIdx, task := range section.Tasks {
 			if printf != nil {
-				printf("  running task: %s\n", task.Text)
+				printf("  running task %d/%d: %s\n", taskIdx+1, len(section.Tasks), task.Text)
 			}
 
 			if err := ExecuteTaskWithReview(info.Path, section.Name, backend, task, printf, deps.invokeAgent); err != nil {
@@ -213,6 +225,10 @@ func withExecuteDepDefaults(deps executeDeps) executeDeps {
 
 func executeSectionReview(workDir string, info *specpkg.SpecInfo, backend string, section RemainingSection, sectionNumber int, printf PrintfFunc, deps executeDeps) error {
 	for pass := 1; pass <= maxSectionReviewPasses; pass++ {
+		if printf != nil {
+			printf("  section review pass %d/%d started: %s\n", pass, maxSectionReviewPasses, section.Name)
+		}
+
 		reviewPrompt, err := buildSectionReviewPrompt(info.Path, section.Name, section.Tasks)
 		if err != nil {
 			return fmt.Errorf("failed to build section review prompt for %q: %w", section.Name, err)
@@ -229,6 +245,10 @@ func executeSectionReview(workDir string, info *specpkg.SpecInfo, backend string
 		if err != nil {
 			return fmt.Errorf("section review pass %d failed for %q: %w", pass, section.Name, err)
 		}
+		if printf != nil {
+			printf("  section review pass %d/%d completed: %s\n", pass, maxSectionReviewPasses, section.Name)
+			printReviewFeedback(printf, "section", pass, reviewResult.Output)
+		}
 
 		if !reviewResult.CriticalIssues {
 			if printf != nil {
@@ -243,6 +263,7 @@ func executeSectionReview(workDir string, info *specpkg.SpecInfo, backend string
 
 		if printf != nil {
 			printf("  section review found critical issues for %q; retrying once\n", section.Name)
+			printf("  section worker retry started: %s\n", section.Name)
 		}
 
 		workerPrompt, err := buildSectionWorkerPrompt(info.Path, section.Name, section.Tasks, reviewResult.Output)
@@ -259,6 +280,9 @@ func executeSectionReview(workDir string, info *specpkg.SpecInfo, backend string
 			Prompt:      workerPrompt,
 		}); err != nil {
 			return fmt.Errorf("section worker retry failed for %q: %w", section.Name, err)
+		}
+		if printf != nil {
+			printf("  section worker retry completed: %s\n", section.Name)
 		}
 
 		hasChanges, err := deps.hasUncommittedChanges(workDir)
@@ -433,4 +457,17 @@ func taskTexts(tasks []specpkg.Task) []string {
 	}
 
 	return texts
+}
+
+func printReviewFeedback(printf PrintfFunc, scope string, pass int, output string) {
+	trimmed := strings.TrimSpace(output)
+	printf("    %s review feedback (pass %d):\n", scope, pass)
+	if trimmed == "" {
+		printf("      (no reviewer output)\n")
+		return
+	}
+
+	for _, line := range strings.Split(trimmed, "\n") {
+		printf("      %s\n", line)
+	}
 }

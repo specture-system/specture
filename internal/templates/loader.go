@@ -32,22 +32,22 @@ func GetAgentPromptTemplate() (string, error) {
 
 // GetImplementWorkerPromptTemplate returns the implement worker prompt template.
 func GetImplementWorkerPromptTemplate() (string, error) {
-	return readTemplate("implement-worker-prompt.md", "implement worker prompt template")
+	return readTemplate("task-worker-prompt.md", "implement worker prompt template")
 }
 
 // GetImplementReviewPromptTemplate returns the implement review prompt template.
 func GetImplementReviewPromptTemplate() (string, error) {
-	return readTemplate("implement-review-prompt.md", "implement review prompt template")
+	return readTemplate("task-review-prompt.md", "implement review prompt template")
 }
 
 // GetImplementSectionReviewPromptTemplate returns the section-level implement review prompt template.
 func GetImplementSectionReviewPromptTemplate() (string, error) {
-	return readTemplate("implement-section-review-prompt.md", "implement section review prompt template")
+	return readTemplate("section-review-prompt.md", "implement section review prompt template")
 }
 
 // GetImplementSectionWorkerPromptTemplate returns the section-level implement worker prompt template.
 func GetImplementSectionWorkerPromptTemplate() (string, error) {
-	return readTemplate("implement-section-worker-prompt.md", "implement section worker prompt template")
+	return readTemplate("section-worker-prompt.md", "implement section worker prompt template")
 }
 
 // GetSpecsReadmeTemplate returns the specs README template.

@@ -575,6 +575,68 @@ status: approved
 	}
 }
 
+func TestExecutePlan_MarksSpecCompletedAfterAllRemainingTasksFinish(t *testing.T) {
+	tmpDir := t.TempDir()
+	specPath := filepath.Join(tmpDir, "spec.md")
+	specBody := `---
+number: 7
+status: in-progress
+---
+
+# Test Spec
+
+## Task List
+
+### Completion
+
+- [ ] Implement the final completion update when all remaining tasks are done
+`
+
+	if err := os.WriteFile(specPath, []byte(specBody), 0644); err != nil {
+		t.Fatalf("failed to write spec: %v", err)
+	}
+
+	info := &specpkg.SpecInfo{Number: 7, Path: specPath, Status: StatusInProgress}
+	plan := Plan{
+		Sections: []RemainingSection{{
+			Name: "Completion",
+			Tasks: []specpkg.Task{{
+				Text:    "Implement the final completion update when all remaining tasks are done",
+				Section: "Completion",
+			}},
+		}},
+	}
+
+	currentBranch := "main"
+
+	err := executePlanWithDeps(tmpDir, info, plan, BackendOpencode, nil, executeDeps{
+		hasUncommittedChanges: func(dir string) (bool, error) { return false, nil },
+		getCurrentBranch:      func(dir string) (string, error) { return currentBranch, nil },
+		createBranch: func(dir, branchName string) error {
+			currentBranch = branchName
+			return nil
+		},
+		branchExists: func(dir, branchName string) (bool, error) { return false, nil },
+		stageAll:     func(dir string) error { return nil },
+		commit:       func(dir, message string) error { return nil },
+		pushBranch:   func(dir, branchName string) error { return nil },
+		invokeAgent:  func(invocation AgentInvocation) (AgentResult, error) { return AgentResult{}, nil },
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	updated, err := os.ReadFile(specPath)
+	if err != nil {
+		t.Fatalf("failed to read updated spec: %v", err)
+	}
+
+	updatedText := string(updated)
+	if !strings.Contains(updatedText, "status: completed") {
+		t.Fatalf("expected spec status to transition to completed when all remaining tasks are done, got:\n%s", updatedText)
+	}
+}
+
 func TestExecutePlan_SectionReviewGetsSingleRetryAndCommitsFixes(t *testing.T) {
 	tmpDir := t.TempDir()
 	specPath := filepath.Join(tmpDir, "spec.md")

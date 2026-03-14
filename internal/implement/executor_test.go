@@ -222,3 +222,266 @@ func TestExecuteTaskWithReview_FailsAfterThreeCriticalReviews(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestExecutePlan_UpdatesApprovedSpecAndCommitsAcceptedTasks(t *testing.T) {
+	tmpDir := t.TempDir()
+	specPath := filepath.Join(tmpDir, "spec.md")
+	specBody := `---
+number: 7
+status: approved
+---
+
+# Test Spec
+
+## Task List
+
+### Spec Updates and Section Delivery
+
+- [ ] Add failing tests for in-progress transition
+- [ ] Implement deterministic task commits
+
+### Completion
+
+- [ ] Finish remaining work
+`
+
+	if err := os.WriteFile(specPath, []byte(specBody), 0644); err != nil {
+		t.Fatalf("failed to write spec: %v", err)
+	}
+
+	info := &specpkg.SpecInfo{Number: 7, Path: specPath, Status: StatusApproved}
+	plan := Plan{
+		Sections: []RemainingSection{{
+			Name: "Spec Updates and Section Delivery",
+			Tasks: []specpkg.Task{
+				{Text: "Add failing tests for in-progress transition", Section: "Spec Updates and Section Delivery"},
+				{Text: "Implement deterministic task commits", Section: "Spec Updates and Section Delivery"},
+			},
+		}},
+	}
+
+	var commits []string
+	var pushes []string
+
+	err := executePlanWithDeps(tmpDir, info, plan, BackendOpencode, nil, executeDeps{
+		hasUncommittedChanges: func(dir string) (bool, error) { return false, nil },
+		getCurrentBranch:      func(dir string) (string, error) { return "main", nil },
+		createBranch:          func(dir, branchName string) error { return nil },
+		branchExists:          func(dir, branchName string) (bool, error) { return false, nil },
+		stageAll:              func(dir string) error { return nil },
+		commit: func(dir, message string) error {
+			commits = append(commits, message)
+			return nil
+		},
+		pushBranch: func(dir, branchName string) error {
+			pushes = append(pushes, branchName)
+			return nil
+		},
+		invokeAgent: func(invocation AgentInvocation) (AgentResult, error) {
+			return AgentResult{}, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	updated, err := os.ReadFile(specPath)
+	if err != nil {
+		t.Fatalf("failed to read updated spec: %v", err)
+	}
+
+	updatedText := string(updated)
+	if !strings.Contains(updatedText, "status: in-progress") {
+		t.Fatalf("expected spec status to transition to in-progress, got:\n%s", updatedText)
+	}
+	if !strings.Contains(updatedText, "- [x] Add failing tests for in-progress transition") {
+		t.Fatalf("expected first task to be checked off, got:\n%s", updatedText)
+	}
+	if !strings.Contains(updatedText, "- [x] Implement deterministic task commits") {
+		t.Fatalf("expected second task to be checked off, got:\n%s", updatedText)
+	}
+
+	expectedCommits := []string{
+		"feat: complete spec 007 task: Add failing tests for in-progress transition",
+		"feat: complete spec 007 task: Implement deterministic task commits",
+	}
+	if len(commits) != len(expectedCommits) {
+		t.Fatalf("expected %d commits, got %d (%v)", len(expectedCommits), len(commits), commits)
+	}
+	for i, want := range expectedCommits {
+		if commits[i] != want {
+			t.Fatalf("unexpected commit %d: got %q want %q", i, commits[i], want)
+		}
+	}
+
+	if len(pushes) != 1 || pushes[0] != "implement/007-01-spec-updates-and-section-delivery" {
+		t.Fatalf("unexpected pushes: %v", pushes)
+	}
+}
+
+func TestExecutePlan_SectionReviewGetsSingleRetryAndCommitsFixes(t *testing.T) {
+	tmpDir := t.TempDir()
+	specPath := filepath.Join(tmpDir, "spec.md")
+	specBody := `---
+number: 7
+status: in-progress
+---
+
+# Test Spec
+
+## Task List
+
+### Spec Updates and Section Delivery
+
+- [ ] Add failing tests for section review
+`
+
+	if err := os.WriteFile(specPath, []byte(specBody), 0644); err != nil {
+		t.Fatalf("failed to write spec: %v", err)
+	}
+
+	info := &specpkg.SpecInfo{Number: 7, Path: specPath, Status: StatusInProgress}
+	plan := Plan{
+		Sections: []RemainingSection{{
+			Name: "Spec Updates and Section Delivery",
+			Tasks: []specpkg.Task{
+				{Text: "Add failing tests for section review", Section: "Spec Updates and Section Delivery"},
+			},
+		}},
+	}
+
+	var commits []string
+	var sectionReviewCalls int
+	var sectionWorkerCalls int
+	dirtyChecks := 0
+
+	err := executePlanWithDeps(tmpDir, info, plan, BackendOpencode, nil, executeDeps{
+		hasUncommittedChanges: func(dir string) (bool, error) {
+			dirtyChecks++
+			if dirtyChecks == 1 {
+				return false, nil
+			}
+			return true, nil
+		},
+		getCurrentBranch: func(dir string) (string, error) { return "main", nil },
+		createBranch:     func(dir, branchName string) error { return nil },
+		branchExists:     func(dir, branchName string) (bool, error) { return false, nil },
+		stageAll:         func(dir string) error { return nil },
+		commit: func(dir, message string) error {
+			commits = append(commits, message)
+			return nil
+		},
+		pushBranch: func(dir, branchName string) error { return nil },
+		invokeAgent: func(invocation AgentInvocation) (AgentResult, error) {
+			if invocation.Role == AgentRoleWorker && invocation.TaskText == "" {
+				sectionWorkerCalls++
+				if !strings.Contains(invocation.Prompt, "REVIEW_CRITICAL: integration broke") {
+					t.Fatalf("section worker prompt missing review summary: %s", invocation.Prompt)
+				}
+				return AgentResult{}, nil
+			}
+
+			if invocation.Role == AgentRoleReviewer && invocation.TaskText == "" {
+				sectionReviewCalls++
+				if sectionReviewCalls == 1 {
+					return AgentResult{CriticalIssues: true, Output: "REVIEW_CRITICAL: integration broke"}, nil
+				}
+				return AgentResult{CriticalIssues: false, Output: "REVIEW_OK"}, nil
+			}
+
+			return AgentResult{CriticalIssues: false}, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if sectionReviewCalls != 2 {
+		t.Fatalf("expected 2 section review calls, got %d", sectionReviewCalls)
+	}
+	if sectionWorkerCalls != 1 {
+		t.Fatalf("expected 1 section worker retry, got %d", sectionWorkerCalls)
+	}
+
+	if len(commits) != 2 {
+		t.Fatalf("expected 2 commits, got %d (%v)", len(commits), commits)
+	}
+	if commits[1] != "fix: address spec 007 section 01 review: Spec Updates and Section Delivery" {
+		t.Fatalf("unexpected section review commit message: %q", commits[1])
+	}
+}
+
+func TestExecutePlan_StopsImmediatelyWhenSectionPushFails(t *testing.T) {
+	tmpDir := t.TempDir()
+	specPath := filepath.Join(tmpDir, "spec.md")
+	specBody := `---
+number: 7
+status: in-progress
+---
+
+# Test Spec
+
+## Task List
+
+### Spec Updates and Section Delivery
+
+- [ ] First task
+
+### Completion
+
+- [ ] Second task
+`
+
+	if err := os.WriteFile(specPath, []byte(specBody), 0644); err != nil {
+		t.Fatalf("failed to write spec: %v", err)
+	}
+
+	info := &specpkg.SpecInfo{Number: 7, Path: specPath, Status: StatusInProgress}
+	plan := Plan{
+		Sections: []RemainingSection{
+			{
+				Name:  "Spec Updates and Section Delivery",
+				Tasks: []specpkg.Task{{Text: "First task", Section: "Spec Updates and Section Delivery"}},
+			},
+			{
+				Name:  "Completion",
+				Tasks: []specpkg.Task{{Text: "Second task", Section: "Completion"}},
+			},
+		},
+	}
+
+	createdBranches := 0
+	pushes := 0
+
+	err := executePlanWithDeps(tmpDir, info, plan, BackendOpencode, nil, executeDeps{
+		hasUncommittedChanges: func(dir string) (bool, error) { return false, nil },
+		getCurrentBranch:      func(dir string) (string, error) { return "main", nil },
+		createBranch: func(dir, branchName string) error {
+			createdBranches++
+			return nil
+		},
+		branchExists: func(dir, branchName string) (bool, error) { return false, nil },
+		stageAll:     func(dir string) error { return nil },
+		commit:       func(dir, message string) error { return nil },
+		pushBranch: func(dir, branchName string) error {
+			pushes++
+			return os.ErrPermission
+		},
+		invokeAgent: func(invocation AgentInvocation) (AgentResult, error) {
+			return AgentResult{CriticalIssues: false}, nil
+		},
+	})
+	if err == nil {
+		t.Fatal("expected push failure")
+	}
+
+	if !strings.Contains(err.Error(), "failed to push completed section branch") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if pushes != 1 {
+		t.Fatalf("expected exactly one push attempt, got %d", pushes)
+	}
+	if createdBranches != 1 {
+		t.Fatalf("expected execution to stop before creating second section branch, got %d branches", createdBranches)
+	}
+}

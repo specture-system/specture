@@ -40,6 +40,16 @@ func GetImplementReviewPromptTemplate() (string, error) {
 	return readTemplate("implement-review-prompt.md", "implement review prompt template")
 }
 
+// GetImplementSectionReviewPromptTemplate returns the section-level implement review prompt template.
+func GetImplementSectionReviewPromptTemplate() (string, error) {
+	return readTemplate("implement-section-review-prompt.md", "implement section review prompt template")
+}
+
+// GetImplementSectionWorkerPromptTemplate returns the section-level implement worker prompt template.
+func GetImplementSectionWorkerPromptTemplate() (string, error) {
+	return readTemplate("implement-section-worker-prompt.md", "implement section worker prompt template")
+}
+
 // GetSpecsReadmeTemplate returns the specs README template.
 func GetSpecsReadmeTemplate() (string, error) {
 	return readTemplate("specs-readme.md", "specs readme template")

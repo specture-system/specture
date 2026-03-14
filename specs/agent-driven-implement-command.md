@@ -1,6 +1,6 @@
 ---
 number: 7
-status: approved
+status: in-progress
 author: Addison Emig
 creation_date: 2026-03-12
 approved_by: Addison Emig
@@ -122,10 +122,20 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 
 ### Spec Updates and Section Delivery
 
-- [ ] Add failing tests for `in-progress` transition, task checkbox updates, and deterministic task commits
-- [ ] Implement spec status updates and task completion commits so each accepted task updates the spec in the same commit as its implementation
-- [ ] Add failing tests for section-level review, single-retry behavior, strict push gating, and push failure handling
-- [ ] Implement section-level review with exactly 1 revision retry on critical issues, then push the completed section branch and stop immediately if that push fails
+- [x] Add failing tests for `in-progress` transition, task checkbox updates, and deterministic task commits
+- [x] Implement spec status updates and task completion commits so each accepted task updates the spec in the same commit as its implementation
+- [x] Add failing tests for section-level review, single-retry behavior, strict push gating, and push failure handling
+- [x] Implement section-level review with exactly 1 revision retry on critical issues, then push the completed section branch and stop immediately if that push fails
+
+### Clean Up and Polish
+
+- [ ] Improve help message for the `implement` command
+  - [ ] Mention that it is an agent orchestrator
+  - [ ] Include example usage
+- [ ] Add `--dry-run` support to `implement` command
+- [ ] Improving naming of new template files
+  - [ ] `task-` prefix
+  - [ ] `section-` prefix
 
 ### Completion
 

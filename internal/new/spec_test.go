@@ -78,9 +78,9 @@ func TestFindNextSpecNumber(t *testing.T) {
 		{
 			name: "ignores_files_without_number",
 			setupFiles: map[string]string{
-				"README.md":    "# Readme\n",
-				"000-spec.md":  "---\nnumber: 0\n---\n\n# Spec\n\n## Task List\n",
-				"notes.txt":    "some notes",
+				"README.md":   "# Readme\n",
+				"000-spec.md": "---\nnumber: 0\n---\n\n# Spec\n\n## Task List\n",
+				"notes.txt":   "some notes",
 			},
 			expected: 1,
 		},

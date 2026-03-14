@@ -457,5 +457,3 @@ func TestListCommand_FilterJSON(t *testing.T) {
 		t.Errorf("expected status 'in-progress', got %v", result[0]["status"])
 	}
 }
-
-

@@ -81,7 +81,7 @@ func TestPlan_CustomSlug(t *testing.T) {
 func TestPlan_FindsLinkReferences(t *testing.T) {
 	dir := setupSpecsDir(t, map[string]string{
 		"003-status-command.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
-		"005-list-command.md": "---\nnumber: 5\n---\n\n# List Command\n\nSee [status](/specs/003-status-command.md).\n\n## Task List\n",
+		"005-list-command.md":   "---\nnumber: 5\n---\n\n# List Command\n\nSee [status](/specs/003-status-command.md).\n\n## Task List\n",
 	})
 
 	result, err := Plan(dir, 3, "status-command")

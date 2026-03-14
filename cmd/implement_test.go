@@ -7,6 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	implementpkg "github.com/specture-system/specture/internal/implement"
+	specpkg "github.com/specture-system/specture/internal/spec"
 )
 
 // Note: These tests intentionally do not use t.Parallel() because implementCmd is a
@@ -35,13 +38,19 @@ func execImplement(t *testing.T, tmpDir string, flags map[string]string) (string
 
 	originalWd, _ := os.Getwd()
 	originalLookPath := implementLookPath
+	originalExecutePlan := implementExecutePlan
 
 	t.Cleanup(func() {
 		os.Chdir(originalWd)
 		implementLookPath = originalLookPath
+		implementExecutePlan = originalExecutePlan
 		implementCmd.Flags().Set("spec", "")
 		implementCmd.Flags().Set("agent", "")
 	})
+
+	implementExecutePlan = func(workDir string, info *specpkg.SpecInfo, plan implementpkg.Plan, backend string, printf implementpkg.PrintfFunc) error {
+		return nil
+	}
 
 	if err := os.Chdir(tmpDir); err != nil {
 		t.Fatalf("failed to chdir: %v", err)

@@ -114,11 +114,11 @@ The command should prefer `opencode` when auto-detecting available agent CLIs, f
 
 ### Branch and Task Execution
 
-- [ ] Add failing tests for deterministic section branch naming, clean-worktree checks, and fail-closed rerun behavior
-- [ ] Implement section branch creation, clean-worktree enforcement, and rerun validation
-- [ ] Add failing tests for worker invocation and task-level retry behavior when review finds critical issues
-- [ ] Implement worker-agent invocation that passes the current task, section context, and spec path, and instructs workers to avoid editing the spec or creating commits
-- [ ] Implement task-level review-agent invocation and rerun the worker up to 3 total passes only when review finds critical issues
+- [x] Add failing tests for deterministic section branch naming, clean-worktree checks, and fail-closed rerun behavior
+- [x] Implement section branch creation, clean-worktree enforcement, and rerun validation
+- [x] Add failing tests for worker invocation and task-level retry behavior when review finds critical issues
+- [x] Implement worker-agent invocation that passes the current task, section context, and spec path, and instructs workers to avoid editing the spec or creating commits
+- [x] Implement task-level review-agent invocation and rerun the worker up to 3 total passes only when review finds critical issues
 
 ### Spec Updates and Section Delivery
 

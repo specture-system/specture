@@ -2,6 +2,7 @@ package implement
 
 import (
 	"fmt"
+	"strings"
 )
 
 const (
@@ -45,12 +46,16 @@ func isSupportedBackend(name string) bool {
 	return false
 }
 
-func backendInvocationArgs(invocation AgentInvocation) ([]string, error) {
+func backendInvocationArgs(invocation AgentInvocation, outputPath string) ([]string, error) {
 	switch invocation.Backend {
 	case BackendOpencode:
-		return []string{"run", invocation.Prompt}, nil
+		return []string{"run", "--format", "json", invocation.Prompt}, nil
 	case BackendCodex:
-		return []string{"exec", invocation.Prompt}, nil
+		if strings.TrimSpace(outputPath) == "" {
+			return nil, fmt.Errorf("codex backend requires output path for invocation")
+		}
+
+		return []string{"exec", "--output-last-message", outputPath, invocation.Prompt}, nil
 	default:
 		return nil, fmt.Errorf("unsupported agent backend %q for invocation", invocation.Backend)
 	}

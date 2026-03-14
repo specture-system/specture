@@ -259,6 +259,56 @@ func TestExecuteTaskWithReview_PassesPriorCriticalReviewFeedbackToNextWorkerPass
 	}
 }
 
+func TestParseOpencodeRunJSONOutput_ExtractsTextEventsOnly(t *testing.T) {
+	raw := strings.Join([]string{
+		`{"type":"step_start","part":{"type":"step-start"}}`,
+		`{"type":"text","part":{"type":"text","text":"REVIEW_"}}`,
+		`{"type":"text","part":{"type":"text","text":"OK"}}`,
+		`{"type":"step_finish","part":{"type":"step-finish"}}`,
+	}, "\n")
+
+	got, err := parseOpencodeRunJSONOutput(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got != "REVIEW_OK" {
+		t.Fatalf("expected REVIEW_OK, got %q", got)
+	}
+}
+
+func TestParseOpencodeRunJSONOutput_RejectsInvalidJSONEvent(t *testing.T) {
+	raw := strings.Join([]string{
+		`{"type":"text","part":{"type":"text","text":"REVIEW_OK"}}`,
+		`not-json`,
+	}, "\n")
+
+	_, err := parseOpencodeRunJSONOutput(raw)
+	if err == nil {
+		t.Fatal("expected invalid JSONL error")
+	}
+
+	if !strings.Contains(err.Error(), "invalid JSONL event") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestParseOpencodeRunJSONOutput_RejectsWhenNoTextEvents(t *testing.T) {
+	raw := strings.Join([]string{
+		`{"type":"step_start","part":{"type":"step-start"}}`,
+		`{"type":"step_finish","part":{"type":"step-finish"}}`,
+	}, "\n")
+
+	_, err := parseOpencodeRunJSONOutput(raw)
+	if err == nil {
+		t.Fatal("expected missing text event error")
+	}
+
+	if !strings.Contains(err.Error(), "no text events") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestExecuteTaskWithReview_WithContextPassesChangedFilesToReviewer(t *testing.T) {
 	task := specpkg.Task{Text: "Implement retry behavior"}
 	invocations := make([]AgentInvocation, 0, 2)

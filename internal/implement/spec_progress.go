@@ -104,20 +104,28 @@ func markNestedTaskSubtreeComplete(lines []string, parentIdx int) {
 		line := lines[i]
 		trimmed := strings.TrimSpace(line)
 
-		if strings.HasPrefix(trimmed, "## ") && trimmed != "## Task List" {
+		if isTaskListBoundary(trimmed) {
 			break
 		}
-		if strings.HasPrefix(trimmed, "### ") {
+		if isTopLevelTaskLine(line) {
 			break
 		}
-		if strings.HasPrefix(line, "- [ ] ") || strings.HasPrefix(line, "- [x] ") {
-			break
-		}
-
 		if strings.HasPrefix(trimmed, "- [ ] ") {
 			lines[i] = strings.Replace(line, "[ ]", "[x]", 1)
 		}
 	}
+}
+
+func isTaskListBoundary(trimmedLine string) bool {
+	if strings.HasPrefix(trimmedLine, "## ") && trimmedLine != "## Task List" {
+		return true
+	}
+
+	return strings.HasPrefix(trimmedLine, "### ")
+}
+
+func isTopLevelTaskLine(line string) bool {
+	return strings.HasPrefix(line, "- [ ] ") || strings.HasPrefix(line, "- [x] ")
 }
 
 func taskListHasIncompleteTasks(lines []string) bool {

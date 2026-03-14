@@ -19,6 +19,12 @@ import (
 const maxWorkerPassesPerTask = 3
 const maxSectionReviewPasses = 2
 
+const finalCleanupSectionName = "Final Cleanup"
+const reviewCriticalPrefix = "REVIEW_CRITICAL:"
+
+var sectionSlugNonAlphaNumPattern = regexp.MustCompile(`[^a-z0-9]+`)
+var sectionSlugMultiDashPattern = regexp.MustCompile(`-+`)
+
 type PrintfFunc func(format string, args ...any)
 
 type AgentRole string
@@ -86,13 +92,9 @@ func executeTaskWithReviewWithContext(workDir, specPath, sectionName, backend st
 			printf("    worker pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
 		}
 
-		taskChangedFiles := []string{}
-		if changedFiles != nil {
-			files, err := changedFiles(workDir)
-			if err != nil {
-				return fmt.Errorf("failed to collect changed files for task %q before worker pass %d: %w", task.Text, pass, err)
-			}
-			taskChangedFiles = files
+		taskChangedFiles, err := collectChangedFiles(changedFiles, workDir, task.Text, pass, "before worker")
+		if err != nil {
+			return err
 		}
 
 		workerPrompt, err := buildWorkerPrompt(specPath, sectionName, task, priorCriticalReviewOutput, taskChangedFiles)
@@ -116,13 +118,9 @@ func executeTaskWithReviewWithContext(workDir, specPath, sectionName, backend st
 			printf("    review pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
 		}
 
-		taskChangedFiles = []string{}
-		if changedFiles != nil {
-			files, err := changedFiles(workDir)
-			if err != nil {
-				return fmt.Errorf("failed to collect changed files for task %q on pass %d: %w", task.Text, pass, err)
-			}
-			taskChangedFiles = files
+		taskChangedFiles, err = collectChangedFiles(changedFiles, workDir, task.Text, pass, "before review")
+		if err != nil {
+			return err
 		}
 
 		reviewPrompt, err := buildReviewPrompt(specPath, sectionName, task, taskChangedFiles)
@@ -391,7 +389,7 @@ func executeFinalCleanupPass(workDir string, info *specpkg.SpecInfo, sections []
 		Backend:     backend,
 		Role:        AgentRoleReviewer,
 		SpecPath:    info.Path,
-		SectionName: "Final Cleanup",
+		SectionName: finalCleanupSectionName,
 		Attempt:     1,
 		Prompt:      reviewPrompt,
 	})
@@ -414,7 +412,7 @@ func executeFinalCleanupPass(workDir string, info *specpkg.SpecInfo, sections []
 		Backend:     backend,
 		Role:        AgentRoleWorker,
 		SpecPath:    info.Path,
-		SectionName: "Final Cleanup",
+		SectionName: finalCleanupSectionName,
 		Attempt:     1,
 		Prompt:      workerPrompt,
 	}); err != nil {
@@ -540,8 +538,21 @@ func invokeAgentCLI(invocation AgentInvocation) (AgentResult, error) {
 
 	return AgentResult{
 		Output:         outputText,
-		CriticalIssues: strings.HasPrefix(strings.TrimSpace(outputText), "REVIEW_CRITICAL:"),
+		CriticalIssues: strings.HasPrefix(strings.TrimSpace(outputText), reviewCriticalPrefix),
 	}, nil
+}
+
+func collectChangedFiles(changedFiles func(dir string) ([]string, error), workDir, taskText string, pass int, stage string) ([]string, error) {
+	if changedFiles == nil {
+		return []string{}, nil
+	}
+
+	files, err := changedFiles(workDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect changed files for task %q %s pass %d: %w", taskText, stage, pass, err)
+	}
+
+	return files, nil
 }
 
 func parseOpencodeRunJSONOutput(stdout string) (string, error) {
@@ -698,12 +709,10 @@ func sectionSlug(sectionName string) string {
 		return ""
 	}
 
-	nonAlphaNum := regexp.MustCompile(`[^a-z0-9]+`)
-	slug := nonAlphaNum.ReplaceAllString(trimmed, "-")
+	slug := sectionSlugNonAlphaNumPattern.ReplaceAllString(trimmed, "-")
 	slug = strings.Trim(slug, "-")
 
-	multiDash := regexp.MustCompile(`-+`)
-	return multiDash.ReplaceAllString(slug, "-")
+	return sectionSlugMultiDashPattern.ReplaceAllString(slug, "-")
 }
 
 func displaySectionName(name string) string {

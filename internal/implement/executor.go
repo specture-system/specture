@@ -174,7 +174,12 @@ func ensureSectionBranch(workDir, branchName string, deps executeDeps) error {
 }
 
 func invokeAgentCLI(invocation AgentInvocation) (AgentResult, error) {
-	cmd := exec.Command(invocation.Backend, "run", invocation.Prompt)
+	args, err := backendInvocationArgs(invocation)
+	if err != nil {
+		return AgentResult{}, err
+	}
+
+	cmd := exec.Command(invocation.Backend, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return AgentResult{}, fmt.Errorf("%s agent invocation failed: %w", invocation.Role, err)
@@ -185,6 +190,17 @@ func invokeAgentCLI(invocation AgentInvocation) (AgentResult, error) {
 		Output:         outputText,
 		CriticalIssues: strings.Contains(outputText, "REVIEW_CRITICAL"),
 	}, nil
+}
+
+func backendInvocationArgs(invocation AgentInvocation) ([]string, error) {
+	switch invocation.Backend {
+	case BackendOpencode:
+		return []string{"run", invocation.Prompt}, nil
+	case BackendCodex:
+		return []string{"exec", invocation.Prompt}, nil
+	default:
+		return nil, fmt.Errorf("unsupported agent backend %q for invocation", invocation.Backend)
+	}
 }
 
 func gitBranchExists(dir, branchName string) (bool, error) {

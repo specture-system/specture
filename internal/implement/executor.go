@@ -167,6 +167,7 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 		return fmt.Errorf("failed to determine current branch before execution: %w", err)
 	}
 	parentBranch := initialBranch
+	lastSectionParentBranch := initialBranch
 
 	for idx, section := range plan.Sections {
 		sectionNumber := idx + 1
@@ -237,11 +238,12 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 		if err := deps.pushBranch(workDir, branchName); err != nil {
 			return fmt.Errorf("failed to push completed section branch %q: %w", branchName, err)
 		}
+		lastSectionParentBranch = parentBranch
 		parentBranch = branchName
 	}
 
 	if len(plan.Sections) > 0 {
-		if err := executeFinalCleanupPass(workDir, info, plan.Sections, backend, parentBranch, printf, deps); err != nil {
+		if err := executeFinalCleanupPass(workDir, info, plan.Sections, backend, parentBranch, lastSectionParentBranch, printf, deps); err != nil {
 			return err
 		}
 	}
@@ -371,12 +373,12 @@ func executeSectionReview(workDir string, info *specpkg.SpecInfo, backend string
 	return nil
 }
 
-func executeFinalCleanupPass(workDir string, info *specpkg.SpecInfo, sections []RemainingSection, backend, currentBranch string, printf PrintfFunc, deps executeDeps) error {
+func executeFinalCleanupPass(workDir string, info *specpkg.SpecInfo, sections []RemainingSection, backend, currentBranch, parentBranch string, printf PrintfFunc, deps executeDeps) error {
 	if printf != nil {
 		printf("Final cleanup review started\n")
 	}
 
-	reviewPrompt, err := buildFinalCleanupReviewPrompt(info.Path, sections, currentBranch)
+	reviewPrompt, err := buildFinalCleanupReviewPrompt(info.Path, sections, currentBranch, parentBranch)
 	if err != nil {
 		return fmt.Errorf("failed to build final cleanup review prompt: %w", err)
 	}
@@ -547,7 +549,7 @@ func buildSectionWorkerPrompt(specPath, sectionName string, tasks []specpkg.Task
 	})
 }
 
-func buildFinalCleanupReviewPrompt(specPath string, sections []RemainingSection, currentBranch string) (string, error) {
+func buildFinalCleanupReviewPrompt(specPath string, sections []RemainingSection, currentBranch, parentBranch string) (string, error) {
 	promptTemplate, err := templatespkg.GetImplementCleanupReviewPromptTemplate()
 	if err != nil {
 		return "", err
@@ -556,10 +558,12 @@ func buildFinalCleanupReviewPrompt(specPath string, sections []RemainingSection,
 	return templatepkg.RenderTemplate(promptTemplate, struct {
 		SpecPath      string
 		CurrentBranch string
+		ParentBranch  string
 		Sections      []string
 	}{
 		SpecPath:      specPath,
 		CurrentBranch: currentBranch,
+		ParentBranch:  parentBranch,
 		Sections:      sectionNames(sections),
 	})
 }

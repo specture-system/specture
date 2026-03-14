@@ -795,6 +795,9 @@ status: in-progress
 					if !strings.Contains(invocation.Prompt, "low-risk maintainability improvements") {
 						t.Fatalf("cleanup review prompt missing maintainability guidance: %s", invocation.Prompt)
 					}
+					if !strings.Contains(invocation.Prompt, "Parent branch: main") {
+						t.Fatalf("cleanup review prompt missing parent branch: %s", invocation.Prompt)
+					}
 					return AgentResult{Output: "- simplify helper layering"}, nil
 				}
 

@@ -172,6 +172,12 @@ func TestExecuteTaskWithReview_InvokesWorkerAndReviewerWithContext(t *testing.T)
 	if !strings.Contains(invocations[0].Prompt, "Task Subtree:") {
 		t.Fatalf("worker prompt missing task subtree header: %s", invocations[0].Prompt)
 	}
+	if !strings.Contains(invocations[0].Prompt, "Current changed files in working tree:\n- (none detected)") {
+		t.Fatalf("worker prompt missing changed files fallback: %s", invocations[0].Prompt)
+	}
+	if strings.Contains(invocations[0].Prompt, "Prior critical review findings:") {
+		t.Fatalf("worker prompt should not include prior critical findings on first pass: %s", invocations[0].Prompt)
+	}
 	if !strings.Contains(invocations[0].Prompt, "  - [ ] Include nested checkbox context") {
 		t.Fatalf("worker prompt missing nested checkbox context: %s", invocations[0].Prompt)
 	}
@@ -186,6 +192,9 @@ func TestExecuteTaskWithReview_InvokesWorkerAndReviewerWithContext(t *testing.T)
 	}
 	if !strings.Contains(invocations[1].Prompt, "Task Subtree:") {
 		t.Fatalf("review prompt missing task subtree header: %s", invocations[1].Prompt)
+	}
+	if !strings.Contains(invocations[1].Prompt, "Files changed in current task pass:\n- (none detected)") {
+		t.Fatalf("review prompt missing changed files fallback: %s", invocations[1].Prompt)
 	}
 }
 
@@ -215,6 +224,96 @@ func TestExecuteTaskWithReview_RetriesWorkerUpToThreePassesOnCriticalReview(t *t
 	}
 	if reviewCalls != 3 {
 		t.Fatalf("expected 3 review calls, got %d", reviewCalls)
+	}
+}
+
+func TestExecuteTaskWithReview_PassesPriorCriticalReviewFeedbackToNextWorkerPass(t *testing.T) {
+	task := specpkg.Task{Text: "Implement retry behavior"}
+	var workerPrompts []string
+	reviewCalls := 0
+
+	err := ExecuteTaskWithReview("specs/agent.md", "Branch and Task Execution", BackendOpencode, task, nil, func(invocation AgentInvocation) (AgentResult, error) {
+		if invocation.Role == AgentRoleWorker {
+			workerPrompts = append(workerPrompts, invocation.Prompt)
+			return AgentResult{}, nil
+		}
+
+		reviewCalls++
+		if reviewCalls == 1 {
+			return AgentResult{CriticalIssues: true, Output: "REVIEW_CRITICAL: missing tests"}, nil
+		}
+		return AgentResult{CriticalIssues: false, Output: "REVIEW_OK"}, nil
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(workerPrompts) != 2 {
+		t.Fatalf("expected 2 worker prompts, got %d", len(workerPrompts))
+	}
+	if strings.Contains(workerPrompts[0], "Prior critical review findings:") {
+		t.Fatalf("first worker prompt should not include prior critical findings: %s", workerPrompts[0])
+	}
+	if !strings.Contains(workerPrompts[1], "Prior critical review findings:\nREVIEW_CRITICAL: missing tests") {
+		t.Fatalf("second worker prompt missing prior critical findings context: %s", workerPrompts[1])
+	}
+}
+
+func TestExecuteTaskWithReview_WithContextPassesChangedFilesToReviewer(t *testing.T) {
+	task := specpkg.Task{Text: "Implement retry behavior"}
+	invocations := make([]AgentInvocation, 0, 2)
+
+	err := executeTaskWithReviewWithContext(
+		"/tmp/repo",
+		"specs/agent.md",
+		"Branch and Task Execution",
+		BackendOpencode,
+		task,
+		nil,
+		func(dir string) ([]string, error) {
+			if dir != "/tmp/repo" {
+				t.Fatalf("unexpected work dir: %s", dir)
+			}
+			return []string{"cmd/implement.go", "internal/implement/executor.go"}, nil
+		},
+		func(invocation AgentInvocation) (AgentResult, error) {
+			invocations = append(invocations, invocation)
+			if invocation.Role == AgentRoleReviewer {
+				return AgentResult{CriticalIssues: false}, nil
+			}
+			return AgentResult{}, nil
+		},
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(invocations) != 2 {
+		t.Fatalf("expected 2 invocations, got %d", len(invocations))
+	}
+	if invocations[0].Role != AgentRoleWorker {
+		t.Fatalf("expected first invocation to be worker, got %s", invocations[0].Role)
+	}
+	if invocations[1].Role != AgentRoleReviewer {
+		t.Fatalf("expected second invocation to be reviewer, got %s", invocations[1].Role)
+	}
+	if !strings.Contains(invocations[0].Prompt, "Current changed files in working tree:") {
+		t.Fatalf("worker prompt missing changed-files header: %s", invocations[0].Prompt)
+	}
+	if !strings.Contains(invocations[0].Prompt, "- cmd/implement.go") {
+		t.Fatalf("worker prompt missing first changed file: %s", invocations[0].Prompt)
+	}
+	if !strings.Contains(invocations[0].Prompt, "- internal/implement/executor.go") {
+		t.Fatalf("worker prompt missing second changed file: %s", invocations[0].Prompt)
+	}
+	if !strings.Contains(invocations[1].Prompt, "Files changed in current task pass:") {
+		t.Fatalf("review prompt missing changed-files header: %s", invocations[1].Prompt)
+	}
+	if !strings.Contains(invocations[1].Prompt, "- cmd/implement.go") {
+		t.Fatalf("review prompt missing first changed file: %s", invocations[1].Prompt)
+	}
+	if !strings.Contains(invocations[1].Prompt, "- internal/implement/executor.go") {
+		t.Fatalf("review prompt missing second changed file: %s", invocations[1].Prompt)
 	}
 }
 
@@ -365,13 +464,17 @@ status: approved
 
 	var commits []string
 	var pushes []string
+	currentBranch := "main"
 
 	err := executePlanWithDeps(tmpDir, info, plan, BackendOpencode, nil, executeDeps{
 		hasUncommittedChanges: func(dir string) (bool, error) { return false, nil },
-		getCurrentBranch:      func(dir string) (string, error) { return "main", nil },
-		createBranch:          func(dir, branchName string) error { return nil },
-		branchExists:          func(dir, branchName string) (bool, error) { return false, nil },
-		stageAll:              func(dir string) error { return nil },
+		getCurrentBranch:      func(dir string) (string, error) { return currentBranch, nil },
+		createBranch: func(dir, branchName string) error {
+			currentBranch = branchName
+			return nil
+		},
+		branchExists: func(dir, branchName string) (bool, error) { return false, nil },
+		stageAll:     func(dir string) error { return nil },
 		commit: func(dir, message string) error {
 			commits = append(commits, message)
 			return nil
@@ -457,6 +560,7 @@ status: in-progress
 	var sectionReviewCalls int
 	var sectionWorkerCalls int
 	dirtyChecks := 0
+	currentBranch := "main"
 
 	err := executePlanWithDeps(tmpDir, info, plan, BackendOpencode, nil, executeDeps{
 		hasUncommittedChanges: func(dir string) (bool, error) {
@@ -466,10 +570,13 @@ status: in-progress
 			}
 			return true, nil
 		},
-		getCurrentBranch: func(dir string) (string, error) { return "main", nil },
-		createBranch:     func(dir, branchName string) error { return nil },
-		branchExists:     func(dir, branchName string) (bool, error) { return false, nil },
-		stageAll:         func(dir string) error { return nil },
+		getCurrentBranch: func(dir string) (string, error) { return currentBranch, nil },
+		createBranch: func(dir, branchName string) error {
+			currentBranch = branchName
+			return nil
+		},
+		branchExists: func(dir, branchName string) (bool, error) { return false, nil },
+		stageAll:     func(dir string) error { return nil },
 		commit: func(dir, message string) error {
 			commits = append(commits, message)
 			return nil
@@ -486,6 +593,15 @@ status: in-progress
 
 			if invocation.Role == AgentRoleReviewer && invocation.TaskText == "" {
 				sectionReviewCalls++
+				if !strings.Contains(invocation.Prompt, "Branch context:") {
+					t.Fatalf("section review prompt missing branch context header: %s", invocation.Prompt)
+				}
+				if !strings.Contains(invocation.Prompt, "Current branch: implement/007-01-spec-updates-and-section-delivery") {
+					t.Fatalf("section review prompt missing current branch: %s", invocation.Prompt)
+				}
+				if !strings.Contains(invocation.Prompt, "Parent branch: main") {
+					t.Fatalf("section review prompt missing parent branch: %s", invocation.Prompt)
+				}
 				if sectionReviewCalls == 1 {
 					return AgentResult{CriticalIssues: true, Output: "REVIEW_CRITICAL: integration broke"}, nil
 				}
@@ -555,12 +671,14 @@ status: in-progress
 
 	createdBranches := 0
 	pushes := 0
+	currentBranch := "main"
 
 	err := executePlanWithDeps(tmpDir, info, plan, BackendOpencode, nil, executeDeps{
 		hasUncommittedChanges: func(dir string) (bool, error) { return false, nil },
-		getCurrentBranch:      func(dir string) (string, error) { return "main", nil },
+		getCurrentBranch:      func(dir string) (string, error) { return currentBranch, nil },
 		createBranch: func(dir, branchName string) error {
 			createdBranches++
+			currentBranch = branchName
 			return nil
 		},
 		branchExists: func(dir, branchName string) (bool, error) { return false, nil },

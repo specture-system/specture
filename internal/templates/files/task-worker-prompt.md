@@ -5,6 +5,18 @@ Section: {{.SectionName}}
 Task: {{.TaskText}}
 Task Subtree:
 {{.TaskSubtree}}
+Current changed files in working tree:
+{{- if .ChangedFiles}}
+{{range .ChangedFiles}}- {{.}}
+{{end}}
+{{- else}}
+- (none detected)
+{{- end}}
+
+{{- if .ReviewOutput}}
+Prior critical review findings:
+{{.ReviewOutput}}
+{{- end}}
 
 Instructions:
 - Treat the current checkout as the source of truth. Preserve existing accepted changes already present in the branch.

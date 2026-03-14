@@ -104,6 +104,86 @@ func TestHasUncommittedChanges(t *testing.T) {
 	}
 }
 
+func TestChangedFiles(t *testing.T) {
+	tests := []struct {
+		name      string
+		setup     func(dir string) error
+		testDir   *string
+		wantFiles []string
+		wantErr   string
+	}{
+		{
+			name: "clean working tree",
+			setup: func(dir string) error {
+				if err := setupGitRepo(t, dir); err != nil {
+					return err
+				}
+				return commitFile(t, dir, "tracked.txt", "content")
+			},
+			wantFiles: []string{},
+		},
+		{
+			name: "modified and untracked files",
+			setup: func(dir string) error {
+				if err := setupGitRepo(t, dir); err != nil {
+					return err
+				}
+				if err := commitFile(t, dir, "tracked.txt", "content"); err != nil {
+					return err
+				}
+				if err := os.WriteFile(filepath.Join(dir, "tracked.txt"), []byte("modified"), 0644); err != nil {
+					return err
+				}
+				return os.WriteFile(filepath.Join(dir, "new.txt"), []byte("new"), 0644)
+			},
+			wantFiles: []string{"new.txt", "tracked.txt"},
+		},
+		{
+			name:    "not a git repository",
+			setup:   func(dir string) error { return nil },
+			wantErr: "failed to list changed files",
+		},
+		{
+			name:    "nonexistent directory",
+			setup:   func(dir string) error { return nil },
+			testDir: strPtr("/nonexistent/path"),
+			wantErr: "failed to list changed files",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := testhelpers.TempDir(t)
+			if err := tt.setup(dir); err != nil {
+				t.Fatalf("setup failed: %v", err)
+			}
+
+			testDir := dir
+			if tt.testDir != nil {
+				testDir = *tt.testDir
+			}
+
+			files, err := ChangedFiles(testDir)
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Fatalf("ChangedFiles() expected error, got nil")
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("ChangedFiles() error = %v, want error containing %q", err, tt.wantErr)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("ChangedFiles() unexpected error = %v", err)
+			}
+			if strings.Join(files, "\n") != strings.Join(tt.wantFiles, "\n") {
+				t.Fatalf("ChangedFiles() = %v, want %v", files, tt.wantFiles)
+			}
+		})
+	}
+}
+
 // setupGitRepo initializes a git repository with user config.
 func setupGitRepo(t *testing.T, dir string) error {
 	t.Helper()

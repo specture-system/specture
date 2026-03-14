@@ -39,8 +39,15 @@ type AgentResult struct {
 	CriticalIssues bool
 }
 
+type sectionBranchContext struct {
+	CurrentBranch         string
+	ExpectedSectionBranch string
+	ParentBranch          string
+}
+
 type executeDeps struct {
 	hasUncommittedChanges func(dir string) (bool, error)
+	changedFiles          func(dir string) ([]string, error)
 	getCurrentBranch      func(dir string) (string, error)
 	createBranch          func(dir, branchName string) error
 	branchExists          func(dir, branchName string) (bool, error)
@@ -64,12 +71,27 @@ func SectionBranchName(specNumber int, sectionName string, sectionNumber int) st
 }
 
 func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.Task, printf PrintfFunc, invokeAgent func(invocation AgentInvocation) (AgentResult, error)) error {
+	return executeTaskWithReviewWithContext("", specPath, sectionName, backend, task, printf, nil, invokeAgent)
+}
+
+func executeTaskWithReviewWithContext(workDir, specPath, sectionName, backend string, task specpkg.Task, printf PrintfFunc, changedFiles func(dir string) ([]string, error), invokeAgent func(invocation AgentInvocation) (AgentResult, error)) error {
+	priorCriticalReviewOutput := ""
+
 	for pass := 1; pass <= maxWorkerPassesPerTask; pass++ {
 		if printf != nil {
 			printf("    worker pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
 		}
 
-		workerPrompt, err := buildWorkerPrompt(specPath, sectionName, task)
+		taskChangedFiles := []string{}
+		if changedFiles != nil {
+			files, err := changedFiles(workDir)
+			if err != nil {
+				return fmt.Errorf("failed to collect changed files for task %q before worker pass %d: %w", task.Text, pass, err)
+			}
+			taskChangedFiles = files
+		}
+
+		workerPrompt, err := buildWorkerPrompt(specPath, sectionName, task, priorCriticalReviewOutput, taskChangedFiles)
 		if err != nil {
 			return fmt.Errorf("failed to build worker prompt for task %q: %w", task.Text, err)
 		}
@@ -90,7 +112,16 @@ func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.T
 			printf("    review pass %d/%d started for task: %s\n", pass, maxWorkerPassesPerTask, task.Text)
 		}
 
-		reviewPrompt, err := buildReviewPrompt(specPath, sectionName, task)
+		taskChangedFiles = []string{}
+		if changedFiles != nil {
+			files, err := changedFiles(workDir)
+			if err != nil {
+				return fmt.Errorf("failed to collect changed files for task %q on pass %d: %w", task.Text, pass, err)
+			}
+			taskChangedFiles = files
+		}
+
+		reviewPrompt, err := buildReviewPrompt(specPath, sectionName, task, taskChangedFiles)
 		if err != nil {
 			return fmt.Errorf("failed to build review prompt for task %q: %w", task.Text, err)
 		}
@@ -117,6 +148,7 @@ func ExecuteTaskWithReview(specPath, sectionName, backend string, task specpkg.T
 			}
 			return nil
 		}
+		priorCriticalReviewOutput = reviewResult.Output
 
 		if printf != nil {
 			printf("  critical issues found for task %q on pass %d; retrying\n", task.Text, pass)
@@ -130,6 +162,11 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 	deps = withExecuteDepDefaults(deps)
 	sectionOrderByName := specpkg.TaskListSectionOrders(info.Path)
 	currentStatus := info.Status
+	initialBranch, err := deps.getCurrentBranch(workDir)
+	if err != nil {
+		return fmt.Errorf("failed to determine current branch before execution: %w", err)
+	}
+	parentBranch := initialBranch
 
 	for idx, section := range plan.Sections {
 		sectionNumber := idx + 1
@@ -141,6 +178,10 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 
 		if err := ensureSectionBranch(workDir, branchName, deps); err != nil {
 			return err
+		}
+		currentBranch, err := deps.getCurrentBranch(workDir)
+		if err != nil {
+			return fmt.Errorf("failed to determine current branch for section %q: %w", section.Name, err)
 		}
 
 		if printf != nil {
@@ -157,7 +198,7 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 				printf("  running task %d/%d: %s\n", taskIdx+1, len(section.Tasks), task.Text)
 			}
 
-			if err := ExecuteTaskWithReview(info.Path, section.Name, backend, task, printf, deps.invokeAgent); err != nil {
+			if err := executeTaskWithReviewWithContext(workDir, info.Path, section.Name, backend, task, printf, deps.changedFiles, deps.invokeAgent); err != nil {
 				return err
 			}
 
@@ -184,13 +225,19 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 			}
 		}
 
-		if err := executeSectionReview(workDir, info, backend, section, sectionNumber, printf, deps); err != nil {
+		branchContext := sectionBranchContext{
+			CurrentBranch:         currentBranch,
+			ExpectedSectionBranch: branchName,
+			ParentBranch:          parentBranch,
+		}
+		if err := executeSectionReview(workDir, info, backend, section, sectionNumber, branchContext, printf, deps); err != nil {
 			return err
 		}
 
 		if err := deps.pushBranch(workDir, branchName); err != nil {
 			return fmt.Errorf("failed to push completed section branch %q: %w", branchName, err)
 		}
+		parentBranch = branchName
 	}
 
 	return nil
@@ -199,6 +246,7 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 func defaultExecuteDeps() executeDeps {
 	return executeDeps{
 		hasUncommittedChanges: gitpkg.HasUncommittedChanges,
+		changedFiles:          gitpkg.ChangedFiles,
 		getCurrentBranch:      gitpkg.GetCurrentBranch,
 		createBranch:          gitpkg.CreateBranch,
 		branchExists:          gitpkg.BranchExists,
@@ -213,6 +261,9 @@ func withExecuteDepDefaults(deps executeDeps) executeDeps {
 	if deps.stageAll == nil {
 		deps.stageAll = func(dir string) error { return nil }
 	}
+	if deps.changedFiles == nil {
+		deps.changedFiles = func(dir string) ([]string, error) { return []string{}, nil }
+	}
 	if deps.commit == nil {
 		deps.commit = func(dir, message string) error { return nil }
 	}
@@ -223,13 +274,22 @@ func withExecuteDepDefaults(deps executeDeps) executeDeps {
 	return deps
 }
 
-func executeSectionReview(workDir string, info *specpkg.SpecInfo, backend string, section RemainingSection, sectionNumber int, printf PrintfFunc, deps executeDeps) error {
+func executeSectionReview(workDir string, info *specpkg.SpecInfo, backend string, section RemainingSection, sectionNumber int, branchContext sectionBranchContext, printf PrintfFunc, deps executeDeps) error {
 	for pass := 1; pass <= maxSectionReviewPasses; pass++ {
+		currentBranch, err := deps.getCurrentBranch(workDir)
+		if err != nil {
+			return fmt.Errorf("failed to determine current branch before section review for %q: %w", section.Name, err)
+		}
+		if currentBranch != branchContext.ExpectedSectionBranch {
+			return fmt.Errorf("section review for %q requires current branch %q, but got %q", section.Name, branchContext.ExpectedSectionBranch, currentBranch)
+		}
+		branchContext.CurrentBranch = currentBranch
+
 		if printf != nil {
 			printf("  section review pass %d/%d started: %s\n", pass, maxSectionReviewPasses, section.Name)
 		}
 
-		reviewPrompt, err := buildSectionReviewPrompt(info.Path, section.Name, section.Tasks)
+		reviewPrompt, err := buildSectionReviewPrompt(info.Path, section.Name, section.Tasks, branchContext)
 		if err != nil {
 			return fmt.Errorf("failed to build section review prompt for %q: %w", section.Name, err)
 		}
@@ -357,28 +417,34 @@ func invokeAgentCLI(invocation AgentInvocation) (AgentResult, error) {
 	}, nil
 }
 
-func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task) (string, error) {
-	return renderPromptTemplate(templatespkg.GetImplementWorkerPromptTemplate, specPath, sectionName, task)
+func buildWorkerPrompt(specPath, sectionName string, task specpkg.Task, reviewOutput string, changedFiles []string) (string, error) {
+	return renderPromptTemplate(templatespkg.GetImplementWorkerPromptTemplate, specPath, sectionName, task, reviewOutput, changedFiles)
 }
 
-func buildReviewPrompt(specPath, sectionName string, task specpkg.Task) (string, error) {
-	return renderPromptTemplate(templatespkg.GetImplementReviewPromptTemplate, specPath, sectionName, task)
+func buildReviewPrompt(specPath, sectionName string, task specpkg.Task, changedFiles []string) (string, error) {
+	return renderPromptTemplate(templatespkg.GetImplementReviewPromptTemplate, specPath, sectionName, task, "", changedFiles)
 }
 
-func buildSectionReviewPrompt(specPath, sectionName string, tasks []specpkg.Task) (string, error) {
+func buildSectionReviewPrompt(specPath, sectionName string, tasks []specpkg.Task, branchContext sectionBranchContext) (string, error) {
 	promptTemplate, err := templatespkg.GetImplementSectionReviewPromptTemplate()
 	if err != nil {
 		return "", err
 	}
 
 	return templatepkg.RenderTemplate(promptTemplate, struct {
-		SpecPath    string
-		SectionName string
-		Tasks       []string
+		SpecPath              string
+		SectionName           string
+		Tasks                 []string
+		CurrentBranch         string
+		ExpectedSectionBranch string
+		ParentBranch          string
 	}{
-		SpecPath:    specPath,
-		SectionName: displaySectionName(sectionName),
-		Tasks:       taskTexts(tasks),
+		SpecPath:              specPath,
+		SectionName:           displaySectionName(sectionName),
+		Tasks:                 taskTexts(tasks),
+		CurrentBranch:         branchContext.CurrentBranch,
+		ExpectedSectionBranch: branchContext.ExpectedSectionBranch,
+		ParentBranch:          branchContext.ParentBranch,
 	})
 }
 
@@ -401,22 +467,26 @@ func buildSectionWorkerPrompt(specPath, sectionName string, tasks []specpkg.Task
 	})
 }
 
-func renderPromptTemplate(loadTemplate func() (string, error), specPath, sectionName string, task specpkg.Task) (string, error) {
+func renderPromptTemplate(loadTemplate func() (string, error), specPath, sectionName string, task specpkg.Task, reviewOutput string, changedFiles []string) (string, error) {
 	promptTemplate, err := loadTemplate()
 	if err != nil {
 		return "", err
 	}
 
 	return templatepkg.RenderTemplate(promptTemplate, struct {
-		SpecPath    string
-		SectionName string
-		TaskText    string
-		TaskSubtree string
+		SpecPath     string
+		SectionName  string
+		TaskText     string
+		TaskSubtree  string
+		ReviewOutput string
+		ChangedFiles []string
 	}{
-		SpecPath:    specPath,
-		SectionName: displaySectionName(sectionName),
-		TaskText:    task.Text,
-		TaskSubtree: task.Subtree,
+		SpecPath:     specPath,
+		SectionName:  displaySectionName(sectionName),
+		TaskText:     task.Text,
+		TaskSubtree:  task.Subtree,
+		ReviewOutput: strings.TrimSpace(reviewOutput),
+		ChangedFiles: changedFiles,
 	})
 }
 

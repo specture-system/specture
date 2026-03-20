@@ -327,6 +327,187 @@ status: draft
 	}
 }
 
+func TestValidateSpec_NumberedSectionHeadersAreInvalid(t *testing.T) {
+	content := []byte(`---
+number: 7
+status: draft
+---
+
+# My Feature
+
+## 1. Overview
+
+Description.
+
+## Task List
+
+### Foundation
+
+- [ ] Implement parser change
+`)
+
+	spec, err := ParseSpecContent("test.md", content)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+
+	result := ValidateSpec(spec)
+	if result.IsValid() {
+		t.Fatal("expected validation to fail")
+	}
+
+	found := false
+	for _, e := range result.Errors {
+		if e.Field == "headings" && strings.Contains(e.Message, "must not be numbered") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected numbered heading validation error, got: %v", result.Errors)
+	}
+}
+
+func TestValidateSpec_UnnumberedSectionHeadersAreValid(t *testing.T) {
+	content := []byte(`---
+number: 7
+status: draft
+---
+
+# My Feature
+
+## Overview
+
+Description.
+
+## Task List
+
+### Foundation
+
+- [ ] Implement parser change
+`)
+
+	spec, err := ParseSpecContent("test.md", content)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+
+	result := ValidateSpec(spec)
+	for _, e := range result.Errors {
+		if e.Field == "headings" && strings.Contains(e.Message, "must not be numbered") {
+			t.Fatalf("unexpected numbered heading error: %v", e)
+		}
+	}
+}
+
+func TestValidateSpec_GenericSpecLinkLabelIsInvalid(t *testing.T) {
+	content := []byte(`---
+number: 8
+status: draft
+---
+
+# My Feature
+
+See [spec 12](status-command.md) for background.
+
+## Task List
+
+### Foundation
+
+- [ ] Implement parser change
+`)
+
+	spec, err := ParseSpecContent("test.md", content)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+
+	result := ValidateSpec(spec)
+	if result.IsValid() {
+		t.Fatal("expected validation to fail")
+	}
+
+	found := false
+	for _, e := range result.Errors {
+		if e.Field == "links" && strings.Contains(e.Message, "must use the referenced spec title") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected generic spec link label error, got: %v", result.Errors)
+	}
+}
+
+func TestValidateSpec_SpecHashLinkLabelIsInvalid(t *testing.T) {
+	content := []byte(`---
+number: 8
+status: draft
+---
+
+# My Feature
+
+See [spec #12](status-command.md) for background.
+
+## Task List
+
+### Foundation
+
+- [ ] Implement parser change
+`)
+
+	spec, err := ParseSpecContent("test.md", content)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+
+	result := ValidateSpec(spec)
+	if result.IsValid() {
+		t.Fatal("expected validation to fail")
+	}
+
+	found := false
+	for _, e := range result.Errors {
+		if e.Field == "links" && strings.Contains(e.Message, "must use the referenced spec title") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected generic spec link label error, got: %v", result.Errors)
+	}
+}
+
+func TestValidateSpec_SpecTitleLinkLabelIsValid(t *testing.T) {
+	content := []byte(`---
+number: 8
+status: draft
+---
+
+# My Feature
+
+See [Status command](status-command.md) for background.
+
+## Task List
+
+### Foundation
+
+- [ ] Implement parser change
+`)
+
+	spec, err := ParseSpecContent("test.md", content)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+
+	result := ValidateSpec(spec)
+	for _, e := range result.Errors {
+		if e.Field == "links" && strings.Contains(e.Message, "must use the referenced spec title") {
+			t.Fatalf("unexpected spec link label error: %v", e)
+		}
+	}
+}
+
 func TestValidateSpec_MultipleErrors(t *testing.T) {
 	// Missing everything
 	content := []byte(`Just some text without structure.`)

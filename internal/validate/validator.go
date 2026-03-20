@@ -10,6 +10,14 @@ import (
 	"strings"
 )
 
+var (
+	filenamePrefixPattern     = regexp.MustCompile(`^(\d{3})-`)
+	markdownSectionPattern    = regexp.MustCompile(`^(#{2,6})\s+(.+)$`)
+	numberedSectionPattern    = regexp.MustCompile(`^\d+(?:(?:\.\d+)+|[.)]|\s)`)
+	markdownInlineLinkPattern = regexp.MustCompile(`\[([^\]]+)\]\(([^)\s]+)\)`)
+	genericSpecLinkPattern    = regexp.MustCompile(`(?i)^spec\s+#?\w+$`)
+)
+
 // ValidationError represents a single validation error
 type ValidationError struct {
 	Field   string
@@ -60,8 +68,7 @@ func ValidateSpec(spec *Spec) *ValidationResult {
 		} else {
 			// Check number/filename mismatch
 			filename := filepath.Base(spec.Path)
-			fileNumRe := regexp.MustCompile(`^(\d{3})-`)
-			matches := fileNumRe.FindStringSubmatch(filename)
+			matches := filenamePrefixPattern.FindStringSubmatch(filename)
 			if len(matches) >= 2 {
 				fileNum, err := strconv.Atoi(matches[1])
 				if err == nil && fileNum != *spec.Frontmatter.Number {
@@ -105,6 +112,20 @@ func ValidateSpec(spec *Spec) *ValidationResult {
 		result.Errors = append(result.Errors, ValidationError{
 			Field:   "task list",
 			Message: "'## Task List' must be organized into '###' sections (every top-level checkbox must be under a section)",
+		})
+	}
+
+	if numberedHeading, ok := firstNumberedSectionHeading(spec.Source); ok {
+		result.Errors = append(result.Errors, ValidationError{
+			Field:   "headings",
+			Message: fmt.Sprintf("section headers must not be numbered (found %q)", numberedHeading),
+		})
+	}
+
+	if genericLabel, ok := firstGenericSpecLinkLabel(spec.Source); ok {
+		result.Errors = append(result.Errors, ValidationError{
+			Field:   "links",
+			Message: fmt.Sprintf("spec links must use the referenced spec title, not generic labels like 'spec 12' or 'spec #12' (found %q)", genericLabel),
 		})
 	}
 
@@ -153,6 +174,43 @@ func isTopLevelCheckboxLine(line string) bool {
 	}
 
 	return strings.HasPrefix(line, "- [ ] ") || strings.HasPrefix(line, "- [x] ")
+}
+
+func firstNumberedSectionHeading(source []byte) (string, bool) {
+	lines := strings.Split(string(source), "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		matches := markdownSectionPattern.FindStringSubmatch(trimmed)
+		if len(matches) != 3 {
+			continue
+		}
+		title := strings.TrimSpace(matches[2])
+		if numberedSectionPattern.MatchString(title) {
+			return trimmed, true
+		}
+	}
+
+	return "", false
+}
+
+func firstGenericSpecLinkLabel(source []byte) (string, bool) {
+	matches := markdownInlineLinkPattern.FindAllSubmatch(source, -1)
+	for _, match := range matches {
+		if len(match) < 3 {
+			continue
+		}
+
+		label := strings.TrimSpace(string(match[1]))
+		target := strings.TrimSpace(string(match[2]))
+		if !strings.HasSuffix(target, ".md") {
+			continue
+		}
+		if genericSpecLinkPattern.MatchString(label) {
+			return label, true
+		}
+	}
+
+	return "", false
 }
 
 // ValidateSpecs validates multiple specs, including cross-spec checks like duplicate numbers.

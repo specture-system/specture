@@ -90,6 +90,8 @@ YAML frontmatter between `---` delimiters at the top of the file.
 
 ## Required Sections
 
+Do not number markdown headings in spec files. Use plain titles like `## Task List` and `### Foundation`, not `## 1. Task List` or `### 2.1 Foundation`.
+
 ### Title (H1)
 
 A clear, descriptive `# Heading` summarizing what is being proposed. Must be the first heading in the document.
@@ -127,9 +129,13 @@ Implementation tasks as markdown checklists. Group related tasks under `###` sub
 - Make tasks specific and actionable
 - Order by dependencies (prerequisites first)
 - Group related tasks into `###` sections
+- Treat each `###` section as one pull request scope (a reviewer should be able to review and merge each section independently)
+- Treat each checklist item as one atomic commit
 - Include testing, documentation, and deployment tasks
 - Keep individual tasks reasonably sized (one commit each)
 - Avoid implementation-level detail — describe *what*, not *how*
+
+When referencing another spec, always use an inline markdown link with the correct relative path to that file (for example, `[Status command](status-command.md)`).
 
 **During implementation:**
 

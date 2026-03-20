@@ -43,6 +43,7 @@ Then follow this loop:
 - Use plain-language markdown headings in specs. Do **not** number section headers (`## 1. Task List`, `### 2.1 Foundation`, etc.).
 - Treat each `###` section under `## Task List` as one pull request scope. Name sections so they can stand alone as PR units.
 - Write tasks so each checkbox maps to one atomic commit. If a task needs multiple commits, split it into multiple checkboxes first.
+- Any cross-spec mention MUST use an inline markdown link to the other spec file with the correct relative path (for example, `[Status command](status-command.md)`).
 - Do NOT edit spec design decisions or descriptions without explicit user permission. You may only mark tasks complete and add/remove tasks during implementation.
 - When editing a spec, keep the design decisions section and task list in sync. If a description is updated, update all corresponding task descriptions to match, and vice versa.
 - When all tasks are checked off, update the frontmatter `status` to `completed`.

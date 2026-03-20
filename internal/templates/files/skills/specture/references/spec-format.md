@@ -135,6 +135,8 @@ Implementation tasks as markdown checklists. Group related tasks under `###` sub
 - Keep individual tasks reasonably sized (one commit each)
 - Avoid implementation-level detail — describe *what*, not *how*
 
+When referencing another spec, always use an inline markdown link with the correct relative path to that file (for example, `[Status command](status-command.md)`).
+
 **During implementation:**
 
 - Check off tasks by changing `- [ ]` to `- [x]`

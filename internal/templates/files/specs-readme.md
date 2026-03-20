@@ -7,6 +7,7 @@ When writing specs:
 - Do not number section headers (`##`/`###`).
 - Treat each `###` section in `## Task List` as one pull request.
 - Treat each task checkbox as one atomic commit.
+- Use inline markdown links with correct relative paths for any cross-spec mentions (for example, `[Status command](status-command.md)`).
 
 For full documentation on the spec system, workflow, and file format, see the [Specture System](https://github.com/specture-system/specture) repository. Run `specture help` for CLI usage.
 

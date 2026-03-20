@@ -108,6 +108,13 @@ func ValidateSpec(spec *Spec) *ValidationResult {
 		})
 	}
 
+	if numberedHeading, ok := firstNumberedSectionHeading(spec.Source); ok {
+		result.Errors = append(result.Errors, ValidationError{
+			Field:   "headings",
+			Message: fmt.Sprintf("section headers must not be numbered (found %q)", numberedHeading),
+		})
+	}
+
 	return result
 }
 
@@ -153,6 +160,36 @@ func isTopLevelCheckboxLine(line string) bool {
 	}
 
 	return strings.HasPrefix(line, "- [ ] ") || strings.HasPrefix(line, "- [x] ")
+}
+
+var numberedSectionHeaderPattern = regexp.MustCompile(`^\d+(?:(?:\.\d+)+|[.)]|\s)`)
+
+func firstNumberedSectionHeading(source []byte) (string, bool) {
+	lines := strings.Split(string(source), "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "##") {
+			continue
+		}
+
+		level := 0
+		for level < len(trimmed) && trimmed[level] == '#' {
+			level++
+		}
+		if level < 2 || level > 6 {
+			continue
+		}
+		if level >= len(trimmed) || trimmed[level] != ' ' {
+			continue
+		}
+
+		title := strings.TrimSpace(trimmed[level:])
+		if numberedSectionHeaderPattern.MatchString(title) {
+			return trimmed, true
+		}
+	}
+
+	return "", false
 }
 
 // ValidateSpecs validates multiple specs, including cross-spec checks like duplicate numbers.

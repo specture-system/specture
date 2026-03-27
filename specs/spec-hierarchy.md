@@ -21,7 +21,10 @@ This will be a large change to improve how our specs are organized. The goals an
 - Remove `specs/README.md`.
   - The `specture help` command should cover all important points of the Specture System.
   - It doesn't fit with our plan to ignore anything that isn't `SPEC.md` in `specs/`.
-- Update the skill and `help` message to match the new design.
+- Update the skill to match the new design.
+- Update the `specs/README.md` template to match the new design.
+- Update the `help` subcommand output to match the new design.
+- Update the validator to match the new design.
 
 ## Design Decisions
 
@@ -39,8 +42,12 @@ This will be a large change to improve how our specs are organized. The goals an
 - Validator should no longer throw error `links: spec links must use the referenced spec title, not generic labels like 'spec 12' or 'spec #12'`
   - We now have immutable spec numbers, and they should be more permanent than spec titles.
 - The `setup`/`update` subcommand should automatically reorganize the `specs` directory for the new directory and naming scheme.
-  - Also, update a project's `.gitignore` to ignore anything in `specs/` that is not a `SPEC.md`.
-  - Also, remove a project's `specs/README.md`.
+  - Also, add `specs/.gitignore` for each project:
+    ```
+    *
+    !**/SPEC.md
+    !README.md
+    ```
 
 ## Task List
 

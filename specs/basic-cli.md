@@ -274,5 +274,3 @@ It should be possible to validate one specific spec or all the specs.
 - [x] Write tests for error messages and summary output
 - [x] Implement clear, actionable error messages for validation failures
 - [x] Add summary output (X of Y specs valid)
-
-

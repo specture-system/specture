@@ -18,9 +18,6 @@ This will be a large change to improve how our specs are organized. The goals an
   - Agents often forget to check off items in the task list as they go.
 - Spec numbers should be immutable long term references.
   - They should no longer have any connection to priority or conflict resolution between specs.
-- Remove `specs/README.md`.
-  - The `specture help` command should cover all important points of the Specture System.
-  - It doesn't fit with our plan to ignore anything that isn't `SPEC.md` in `specs/`.
 - Update the skill to match the new design.
 - Update the `specs/README.md` template to match the new design.
 - Update the `help` subcommand output to match the new design.

@@ -28,25 +28,39 @@ This will be a large change to improve how our specs are organized. The goals an
 ## Design Decisions
 
 - Specs should be directories, with `SPEC.md` files.
-  - Sub-specs are added as subdirectories with a spec directory, along with their own `SPEC.md` files.
+  - Sub-specs are added as subdirectories within a spec directory, along with their own `SPEC.md` files.
   - This allows better modeling of large features, similar to GitLab epics.
   - The full reference number of a spec will include all the numbers of its ancestors, separated by `.`.
     - For example, Spec 1.4.3.
     - This follows the typical pattern used in engineering design documents.
+  - Sub-spec numbers are scoped per parent, not global.
+    - Each parent directory has its own numbering sequence starting from 0.
+    - `FindNextSpecNumber` allocates from the scope of the target parent.
 - Spec numbers should be included as a prefix for the directory names to allow easy scanning when using tools like `ls`.
-  - Left padded `0` are optional
+  - Left padded `0` are optional.
   - For example, `specs/0-MVP/1-backend/13-auth/SPEC.md` and `specs/000-mvp/001-backend/013-auth/SPEC.md` are both valid.
+  - The `number:` field stays in frontmatter; the directory prefix is for human scanning convenience only.
+- `specture new` accepts a `--parent` flag with a full dotted reference (e.g., `--parent 1.4`) to create sub-specs.
+  - Without `--parent`, specs are created at the top level.
+- `specture list` shows only top-level specs by default.
+  - Use `--parent 1.4` to list children of a specific spec.
+- All commands that accept a `--spec` flag support dotted references (e.g., `1.4.3`).
+  - This applies to `status`, `validate`, `list` (via `--parent`), `implement`, and `rename`.
+  - `ResolvePath` is updated to resolve dotted references by walking the directory tree.
+- The `specs/README.md` template should be simplified.
+  - The directory tree is self-documenting; the README only needs a brief description and a link to the Specture repo.
 - Validator should no longer check the `## Task List` section.
   - We won't error if it still exists (from old specs), but it should not be required in the future.
 - Validator should no longer throw error `links: spec links must use the referenced spec title, not generic labels like 'spec 12' or 'spec #12'`
   - We now have immutable spec numbers, and they should be more permanent than spec titles.
 - The `setup`/`update` subcommand should automatically reorganize the `specs` directory for the new directory and naming scheme.
-  - Also, add `specs/.gitignore` for each project:
-    ```
-    *
-    !**/SPEC.md
-    !README.md
-    ```
+  - Spec directories only track `SPEC.md` and `README.md` — no other assets for now.
+    - Add `specs/.gitignore` for each project:
+      ```
+      *
+      !**/SPEC.md
+      !README.md
+      ```
 
 ## Task List
 

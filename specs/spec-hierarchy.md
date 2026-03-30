@@ -1,8 +1,10 @@
 ---
 number: 8
-status: draft
+status: approved
 author: Addison Emig
 creation_date: 2026-03-27
+approved_by: Bennett Moore
+approval_date: 2026-03-30
 ---
 
 # Rework Spec Organization

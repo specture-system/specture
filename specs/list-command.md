@@ -44,7 +44,7 @@ The text output is intentionally a compact overview — one row per spec. For ta
 
 - [x] Write tests for list command text and JSON output
 - [x] Implement `specture list` command structure and aliases (`list`, `ls`)
-- [x] Use `spec.ParseAll` from `internal/spec` ([spec 003](/specs/status-command.md)) to load and parse all specs
+- [x] Use `spec.ParseAll` from `internal/spec` (See [Status Command](/specs/status-command.md) spec) to load and parse all specs
 - [x] Implement text output with columns: Number, Status, Progress (e.g., `3/7`), Name — sorted by ascending spec number
 - [x] Implement JSON output with full `SpecInfo` metadata per spec (name, number, status, current task, current task section, complete tasks, incomplete tasks)
 - [x] Add `--format` flag (`text`, `json`)

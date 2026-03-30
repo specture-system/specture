@@ -26,7 +26,7 @@ Move spec numbers into frontmatter and use plain slug filenames.
   - Frontmatter becomes: `number: 3`
   - `specture new` auto-assigns the next available number
   - `specture validate` detects duplicate numbers
-  - `specture list` is the primary way to see spec numbers (per [spec 005](/specs/list-command.md))
+  - `specture list` is the primary way to see spec numbers (per the [List Command](/specs/list-command.md) spec)
   - Reordering precedence is a frontmatter edit, not a file rename
 - Considered: Keep numbers in filenames
   - Simple and visible in file explorers

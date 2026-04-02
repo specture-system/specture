@@ -1,6 +1,6 @@
 ---
 number: 8
-status: approved
+status: in-progress
 author: Addison Emig
 creation_date: 2026-03-27
 approved_by: Bennett Moore
@@ -69,4 +69,5 @@ This will be a large change to improve how our specs are organized. The goals an
 
 ## Task List
 
-Leaving this as blank for now, to appease the current validator. I'll remove it before marking the spec complete.
+- [ ] Remove task-list validation from the validator
+- [ ] Update validator tests to accept specs without `## Task List`

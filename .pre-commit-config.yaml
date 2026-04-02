@@ -5,10 +5,14 @@ repos:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
-  - repo: https://github.com/specture-system/specture
-    rev: v0.0.1
+  - repo: local
     hooks:
       - id: validate-specs
+        name: Validate Specture specs
+        entry: just run validate
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
   - repo: local
     hooks:
       - id: check

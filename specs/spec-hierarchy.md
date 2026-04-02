@@ -66,8 +66,3 @@ This will be a large change to improve how our specs are organized. The goals an
       !**/SPEC.md
       !README.md
       ```
-
-## Task List
-
-- [ ] Compute dotted `FullRef` values from ancestor specs
-- [ ] Add tests for nested `FullRef` parsing

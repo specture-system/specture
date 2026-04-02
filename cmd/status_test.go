@@ -148,6 +148,7 @@ func TestStatusCommand_TextOutput_InProgress(t *testing.T) {
 	// Check key elements of text output
 	expected := []string{
 		"Spec 003: Status Command",
+		"Reference: 3",
 		"Progress: 3/5 tasks complete",
 		"Current Task Section: Phase Two",
 		"Current Task: Write tests for task parsing",
@@ -185,6 +186,9 @@ func TestStatusCommand_JSONOutput_InProgress(t *testing.T) {
 	}
 	if result["name"] != "Status Command" {
 		t.Errorf("expected name 'Status Command', got %v", result["name"])
+	}
+	if result["full_ref"] != "3" {
+		t.Errorf("expected full_ref 3, got %v", result["full_ref"])
 	}
 	if result["current_task"] != "Write tests for task parsing" {
 		t.Errorf("expected current_task, got %v", result["current_task"])
@@ -238,6 +242,9 @@ func TestStatusCommand_SpecFlag(t *testing.T) {
 
 	if !strings.Contains(output, "Spec 001: Setup Command") {
 		t.Errorf("expected output for spec 001, got:\n%s", output)
+	}
+	if !strings.Contains(output, "Reference: 1") {
+		t.Errorf("expected reference line, got:\n%s", output)
 	}
 	if !strings.Contains(output, "Status: completed") {
 		t.Errorf("expected completed status, got:\n%s", output)
@@ -297,6 +304,9 @@ func TestStatusCommand_EmptyTaskList(t *testing.T) {
 
 	if !strings.Contains(output, "Spec 001: Empty Spec") {
 		t.Errorf("expected spec name in output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "Reference: 1") {
+		t.Errorf("expected reference line, got:\n%s", output)
 	}
 	if !strings.Contains(output, "Status: draft") {
 		t.Errorf("expected draft status, got:\n%s", output)

@@ -93,6 +93,9 @@ func formatText(cmd *cobra.Command, info *specpkg.SpecInfo) error {
 	totalTasks := len(info.CompleteTasks) + len(info.IncompleteTasks)
 
 	cmd.Printf("Spec %03d: %s\n", info.Number, info.Name)
+	if info.FullRef != "" {
+		cmd.Printf("Reference: %s\n", info.FullRef)
+	}
 	cmd.Printf("Status: %s\n", info.Status)
 	cmd.Printf("Progress: %d/%d tasks complete\n", len(info.CompleteTasks), totalTasks)
 
@@ -129,6 +132,7 @@ func formatText(cmd *cobra.Command, info *specpkg.SpecInfo) error {
 // jsonOutput represents the JSON structure for the status command.
 type jsonOutput struct {
 	Number          int          `json:"number"`
+	FullRef         string       `json:"full_ref"`
 	Name            string       `json:"name"`
 	Status          string       `json:"status"`
 	CurrentTask     string       `json:"current_task"`
@@ -162,6 +166,7 @@ func formatJSON(cmd *cobra.Command, info *specpkg.SpecInfo) error {
 
 	output := jsonOutput{
 		Number:          info.Number,
+		FullRef:         info.FullRef,
 		Name:            info.Name,
 		Status:          info.Status,
 		CurrentTask:     info.CurrentTask,

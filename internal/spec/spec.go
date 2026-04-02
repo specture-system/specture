@@ -25,6 +25,7 @@ type SpecInfo struct {
 	Path               string
 	Name               string
 	Number             int
+	FullRef            string
 	Status             string
 	CurrentTask        string
 	CurrentTaskSection string
@@ -91,6 +92,7 @@ func ParseContent(path string, content []byte) (*SpecInfo, error) {
 		return nil, err
 	}
 	info.Number = number
+	info.FullRef = formatFullRef(number)
 
 	// Extract title (first H1 heading)
 	info.Name = extractTitle(doc, content)
@@ -172,6 +174,13 @@ func resolveNumber(fmNumber *int) (int, error) {
 		return 0, fmt.Errorf("invalid spec number %d: must be a non-negative integer", *fmNumber)
 	}
 	return *fmNumber, nil
+}
+
+func formatFullRef(number int) string {
+	if number < 0 {
+		return ""
+	}
+	return strconv.Itoa(number)
 }
 
 // extractNumberFromFilename extracts the spec number from a filename like "003-foo.md".

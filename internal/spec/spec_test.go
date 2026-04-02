@@ -539,47 +539,54 @@ func TestParseContent_ExtractsNumber(t *testing.T) {
 
 func TestParseContent_NumberFromFrontmatter(t *testing.T) {
 	tests := []struct {
-		name       string
-		content    []byte
-		path       string
-		wantNumber int
-		wantErr    bool
+		name        string
+		content     []byte
+		path        string
+		wantNumber  int
+		wantFullRef string
+		wantErr     bool
 	}{
 		{
-			name:       "number present in frontmatter",
-			content:    buildSpec("number: 5\nstatus: draft", "Test", ""),
-			path:       "test.md",
-			wantNumber: 5,
+			name:        "number present in frontmatter",
+			content:     buildSpec("number: 5\nstatus: draft", "Test", ""),
+			path:        "test.md",
+			wantNumber:  5,
+			wantFullRef: "5",
 		},
 		{
-			name:       "number zero in frontmatter",
-			content:    buildSpec("number: 0\nstatus: draft", "Test", ""),
-			path:       "test.md",
-			wantNumber: 0,
+			name:        "number zero in frontmatter",
+			content:     buildSpec("number: 0\nstatus: draft", "Test", ""),
+			path:        "test.md",
+			wantNumber:  0,
+			wantFullRef: "0",
 		},
 		{
-			name:       "large number in frontmatter",
-			content:    buildSpec("number: 999\nstatus: draft", "Test", ""),
-			path:       "test.md",
-			wantNumber: 999,
+			name:        "large number in frontmatter",
+			content:     buildSpec("number: 999\nstatus: draft", "Test", ""),
+			path:        "test.md",
+			wantNumber:  999,
+			wantFullRef: "999",
 		},
 		{
-			name:       "frontmatter number overrides filename number",
-			content:    buildSpec("number: 42\nstatus: draft", "Test", ""),
-			path:       "003-test.md",
-			wantNumber: 42,
+			name:        "frontmatter number overrides filename number",
+			content:     buildSpec("number: 42\nstatus: draft", "Test", ""),
+			path:        "003-test.md",
+			wantNumber:  42,
+			wantFullRef: "42",
 		},
 		{
-			name:       "missing number defaults to -1 even with numeric prefix filename",
-			content:    buildSpec("status: draft", "Test", ""),
-			path:       "007-test.md",
-			wantNumber: -1,
+			name:        "missing number defaults to -1 even with numeric prefix filename",
+			content:     buildSpec("status: draft", "Test", ""),
+			path:        "007-test.md",
+			wantNumber:  -1,
+			wantFullRef: "",
 		},
 		{
-			name:       "missing number without numeric prefix defaults to -1",
-			content:    buildSpec("status: draft", "Test", ""),
-			path:       "test.md",
-			wantNumber: -1,
+			name:        "missing number without numeric prefix defaults to -1",
+			content:     buildSpec("status: draft", "Test", ""),
+			path:        "test.md",
+			wantNumber:  -1,
+			wantFullRef: "",
 		},
 		{
 			name:    "negative number is invalid",
@@ -588,10 +595,11 @@ func TestParseContent_NumberFromFrontmatter(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:       "no frontmatter defaults to -1",
-			content:    []byte("# Test\n"),
-			path:       "005-test.md",
-			wantNumber: -1,
+			name:        "no frontmatter defaults to -1",
+			content:     []byte("# Test\n"),
+			path:        "005-test.md",
+			wantNumber:  -1,
+			wantFullRef: "",
 		},
 	}
 
@@ -610,7 +618,21 @@ func TestParseContent_NumberFromFrontmatter(t *testing.T) {
 			if info.Number != tt.wantNumber {
 				t.Errorf("expected number %d, got %d", tt.wantNumber, info.Number)
 			}
+			if info.FullRef != tt.wantFullRef {
+				t.Errorf("expected full ref %q, got %q", tt.wantFullRef, info.FullRef)
+			}
 		})
+	}
+}
+
+func TestParseContent_FullRefMatchesNumberString(t *testing.T) {
+	content := buildSpec("number: 12\nstatus: draft", "Test", "")
+	info, err := ParseContent("test.md", content)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info.FullRef != "12" {
+		t.Fatalf("expected full ref \"12\", got %q", info.FullRef)
 	}
 }
 

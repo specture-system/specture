@@ -69,5 +69,5 @@ This will be a large change to improve how our specs are organized. The goals an
 
 ## Task List
 
-- [ ] Remove task-list validation from the validator
-- [ ] Update validator tests to accept specs without `## Task List`
+- [x] Remove task-list validation from the validator
+- [x] Update validator tests to accept specs without `## Task List`

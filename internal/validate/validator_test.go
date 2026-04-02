@@ -220,8 +220,9 @@ Description.
 	}
 }
 
-func TestValidateSpec_MissingTaskList(t *testing.T) {
+func TestValidateSpec_MissingTaskListAllowed(t *testing.T) {
 	content := []byte(`---
+number: 0
 status: draft
 ---
 
@@ -239,23 +240,12 @@ Description without Task List heading.
 	}
 
 	result := ValidateSpec(spec)
-	if result.IsValid() {
-		t.Error("expected validation to fail")
-	}
-
-	hasTaskListError := false
-	for _, e := range result.Errors {
-		if e.Field == "task list" {
-			hasTaskListError = true
-			break
-		}
-	}
-	if !hasTaskListError {
-		t.Errorf("expected task list error, got: %v", result.Errors)
+	if !result.IsValid() {
+		t.Errorf("expected missing Task List to be allowed, got errors: %v", result.Errors)
 	}
 }
 
-func TestValidateSpec_TopLevelTaskCheckboxesMustBeUnderSection(t *testing.T) {
+func TestValidateSpec_TopLevelTaskCheckboxesAllowedWithoutSection(t *testing.T) {
 	content := []byte(`---
 number: 7
 status: draft
@@ -278,19 +268,8 @@ status: draft
 	}
 
 	result := ValidateSpec(spec)
-	if result.IsValid() {
-		t.Fatal("expected validation to fail")
-	}
-
-	found := false
-	for _, e := range result.Errors {
-		if e.Field == "task list" && strings.Contains(e.Message, "must be organized into '###' sections") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Fatalf("expected top-level sectioning validation error, got: %v", result.Errors)
+	if !result.IsValid() {
+		t.Fatalf("expected top-level checkboxes without sections to be allowed, got errors: %v", result.Errors)
 	}
 }
 
@@ -522,9 +501,9 @@ func TestValidateSpec_MultipleErrors(t *testing.T) {
 		t.Error("expected validation to fail")
 	}
 
-	// Should have errors for frontmatter, title, and task list
-	if len(result.Errors) < 3 {
-		t.Errorf("expected at least 3 errors, got %d: %v", len(result.Errors), result.Errors)
+	// Should have errors for frontmatter and title
+	if len(result.Errors) < 2 {
+		t.Errorf("expected at least 2 errors, got %d: %v", len(result.Errors), result.Errors)
 	}
 }
 

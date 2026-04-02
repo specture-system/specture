@@ -10,7 +10,7 @@
 - Keep reusable logic in the appropriate `internal/` package and keep `cmd/` focused on CLI orchestration.
 - Check for existing helpers before adding new ones, and add tests alongside new `internal/` helpers.
 - Test public `internal/` helpers, cover edge cases, and prefer table-driven tests when they fit.
-- Use conventional commits for commit messages and PR titles.
+- Use conventional commits for commit messages and PR titles. For PR titles, choose the prefix that matches the primary change; spec bookkeeping should not determine the prefix.
 
 ### Ask First (wait for approval)
 

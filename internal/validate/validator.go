@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"bytes"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -102,19 +101,6 @@ func ValidateSpec(spec *Spec) *ValidationResult {
 		})
 	}
 
-	// Validate task list heading exists
-	if !spec.HasTaskList {
-		result.Errors = append(result.Errors, ValidationError{
-			Field:   "task list",
-			Message: "missing '## Task List' heading",
-		})
-	} else if !allTopLevelTaskCheckboxesAreSectioned(spec.Source) {
-		result.Errors = append(result.Errors, ValidationError{
-			Field:   "task list",
-			Message: "'## Task List' must be organized into '###' sections (every top-level checkbox must be under a section)",
-		})
-	}
-
 	if numberedHeading, ok := firstNumberedSectionHeading(spec.Source); ok {
 		result.Errors = append(result.Errors, ValidationError{
 			Field:   "headings",
@@ -130,50 +116,6 @@ func ValidateSpec(spec *Spec) *ValidationResult {
 	}
 
 	return result
-}
-
-func allTopLevelTaskCheckboxesAreSectioned(source []byte) bool {
-	lines := strings.Split(string(source), "\n")
-	inTaskList := false
-	seenSection := false
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		if trimmed == "## Task List" {
-			inTaskList = true
-			seenSection = false
-			continue
-		}
-
-		if !inTaskList {
-			continue
-		}
-
-		if strings.HasPrefix(trimmed, "## ") && !strings.HasPrefix(trimmed, "### ") {
-			break
-		}
-
-		if strings.HasPrefix(trimmed, "### ") {
-			seenSection = true
-			continue
-		}
-
-		if isTopLevelCheckboxLine(line) && !seenSection {
-			return false
-		}
-	}
-
-	return true
-}
-
-func isTopLevelCheckboxLine(line string) bool {
-	trimmedLeft := bytes.TrimLeft([]byte(line), " \t")
-	if len(trimmedLeft) != len(line) {
-		return false
-	}
-
-	return strings.HasPrefix(line, "- [ ] ") || strings.HasPrefix(line, "- [x] ")
 }
 
 func firstNumberedSectionHeading(source []byte) (string, bool) {

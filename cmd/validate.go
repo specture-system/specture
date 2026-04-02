@@ -18,7 +18,7 @@ var validateCmd = &cobra.Command{
 	Short:   "Validate specs",
 	Long: `Validate checks that specs follow the Specture System guidelines.
 
-It validates frontmatter, status, descriptions, and task lists.
+It validates frontmatter, status, and descriptions.
 
 Examples:
   specture validate              # Validate all specs in specs/

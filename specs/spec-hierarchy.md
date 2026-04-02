@@ -16,8 +16,8 @@ This will be a large change to improve how our specs are organized. The goals an
 - Users should be allowed to nest specs to any number of levels.
   - The current flat organization system is tedious to work with.
 - Specs should not contain step-by-step granular implementation progress.
-  - If you try to preplan a giant task list to complete a spec, it will quickly become outdated.
-  - Agents often forget to check off items in the task list as they go.
+  - Track that progress in sibling `PROGRESS.md` files next to `SPEC.md`.
+  - Those files are temporary working notes and should be ignored by git.
 - Spec numbers should be immutable long term references.
   - They should no longer have any connection to priority or conflict resolution between specs.
 - Update the skill to match the new design.
@@ -51,8 +51,8 @@ This will be a large change to improve how our specs are organized. The goals an
 - `specture rename` updates the directory slug (e.g., `3-status-command/` → `3-new-name/`) and rewrites all repo-root-relative cross-spec links that reference the old path.
 - The `specs/README.md` template should be simplified.
   - The directory tree is self-documenting; the README only needs a brief description and a link to the Specture repo.
-- Validator should no longer check the `## Task List` section.
-  - We won't error if it still exists (from old specs), but it should not be required in the future.
+- Validator should no longer require implementation progress to live inside the spec.
+  - Keep progress notes in sibling files instead of the spec body.
 - `specture validate` (no args) validates the entire spec tree recursively. `specture validate --spec 1.4.3` validates only that single `SPEC.md` without recursing into children.
 - Validator should no longer throw error `links: spec links must use the referenced spec title, not generic labels like 'spec 12' or 'spec #12'`
   - We now have immutable spec numbers, and they should be more permanent than spec titles.

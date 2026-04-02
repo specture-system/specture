@@ -19,6 +19,7 @@ Use it when:
 - Issues are for bugs only.
 - Features, refactors, and other planned changes should be proposed through specs and pull requests instead of issues.
 - Pull request titles must use conventional commit format because PRs are squashed on merge and the title becomes the commit message.
+- Use `feat:` for spec-backed implementation work unless the PR is strictly a bug fix, docs change, refactor, or test-only change.
 
 ## Commands
 

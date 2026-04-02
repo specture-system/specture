@@ -43,8 +43,6 @@ Description as paragraphs and/or bulleted list.
 
 ```
 
-Implementation progress belongs in a sibling `PROGRESS.md` file next to the spec. Keep it temporary and ignored by git.
-
 ## Frontmatter
 
 YAML frontmatter between `---` delimiters at the top of the file.
@@ -69,11 +67,13 @@ YAML frontmatter between `---` delimiters at the top of the file.
 
 - **`draft`** — Being written and refined. May go through multiple iterations.
 - **`approved`** — Team has agreed on the design; ready for implementation.
-- **`in-progress`** — Implementation underway and tracked in sibling progress notes.
-- **`completed`** — All planned work is done.
+- **`in-progress`** — Implementation underway.
+- **`completed`** — All planned work is done and goals are achieved.
 - **`rejected`** — Reviewed and rejected. Document **why** if merging a rejected spec.
 
 ## Required Sections
+
+Do not number markdown headings in spec files. Use plain titles like `## Design Decisions` and `### Foundation`, not `## 1. Design Decisions` or `### 2.1 Foundation`.
 
 ### Title (H1)
 
@@ -94,7 +94,9 @@ Implementation progress belongs in a sibling `PROGRESS.md` file next to the spec
 
 When referencing another spec, always use an inline markdown link with the correct relative path to that file (for example, `[Status command](status-command.md)`).
 
-## Optional Sections
+### Goals
+
+A list of specific goals that this spec aims to achieve. May include sublists.
 
 ### Design Decisions
 
@@ -115,13 +117,6 @@ Document major design choices with options considered and their trade-offs:
 
 Include as many decision points as needed. No obligation for small or trivial specs.
 
-## Precedence Rules
-
-1. Higher-numbered specs take precedence over lower-numbered specs when they conflict on any point.
-2. Completed specs are historical records — do **not** retroactively update them.
-3. Exception: fix typos, documentation errors, or factual inaccuracies in completed specs.
-4. When a new spec supersedes part of an older spec, the new spec's rules apply.
-
 ## Scope Guidelines
 
 **Specs are for planned changes**: features, refactors, redesigns, tooling improvements.
@@ -134,10 +129,4 @@ Include as many decision points as needed. No obligation for small or trivial sp
 
 ## Validation
 
-Run `specture validate` to check specs against these format rules. The validator checks:
-
-- Valid YAML frontmatter with required `number` and `status` fields
-- Number is a non-negative integer with no duplicates across specs
-- Status is one of the allowed values
-- Description section is present (content after H1 title)
-- Warns if frontmatter number doesn't match filename numeric prefix
+Run `specture validate` to check specs.

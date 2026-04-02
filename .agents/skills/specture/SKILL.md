@@ -5,25 +5,42 @@ description: Follow the Specture System for spec-driven development. Use when cr
 
 # Specture System
 
-Specture is a spec-driven development system. Specs are design documents in the `specs/` directory that describe planned changes — features, refactors, redesigns, tooling improvements. Each spec contains the design rationale, decisions, and a sibling progress file for implementation notes.
+Specture is a spec-driven development system. Specs are design documents in the `specs/` directory that describe planned changes — features, refactors, redesigns, tooling improvements. Each spec contains metadata, goals, and design decisions.
 
 Spec numbers are stored in the YAML frontmatter `number` field. New specs use slug-only filenames (e.g., `my-feature.md`). Older specs may retain `NNN-slug.md` filenames — both naming patterns are valid.
 
+## Design Workflow
+
+When designing a spec (writing or refining a `draft` spec):
+
+1. Create a new branch for the spec design work (e.g., `spec/my-feature`)
+2. Write or refine the spec content — description and design decisions
+3. Commit and push the spec changes
+4. Open a PR for review and discussion
+
 ## Implementation Workflow
 
-When implementing a spec, follow this loop:
+When starting implementation of an `approved` spec:
 
-1. Run `specture status` to see the current spec and progress notes
-2. Update the sibling `PROGRESS.md` file next to `SPEC.md` with the next slice of work
-3. Implement one or more small chunks of the spec
-4. Commit the implementation changes
-5. Push the changes
-6. Repeat from step 1
+1. **Update the spec status to `in-progress`** by editing the frontmatter `status` field
+2. **Create a new branch** for the implementation work (e.g., `impl/my-feature`)
+3. Commit the status change as the first commit on the branch
+
+Then follow this loop:
+
+1. Read the spec
+2. Analyze the codebase
+3. Update the sibling `PROGRESS.md` file next to `SPEC.md` with the next slice of work
+4. Implement one small chunk of the spec
+5. Commit the implementation changes
+6. Push the changes
+7. Repeat from step 1
 
 **Critical rules:**
 
 - Keep implementation progress in the sibling `PROGRESS.md` file, not in the spec itself.
-- Do not commit temporary progress notes unless the team explicitly wants them versioned.
+- Use plain-language markdown headings in specs. Do **not** number section headers (`## 1. Design Decisions`, `### 2.1 Foundation`, etc.).
+- Any cross-spec mention MUST use an inline markdown link to the other spec file with the correct relative path (for example, `[Status command](status-command.md)`).
 - Do NOT edit spec design decisions or descriptions without explicit user permission. You may update the temporary progress file during implementation.
 - When updating progress notes, keep them aligned with the work you are actually doing.
 - When all work is complete, update the frontmatter `status` to `completed`.
@@ -31,6 +48,7 @@ When implementing a spec, follow this loop:
 ## CLI Commands
 
 Always use non-interactive flags. Interactive mode will hang waiting for input.
+To find specs, use `specture ls`/`specture list` — do **not** scan with `grep`, `find`, or manual filename searching.
 
 ### specture list and specture status
 
@@ -47,7 +65,7 @@ specture list -f json                    # JSON output with full metadata
 
 Aliases: `list`, `ls`
 
-**`specture status`** — detailed view of one spec, including progress notes and current status.
+**`specture status`** — detailed view of one spec.
 
 ```bash
 specture status                          # Current in-progress spec
@@ -55,7 +73,7 @@ specture status --spec 3                 # Specific spec by number
 specture status -f json                  # JSON output
 ```
 
-Typical workflow: run `specture list` to find the spec you need, then `specture status --spec N` to see its progress notes and current status.
+Typical workflow: run `specture list` to find the spec you need, then `specture status --spec N` to see its status.
 
 ### specture new
 
@@ -132,8 +150,8 @@ Specs move through these statuses:
 
 1. **draft** — Being written and refined
 2. **approved** — Ready for implementation
-3. **in-progress** — Implementation underway and tracked in sibling progress notes
-4. **completed** — All planned work is done
+3. **in-progress** — Implementation underway
+4. **completed** — All planned work is done and goals are achieved
 5. **rejected** — Reviewed and rejected
 
 If a spec has no explicit `status` in frontmatter, it is treated as `draft` until the status is set explicitly.

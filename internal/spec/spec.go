@@ -92,7 +92,10 @@ func ParseContent(path string, content []byte) (*SpecInfo, error) {
 		return nil, err
 	}
 	info.Number = number
-	info.FullRef = formatFullRef(number)
+	info.FullRef, err = resolveFullRef(path, number)
+	if err != nil {
+		return nil, err
+	}
 
 	// Extract title (first H1 heading)
 	info.Name = extractTitle(doc, content)
@@ -176,11 +179,26 @@ func resolveNumber(fmNumber *int) (int, error) {
 	return *fmNumber, nil
 }
 
-func formatFullRef(number int) string {
+func resolveFullRef(path string, number int) (string, error) {
 	if number < 0 {
-		return ""
+		return "", nil
 	}
-	return strconv.Itoa(number)
+
+	parentSpecPath := filepath.Join(filepath.Dir(filepath.Dir(path)), "SPEC.md")
+	if _, err := os.Stat(parentSpecPath); err == nil {
+		parentInfo, err := Parse(parentSpecPath)
+		if err != nil {
+			return "", err
+		}
+		if parentInfo.FullRef != "" {
+			return parentInfo.FullRef + "." + strconv.Itoa(number), nil
+		}
+		return strconv.Itoa(number), nil
+	} else if !os.IsNotExist(err) {
+		return "", fmt.Errorf("failed to inspect parent spec: %w", err)
+	}
+
+	return strconv.Itoa(number), nil
 }
 
 // extractNumberFromFilename extracts the spec number from a filename like "003-foo.md".

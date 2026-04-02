@@ -636,6 +636,47 @@ func TestParseContent_FullRefMatchesNumberString(t *testing.T) {
 	}
 }
 
+func TestParseContent_FullRefIncludesAncestorRefs(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	parentDir := filepath.Join(tmpDir, "specs", "1-root")
+	childDir := filepath.Join(parentDir, "2-child")
+	grandchildDir := filepath.Join(childDir, "3-grandchild")
+
+	for _, dir := range []string{parentDir, childDir, grandchildDir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatalf("failed to create dir %s: %v", dir, err)
+		}
+	}
+
+	parentPath := filepath.Join(parentDir, "SPEC.md")
+	childPath := filepath.Join(childDir, "SPEC.md")
+	grandchildPath := filepath.Join(grandchildDir, "SPEC.md")
+
+	parentContent := buildSpec("number: 1\nstatus: draft", "Root", "")
+	childContent := buildSpec("number: 2\nstatus: draft", "Child", "")
+	grandchildContent := buildSpec("number: 3\nstatus: draft", "Grandchild", "")
+
+	if err := os.WriteFile(parentPath, parentContent, 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(childPath, childContent, 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+	if err := os.WriteFile(grandchildPath, grandchildContent, 0o644); err != nil {
+		t.Fatalf("failed to write grandchild spec: %v", err)
+	}
+
+	info, err := Parse(grandchildPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if info.FullRef != "1.2.3" {
+		t.Fatalf("expected full ref \"1.2.3\", got %q", info.FullRef)
+	}
+}
+
 func TestParseContent_ExtractsName(t *testing.T) {
 	content := []byte("# My Great Feature\n\nDescription.\n")
 	info, err := ParseContent("001-test.md", content)

@@ -41,24 +41,9 @@ Description as paragraphs and/or bulleted list.
   - Pro 1
   - Con 1
 
-## Task List
-
-### Foundation
-
-- [ ] Task 1
-- [ ] Task 2
-- [ ] Task 3
-
-### Core Implementation
-
-- [ ] Task 1
-- [ ] Task 2
-
-### Polish and Documentation
-
-- [ ] Task 1
-- [ ] Task 2
 ```
+
+Implementation progress belongs in a sibling `PROGRESS.md` file next to the spec. Keep it temporary and ignored by git.
 
 ## Frontmatter
 
@@ -84,8 +69,8 @@ YAML frontmatter between `---` delimiters at the top of the file.
 
 - **`draft`** — Being written and refined. May go through multiple iterations.
 - **`approved`** — Team has agreed on the design; ready for implementation.
-- **`in-progress`** — Implementation underway. Tasks are being checked off.
-- **`completed`** — All tasks in the task list are done.
+- **`in-progress`** — Implementation underway and tracked in sibling progress notes.
+- **`completed`** — All planned work is done.
 - **`rejected`** — Reviewed and rejected. Document **why** if merging a rejected spec.
 
 ## Required Sections
@@ -105,37 +90,9 @@ Overview of the proposed change, immediately after the title. Can be paragraphs 
 
 For large descriptions, use additional `##` sections (e.g., `## Ideas`, `## Goals`, `## Benefits`).
 
-### Task List (`## Task List`)
+Implementation progress belongs in a sibling `PROGRESS.md` file next to the spec. Keep it temporary and ignored by git.
 
-Implementation tasks as markdown checklists. Group related tasks under `###` subsections.
-
-```markdown
-## Task List
-
-### Phase 1
-
-- [ ] Task description
-- [ ] Another task
-
-### Phase 2
-
-- [ ] More tasks
-```
-
-**Task list best practices:**
-
-- Make tasks specific and actionable
-- Order by dependencies (prerequisites first)
-- Group related tasks into `###` sections
-- Include testing, documentation, and deployment tasks
-- Keep individual tasks reasonably sized (one commit each)
-- Avoid implementation-level detail — describe *what*, not *how*
-
-**During implementation:**
-
-- Check off tasks by changing `- [ ]` to `- [x]`
-- Add new tasks or sections as implementation reveals needs
-- Remove or update tasks that turn out to be unnecessary
+When referencing another spec, always use an inline markdown link with the correct relative path to that file (for example, `[Status command](status-command.md)`).
 
 ## Optional Sections
 
@@ -183,5 +140,4 @@ Run `specture validate` to check specs against these format rules. The validator
 - Number is a non-negative integer with no duplicates across specs
 - Status is one of the allowed values
 - Description section is present (content after H1 title)
-- Task list section is present (`## Task List`)
 - Warns if frontmatter number doesn't match filename numeric prefix

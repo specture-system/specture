@@ -19,9 +19,9 @@ var listCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{"ls"},
 	Short:   "List specs with filtering and output options",
-	Long: `List top-level specs or the children of a specific spec with optional filtering by status and task display.
+	Long: `List top-level specs or the children of a specific spec with optional filtering by status.
 
-By default, shows a compact table with Number, Status, Progress, and Name for top-level specs.
+By default, shows a compact table with Number, Status, and Name for top-level specs.
 Use --parent to show the immediate children of a parent spec.
 Use --format json for machine-readable output with full metadata.
 
@@ -109,27 +109,23 @@ func formatListText(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 
 	// Calculate column widths from data
 	statusWidth := len("STATUS")
-	progressWidth := len("PROGRESS")
+	nameWidth := len("NAME")
 	for _, spec := range specs {
 		if len(spec.Status) > statusWidth {
 			statusWidth = len(spec.Status)
 		}
-		total := len(spec.CompleteTasks) + len(spec.IncompleteTasks)
-		p := fmt.Sprintf("%d/%d", len(spec.CompleteTasks), total)
-		if len(p) > progressWidth {
-			progressWidth = len(p)
+		if len(spec.Name) > nameWidth {
+			nameWidth = len(spec.Name)
 		}
 	}
 
-	rowFmt := fmt.Sprintf("%%03d  %%-%ds  %%%ds  %%s\n", statusWidth, progressWidth)
-	headerFmt := fmt.Sprintf("%%s  %%-%ds  %%%ds  %%s\n", statusWidth, progressWidth)
+	rowFmt := fmt.Sprintf("%%03d  %%-%ds  %%-%ds\n", statusWidth, nameWidth)
+	headerFmt := fmt.Sprintf("%%s  %%-%ds  %%s\n", statusWidth)
 
-	cmd.Printf(headerFmt, "NUM", "STATUS", "PROGRESS", "NAME")
+	cmd.Printf(headerFmt, "NUM", "STATUS", "NAME")
 
 	for _, spec := range specs {
-		totalTasks := len(spec.CompleteTasks) + len(spec.IncompleteTasks)
-		progress := fmt.Sprintf("%d/%d", len(spec.CompleteTasks), totalTasks)
-		cmd.Printf(rowFmt, spec.Number, spec.Status, progress, spec.Name)
+		cmd.Printf(rowFmt, spec.Number, spec.Status, spec.Name)
 	}
 
 	return nil
@@ -137,24 +133,11 @@ func formatListText(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 
 // listJSONOutput represents a single spec in the JSON array output.
 type listJSONOutput struct {
-	Number          int          `json:"number"`
-	Name            string       `json:"name"`
-	Status          string       `json:"status"`
-	CurrentTask     string       `json:"current_task"`
-	CurrentTaskSect string       `json:"current_task_section"`
-	CompleteTasks   []jsonTask   `json:"complete_tasks"`
-	IncompleteTasks []jsonTask   `json:"incomplete_tasks"`
-	Progress        jsonProgress `json:"progress"`
-}
-
-type jsonTask struct {
-	Text    string `json:"text"`
-	Section string `json:"section"`
-}
-
-type jsonProgress struct {
-	Complete int `json:"complete"`
-	Total    int `json:"total"`
+	Number  int    `json:"number"`
+	FullRef string `json:"full_ref"`
+	Name    string `json:"name"`
+	Status  string `json:"status"`
+	Path    string `json:"path"`
 }
 
 // formatListJSON outputs specs as a JSON array with full metadata.
@@ -162,28 +145,12 @@ func formatListJSON(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 	output := make([]listJSONOutput, 0, len(specs))
 
 	for _, spec := range specs {
-		completeTasks := make([]jsonTask, 0, len(spec.CompleteTasks))
-		for _, t := range spec.CompleteTasks {
-			completeTasks = append(completeTasks, jsonTask{Text: t.Text, Section: t.Section})
-		}
-
-		incompleteTasks := make([]jsonTask, 0, len(spec.IncompleteTasks))
-		for _, t := range spec.IncompleteTasks {
-			incompleteTasks = append(incompleteTasks, jsonTask{Text: t.Text, Section: t.Section})
-		}
-
 		output = append(output, listJSONOutput{
-			Number:          spec.Number,
-			Name:            spec.Name,
-			Status:          spec.Status,
-			CurrentTask:     spec.CurrentTask,
-			CurrentTaskSect: spec.CurrentTaskSection,
-			CompleteTasks:   completeTasks,
-			IncompleteTasks: incompleteTasks,
-			Progress: jsonProgress{
-				Complete: len(spec.CompleteTasks),
-				Total:    len(spec.CompleteTasks) + len(spec.IncompleteTasks),
-			},
+			Number:  spec.Number,
+			FullRef: spec.FullRef,
+			Name:    spec.Name,
+			Status:  spec.Status,
+			Path:    spec.Path,
 		})
 	}
 

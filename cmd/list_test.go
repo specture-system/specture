@@ -61,20 +61,7 @@ status: in-progress
 ---
 
 # Status Command
-
 Description.
-
-## Task List
-
-### Phase One
-
-- [x] Create SpecInfo struct
-- [x] Create Task struct
-
-### Phase Two
-
-- [ ] Write tests
-- [ ] Implement feature
 `
 
 const listCompletedSpec = `---
@@ -85,12 +72,6 @@ status: completed
 # Setup Command
 
 All done.
-
-## Task List
-
-- [x] Task A
-- [x] Task B
-- [x] Task C
 `
 
 const listDraftSpec = `---
@@ -101,11 +82,6 @@ status: draft
 # Future Feature
 
 Just an idea.
-
-## Task List
-
-- [ ] Think about it
-- [ ] Plan it
 `
 
 const listApprovedSpec = `---
@@ -116,10 +92,6 @@ status: approved
 # Approved Feature
 
 Ready to go.
-
-## Task List
-
-- [ ] Do the thing
 `
 
 // ---- Text output tests ----
@@ -144,7 +116,7 @@ func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 
 	// Check header
 	header := lines[0]
-	for _, col := range []string{"NUM", "STATUS", "PROGRESS", "NAME"} {
+	for _, col := range []string{"NUM", "STATUS", "NAME"} {
 		if !strings.Contains(header, col) {
 			t.Errorf("header missing %q: %s", col, header)
 		}
@@ -152,14 +124,13 @@ func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 
 	// Check each data row has expected columns
 	expected := []struct {
-		number   string
-		status   string
-		progress string
-		name     string
+		number string
+		status string
+		name   string
 	}{
-		{"001", "completed", "3/3", "Setup Command"},
-		{"002", "draft", "0/2", "Future Feature"},
-		{"003", "in-progress", "2/4", "Status Command"},
+		{"001", "completed", "Setup Command"},
+		{"002", "draft", "Future Feature"},
+		{"003", "in-progress", "Status Command"},
 	}
 
 	for i, exp := range expected {
@@ -169,9 +140,6 @@ func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 		}
 		if !strings.Contains(row, exp.status) {
 			t.Errorf("row %d: expected status %s, got: %s", i, exp.status, row)
-		}
-		if !strings.Contains(row, exp.progress) {
-			t.Errorf("row %d: expected progress %s, got: %s", i, exp.progress, row)
 		}
 		if !strings.Contains(row, exp.name) {
 			t.Errorf("row %d: expected name %s, got: %s", i, exp.name, row)
@@ -395,42 +363,13 @@ func TestListCommand_JSONOutput_AllSpecs(t *testing.T) {
 		t.Errorf("expected status 'draft', got %v", result[1]["status"])
 	}
 
-	// Check third spec has full metadata
+	// Check third spec has the expected metadata fields
 	spec3 := result[2]
-	if spec3["current_task"] != "Write tests" {
-		t.Errorf("expected current_task 'Write tests', got %v", spec3["current_task"])
+	if spec3["full_ref"] != "3" {
+		t.Errorf("expected full_ref '3', got %v", spec3["full_ref"])
 	}
-	if spec3["current_task_section"] != "Phase Two" {
-		t.Errorf("expected current_task_section 'Phase Two', got %v", spec3["current_task_section"])
-	}
-
-	// Validate progress on spec 3
-	progress, ok := spec3["progress"].(map[string]any)
-	if !ok {
-		t.Fatalf("progress is not an object")
-	}
-	if progress["complete"] != float64(2) {
-		t.Errorf("expected progress.complete 2, got %v", progress["complete"])
-	}
-	if progress["total"] != float64(4) {
-		t.Errorf("expected progress.total 4, got %v", progress["total"])
-	}
-
-	// Validate complete_tasks and incomplete_tasks are arrays
-	completeTasks, ok := spec3["complete_tasks"].([]any)
-	if !ok {
-		t.Fatalf("complete_tasks is not an array")
-	}
-	if len(completeTasks) != 2 {
-		t.Errorf("expected 2 complete tasks, got %d", len(completeTasks))
-	}
-
-	incompleteTasks, ok := spec3["incomplete_tasks"].([]any)
-	if !ok {
-		t.Fatalf("incomplete_tasks is not an array")
-	}
-	if len(incompleteTasks) != 2 {
-		t.Errorf("expected 2 incomplete tasks, got %d", len(incompleteTasks))
+	if path, ok := spec3["path"].(string); !ok || !strings.HasSuffix(path, filepath.Join("specs", "003-status.md")) {
+		t.Errorf("expected path to end with %q, got %v", filepath.Join("specs", "003-status.md"), spec3["path"])
 	}
 }
 
@@ -448,33 +387,6 @@ func TestListCommand_JSONOutput_EmptyList(t *testing.T) {
 	}
 	if len(result) != 0 {
 		t.Errorf("expected empty array, got %d items", len(result))
-	}
-}
-
-func TestListCommand_JSONOutput_IncludesTaskSections(t *testing.T) {
-	tmpDir := setupListTest(t, map[string]string{
-		"003-status.md": listInProgressSpec,
-	})
-
-	output, err := execList(t, tmpDir, map[string]string{"format": "json"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	var result []map[string]any
-	if err := json.Unmarshal([]byte(output), &result); err != nil {
-		t.Fatalf("failed to parse JSON: %v", err)
-	}
-
-	if len(result) != 1 {
-		t.Fatalf("expected 1 spec, got %d", len(result))
-	}
-
-	// Check that tasks include section info
-	completeTasks := result[0]["complete_tasks"].([]any)
-	firstTask := completeTasks[0].(map[string]any)
-	if firstTask["section"] != "Phase One" {
-		t.Errorf("expected section 'Phase One', got %v", firstTask["section"])
 	}
 }
 

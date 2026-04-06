@@ -48,9 +48,9 @@ Then follow this loop:
 Always use non-interactive flags. Interactive mode will hang waiting for input.
 To find specs, use `specture ls`/`specture list` — do **not** scan with `grep`, `find`, or manual filename searching.
 
-### specture list and specture status
+### specture list
 
-Use `list` to see all specs at a glance, then `status` to drill into a specific one.
+Use `list` to see all specs at a glance. To inspect a specific spec in detail, read its `SPEC.md` file directly.
 
 **`specture list`** — overview of all specs (number, status, progress, name).
 
@@ -62,16 +62,6 @@ specture list -f json                    # JSON output with full metadata
 ```
 
 Aliases: `list`, `ls`
-
-**`specture status`** — detailed view of one spec.
-
-```bash
-specture status                          # Current in-progress spec
-specture status --spec 3                 # Specific spec by number
-specture status -f json                  # JSON output
-```
-
-Typical workflow: run `specture list` to find the spec you need, then `specture status --spec N` to see its full reference and status.
 
 ### specture new
 

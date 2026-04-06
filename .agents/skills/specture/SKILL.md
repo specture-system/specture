@@ -52,13 +52,13 @@ To find specs, use `specture ls`/`specture list` — do **not** scan with `grep`
 
 Use `list` to see all specs at a glance. To inspect a specific spec in detail, read its `SPEC.md` file directly.
 
-**`specture list`** — overview of all specs (number, status, progress, name).
+**`specture list`** — overview of all specs (number, status, name).
 
 ```bash
 specture list                            # All specs
 specture list --status in-progress       # Filter by status
 specture list --status draft,approved    # Multiple statuses
-specture list -f json                    # JSON output with full metadata
+specture list -f json                    # JSON output with spec metadata
 ```
 
 Aliases: `list`, `ls`

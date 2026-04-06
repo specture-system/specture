@@ -113,9 +113,6 @@ specture setup --yes
 
 # Preview without changes
 specture setup --dry-run
-
-# Force AGENTS.md update prompt
-specture setup --update-agents --yes
 ```
 
 Aliases: `setup`, `update`, `u`

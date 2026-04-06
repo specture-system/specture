@@ -106,27 +106,3 @@ func (c *SetupCommandContext) CreateSpecsReadme(dryRun bool) error {
 
 	return nil
 }
-
-// FindExistingFiles finds AGENTS.md and CLAUDE.md files in the repository.
-func (c *SetupCommandContext) FindExistingFiles() (hasAgentsFile, hasClaudeFile bool) {
-	agentsPath := filepath.Join(c.WorkDir, "AGENTS.md")
-	claudePath := filepath.Join(c.WorkDir, "CLAUDE.md")
-
-	if _, err := os.Stat(agentsPath); err == nil {
-		hasAgentsFile = true
-	}
-	if _, err := os.Stat(claudePath); err == nil {
-		hasClaudeFile = true
-	}
-
-	return hasAgentsFile, hasClaudeFile
-}
-
-// RenderAgentPromptTemplate renders the agent prompt template with context.
-func RenderAgentPromptTemplate(isClaudeFile bool) (string, error) {
-	tmpl, err := templates.GetAgentPromptTemplate()
-	if err != nil {
-		return "", fmt.Errorf("failed to load agent prompt template: %w", err)
-	}
-	return template.RenderTemplate(tmpl, map[string]bool{"IsClaudeFile": isClaudeFile})
-}

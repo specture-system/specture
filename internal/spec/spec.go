@@ -2,7 +2,6 @@
 package spec
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"os"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 	gmfrontmatter "go.abhg.dev/goldmark/frontmatter"
@@ -22,21 +20,11 @@ import (
 
 // SpecInfo represents a parsed spec file with all extracted metadata.
 type SpecInfo struct {
-	Path            string
-	Name            string
-	Number          int
-	FullRef         string
-	Status          string
-	CompleteTasks   []Task
-	IncompleteTasks []Task
-}
-
-// Task represents a single task item from a spec's task list.
-type Task struct {
-	Text     string
-	Complete bool
-	Section  string
-	Subtree  string
+	Path    string
+	Name    string
+	Number  int
+	FullRef string
+	Status  string
 }
 
 // frontmatter represents the YAML frontmatter of a spec.
@@ -65,7 +53,6 @@ func ParseContent(path string, content []byte) (*SpecInfo, error) {
 	md := goldmark.New(
 		goldmark.WithExtensions(
 			&gmfrontmatter.Extender{},
-			extension.TaskList,
 		),
 	)
 	ctx := parser.NewContext()
@@ -98,28 +85,10 @@ func ParseContent(path string, content []byte) (*SpecInfo, error) {
 	// Extract title (first H1 heading)
 	info.Name = extractTitle(doc, content)
 
-	// Parse tasks from raw markdown lines.
-	completeTasks, incompleteTasks := parseTasks(content)
-	info.CompleteTasks = completeTasks
-	info.IncompleteTasks = incompleteTasks
-
-	// Status now comes from frontmatter only; specs are no longer inferred from
-	// task completion state.
+	// Status comes from frontmatter only.
 	info.Status = inferStatus(fmStatus)
 
 	return info, nil
-}
-
-// TaskListSectionOrders returns 1-based section order by section name from the
-// spec's ## Task List headings.
-func TaskListSectionOrders(path string) map[string]int {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return map[string]int{}
-	}
-
-	lines := strings.Split(string(content), "\n")
-	return extractTaskListSectionOrders(lines)
 }
 
 // ParseAll finds and parses all specs in the given directory, sorted by ascending number.
@@ -234,135 +203,6 @@ func extractTitle(doc ast.Node, source []byte) string {
 		return ast.WalkContinue, nil
 	})
 	return title
-}
-
-// parseTasks parses the raw markdown to extract tasks from the ## Task List section.
-// Returns completeTasks and incompleteTasks.
-func parseTasks(content []byte) ([]Task, []Task) {
-	scanner := bufio.NewScanner(bytes.NewReader(content))
-
-	// Collect all lines
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	// Find the ## Task List section
-	taskListStart := -1
-	taskListEnd := len(lines)
-	for i, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "## Task List" {
-			taskListStart = i + 1
-			continue
-		}
-		// If we're inside the task list and hit another ## heading, end the section
-		if taskListStart >= 0 && i > taskListStart && strings.HasPrefix(trimmed, "## ") && !strings.HasPrefix(trimmed, "### ") {
-			taskListEnd = i
-			break
-		}
-	}
-
-	if taskListStart < 0 {
-		return nil, nil
-	}
-
-	var completeTasks []Task
-	var incompleteTasks []Task
-	currentSection := ""
-
-	for i := taskListStart; i < taskListEnd; i++ {
-		line := lines[i]
-		trimmed := strings.TrimSpace(line)
-
-		if strings.HasPrefix(trimmed, "### ") {
-			currentSection = strings.TrimPrefix(trimmed, "### ")
-			continue
-		}
-
-		if !isTopLevelTaskLine(line) {
-			continue
-		}
-
-		subtreeEnd := findTaskSubtreeEnd(lines, i, taskListEnd)
-		taskSubtree := strings.Join(lines[i:subtreeEnd], "\n")
-
-		switch {
-		case strings.HasPrefix(line, "- [x] "):
-			taskText := strings.TrimPrefix(line, "- [x] ")
-			completeTasks = append(completeTasks, Task{
-				Text:     taskText,
-				Complete: true,
-				Section:  currentSection,
-				Subtree:  taskSubtree,
-			})
-		case strings.HasPrefix(line, "- [ ] "):
-			taskText := strings.TrimPrefix(line, "- [ ] ")
-			incompleteTasks = append(incompleteTasks, Task{
-				Text:     taskText,
-				Complete: false,
-				Section:  currentSection,
-				Subtree:  taskSubtree,
-			})
-		}
-	}
-
-	return completeTasks, incompleteTasks
-}
-
-func isTopLevelTaskLine(line string) bool {
-	if len(line) > 0 && (line[0] == ' ' || line[0] == '\t') {
-		return false
-	}
-
-	return strings.HasPrefix(line, "- [x] ") || strings.HasPrefix(line, "- [ ] ")
-}
-
-func findTaskSubtreeEnd(lines []string, start, taskListEnd int) int {
-	for i := start + 1; i < taskListEnd; i++ {
-		trimmed := strings.TrimSpace(lines[i])
-		if strings.HasPrefix(trimmed, "### ") {
-			return i
-		}
-		if isTopLevelTaskLine(lines[i]) {
-			return i
-		}
-	}
-
-	return taskListEnd
-}
-
-func extractTaskListSectionOrders(lines []string) map[string]int {
-	orders := make(map[string]int)
-	inTaskList := false
-	order := 0
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		if trimmed == "## Task List" {
-			inTaskList = true
-			continue
-		}
-
-		if inTaskList && strings.HasPrefix(trimmed, "## ") && !strings.HasPrefix(trimmed, "### ") {
-			break
-		}
-
-		if !inTaskList || !strings.HasPrefix(trimmed, "### ") {
-			continue
-		}
-
-		sectionName := strings.TrimSpace(strings.TrimPrefix(trimmed, "### "))
-		if _, exists := orders[sectionName]; exists {
-			continue
-		}
-
-		order++
-		orders[sectionName] = order
-	}
-
-	return orders
 }
 
 // inferStatus determines the spec status from frontmatter only.

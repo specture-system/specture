@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-// Helper to build a minimal spec with frontmatter, title, and a task list section.
-func buildSpec(frontmatter, title, taskListBody string) []byte {
+// Helper to build a minimal spec with optional frontmatter, title, and body.
+func buildSpec(frontmatter, title, body string) []byte {
 	var s string
 	if frontmatter != "" {
 		s += "---\n" + frontmatter + "\n---\n\n"
@@ -15,131 +15,10 @@ func buildSpec(frontmatter, title, taskListBody string) []byte {
 	if title != "" {
 		s += "# " + title + "\n\n"
 	}
-	if taskListBody != "" {
-		s += "## Task List\n\n" + taskListBody + "\n"
+	if body != "" {
+		s += body + "\n"
 	}
 	return []byte(s)
-}
-
-// ---------- Task parsing tests ----------
-
-func TestParseTasks_OnlyComplete(t *testing.T) {
-	content := buildSpec("", "Test", "- [x] Task A\n- [x] Task B\n- [x] Task C")
-	info, err := ParseContent("001-test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(info.CompleteTasks) != 3 {
-		t.Errorf("expected 3 complete tasks, got %d", len(info.CompleteTasks))
-	}
-	if len(info.IncompleteTasks) != 0 {
-		t.Errorf("expected 0 incomplete tasks, got %d", len(info.IncompleteTasks))
-	}
-}
-
-func TestParseTasks_OnlyIncomplete(t *testing.T) {
-	content := buildSpec("", "Test", "- [ ] Task A\n- [ ] Task B")
-	info, err := ParseContent("001-test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(info.CompleteTasks) != 0 {
-		t.Errorf("expected 0 complete tasks, got %d", len(info.CompleteTasks))
-	}
-	if len(info.IncompleteTasks) != 2 {
-		t.Errorf("expected 2 incomplete tasks, got %d", len(info.IncompleteTasks))
-	}
-}
-
-func TestParseTasks_Mixed(t *testing.T) {
-	content := buildSpec("", "Test", "- [x] Done\n- [ ] Not done\n- [x] Also done")
-	info, err := ParseContent("001-test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(info.CompleteTasks) != 2 {
-		t.Errorf("expected 2 complete tasks, got %d", len(info.CompleteTasks))
-	}
-	if len(info.IncompleteTasks) != 1 {
-		t.Errorf("expected 1 incomplete task, got %d", len(info.IncompleteTasks))
-	}
-}
-
-func TestParseTasks_EmptyTaskList(t *testing.T) {
-	content := buildSpec("", "Test", "Tasks will be added later.")
-	info, err := ParseContent("001-test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(info.CompleteTasks) != 0 {
-		t.Errorf("expected 0 complete tasks, got %d", len(info.CompleteTasks))
-	}
-	if len(info.IncompleteTasks) != 0 {
-		t.Errorf("expected 0 incomplete tasks, got %d", len(info.IncompleteTasks))
-	}
-}
-
-func TestParseTasks_IndentedSubTasksSkipped(t *testing.T) {
-	content := buildSpec("", "Test", "- [ ] Top-level task\n  - [ ] Sub-task 1\n  - [x] Sub-task 2\n- [x] Another top-level")
-	info, err := ParseContent("001-test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(info.IncompleteTasks) != 1 {
-		t.Errorf("expected 1 incomplete top-level task, got %d", len(info.IncompleteTasks))
-	}
-	if len(info.CompleteTasks) != 1 {
-		t.Errorf("expected 1 complete top-level task, got %d", len(info.CompleteTasks))
-	}
-	if len(info.IncompleteTasks) > 0 && info.IncompleteTasks[0].Text != "Top-level task" {
-		t.Errorf("expected incomplete task text 'Top-level task', got %q", info.IncompleteTasks[0].Text)
-	}
-	if len(info.CompleteTasks) > 0 && info.CompleteTasks[0].Text != "Another top-level" {
-		t.Errorf("expected complete task text 'Another top-level', got %q", info.CompleteTasks[0].Text)
-	}
-}
-
-func TestParseTasks_TopLevelTasksIncludeNestedSubtree(t *testing.T) {
-	content := buildSpec("", "Test", "- [ ] Top-level task\n  - [ ] Sub-task 1\n    - Nested bullet detail\n  - [x] Sub-task 2\n- [ ] Another top-level")
-	info, err := ParseContent("001-test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(info.IncompleteTasks) != 2 {
-		t.Fatalf("expected 2 incomplete top-level tasks, got %d", len(info.IncompleteTasks))
-	}
-
-	wantSubtree := "- [ ] Top-level task\n  - [ ] Sub-task 1\n    - Nested bullet detail\n  - [x] Sub-task 2"
-	if info.IncompleteTasks[0].Subtree != wantSubtree {
-		t.Fatalf("unexpected subtree:\n--- got ---\n%s\n--- want ---\n%s", info.IncompleteTasks[0].Subtree, wantSubtree)
-	}
-}
-
-func TestParseTasks_SectionField(t *testing.T) {
-	content := buildSpec("", "Test", "### Phase 1\n\n- [x] Task A\n- [ ] Task B\n\n### Phase 2\n\n- [ ] Task C")
-	info, err := ParseContent("001-test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// Check section assignment for complete tasks
-	if len(info.CompleteTasks) != 1 {
-		t.Fatalf("expected 1 complete task, got %d", len(info.CompleteTasks))
-	}
-	if info.CompleteTasks[0].Section != "Phase 1" {
-		t.Errorf("expected section 'Phase 1', got %q", info.CompleteTasks[0].Section)
-	}
-
-	// Check section assignment for incomplete tasks
-	if len(info.IncompleteTasks) != 2 {
-		t.Fatalf("expected 2 incomplete tasks, got %d", len(info.IncompleteTasks))
-	}
-	if info.IncompleteTasks[0].Section != "Phase 1" {
-		t.Errorf("expected section 'Phase 1' for first incomplete, got %q", info.IncompleteTasks[0].Section)
-	}
-	if info.IncompleteTasks[1].Section != "Phase 2" {
-		t.Errorf("expected section 'Phase 2' for second incomplete, got %q", info.IncompleteTasks[1].Section)
-	}
 }
 
 // ---------- Status inference tests ----------
@@ -151,27 +30,27 @@ func TestStatusInference(t *testing.T) {
 		wantStatus string
 	}{
 		{
-			name:       "no frontmatter, no task list → draft",
+			name:       "no frontmatter → draft",
 			content:    []byte("# Test\n\nJust a description.\n"),
 			wantStatus: "draft",
 		},
 		{
-			name:       "no frontmatter, task list present → draft",
+			name:       "task markers do not affect draft without frontmatter",
 			content:    buildSpec("", "Test", "- [x] Done\n- [ ] Not done"),
 			wantStatus: "draft",
 		},
 		{
-			name:       "frontmatter approved wins over task list state → approved",
+			name:       "frontmatter approved wins over body content → approved",
 			content:    buildSpec("status: approved", "Test", "- [x] Done\n- [ ] Not done"),
 			wantStatus: "approved",
 		},
 		{
-			name:       "frontmatter completed wins over task list state → completed",
+			name:       "frontmatter completed wins over body content → completed",
 			content:    buildSpec("status: completed", "Test", "- [ ] Not done\n- [ ] Also not done"),
 			wantStatus: "completed",
 		},
 		{
-			name:       "frontmatter draft wins over task list state → draft",
+			name:       "frontmatter draft wins over body content → draft",
 			content:    buildSpec("status: draft", "Test", "- [x] Done\n- [ ] Not done"),
 			wantStatus: "draft",
 		},
@@ -755,60 +634,5 @@ func TestParseContent_ExtractsName(t *testing.T) {
 	}
 	if info.Name != "My Great Feature" {
 		t.Errorf("expected name 'My Great Feature', got %q", info.Name)
-	}
-}
-
-func TestTaskListSectionOrders(t *testing.T) {
-	tmpDir := t.TempDir()
-	specPath := filepath.Join(tmpDir, "spec.md")
-
-	content := `---
-number: 7
-status: in-progress
----
-
-# Test
-
-## Task List
-
-### CLI and Planning
-
-- [x] done
-
-### Branch and Task Execution
-
-- [ ] remaining
-
-### Branch and Task Execution
-
-- [ ] duplicate heading ignored
-
-## Notes
-
-### Outside Task List
-`
-
-	if err := os.WriteFile(specPath, []byte(content), 0644); err != nil {
-		t.Fatalf("failed to write spec file: %v", err)
-	}
-
-	orders := TaskListSectionOrders(specPath)
-	if len(orders) != 2 {
-		t.Fatalf("expected 2 section orders, got %d", len(orders))
-	}
-
-	if orders["CLI and Planning"] != 1 {
-		t.Fatalf("expected CLI and Planning to be order 1, got %d", orders["CLI and Planning"])
-	}
-
-	if orders["Branch and Task Execution"] != 2 {
-		t.Fatalf("expected Branch and Task Execution to be order 2, got %d", orders["Branch and Task Execution"])
-	}
-}
-
-func TestTaskListSectionOrders_MissingFileReturnsEmptyMap(t *testing.T) {
-	orders := TaskListSectionOrders("/tmp/does-not-exist/spec.md")
-	if len(orders) != 0 {
-		t.Fatalf("expected empty section order map, got %d entries", len(orders))
 	}
 }

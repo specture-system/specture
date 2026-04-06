@@ -59,6 +59,54 @@ func TestFindSpecsNeedingMigration(t *testing.T) {
 	})
 }
 
+func TestMigrateSpecsLayout(t *testing.T) {
+	dir := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(dir, "002-status-command.md"), []byte("---\nnumber: 2\nstatus: completed\n---\n\n# Status Command\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "004-list-command.md"), []byte("---\nnumber: 4\nstatus: draft\n---\n\n# List Command\n\nSee [status](/specs/002-status-command.md).\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	migrated, err := MigrateSpecsLayout(dir, false)
+	if err != nil {
+		t.Fatalf("MigrateSpecsLayout failed: %v", err)
+	}
+	if !migrated {
+		t.Fatal("expected migration to occur")
+	}
+
+	statusPath := filepath.Join(dir, "002-status-command", "SPEC.md")
+	if _, err := os.Stat(statusPath); err != nil {
+		t.Fatalf("expected migrated spec at %s: %v", statusPath, err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "002-status-command.md")); !os.IsNotExist(err) {
+		t.Fatalf("old status spec should be removed, got: %v", err)
+	}
+
+	listPath := filepath.Join(dir, "004-list-command", "SPEC.md")
+	content, err := os.ReadFile(listPath)
+	if err != nil {
+		t.Fatalf("failed to read migrated list spec: %v", err)
+	}
+	if strings.Contains(string(content), "/specs/002-status-command.md") {
+		t.Fatalf("old spec link should have been rewritten, got:\n%s", string(content))
+	}
+	if !strings.Contains(string(content), "specs/002-status-command/SPEC.md") {
+		t.Fatalf("expected rewritten link, got:\n%s", string(content))
+	}
+
+	gitignorePath := filepath.Join(dir, ".gitignore")
+	gitignore, err := os.ReadFile(gitignorePath)
+	if err != nil {
+		t.Fatalf("failed to read specs .gitignore: %v", err)
+	}
+	if string(gitignore) != specsGitignoreContent {
+		t.Fatalf("unexpected .gitignore content:\n%s", string(gitignore))
+	}
+}
+
 func TestAddNumberToFrontmatter(t *testing.T) {
 	t.Run("adds_number_to_existing_frontmatter", func(t *testing.T) {
 		dir := t.TempDir()

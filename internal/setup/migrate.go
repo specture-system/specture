@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	specpkg "github.com/specture-system/specture/internal/spec"
 )
 
 // MigrationResult describes a spec that needs number added to frontmatter.
@@ -17,6 +19,15 @@ type MigrationResult struct {
 	Path   string
 	Number int
 }
+
+type specMovePlan struct {
+	oldPath string
+	newPath string
+	linkOld string
+	linkNew string
+}
+
+const specsGitignoreContent = "*\n!**/SPEC.md\n!README.md\n"
 
 // FindSpecsNeedingMigration scans the specs directory for files matching NNN-slug.md
 // that don't already have a number field in frontmatter.
@@ -56,6 +67,94 @@ func FindSpecsNeedingMigration(specsDir string) ([]MigrationResult, error) {
 	}
 
 	return results, nil
+}
+
+// MigrateSpecsLayout moves flat top-level spec files into numbered spec directories
+// and ensures specs/.gitignore keeps only SPEC.md and README.md files tracked.
+func MigrateSpecsLayout(specsDir string, dryRun bool) (bool, error) {
+	entries, err := os.ReadDir(specsDir)
+	if err != nil && !os.IsNotExist(err) {
+		return false, fmt.Errorf("failed to read specs directory: %w", err)
+	}
+	if os.IsNotExist(err) {
+		entries = nil
+	}
+
+	var plans []specMovePlan
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		name := entry.Name()
+		if name == "README.md" || name == ".gitignore" || !strings.HasSuffix(name, ".md") {
+			continue
+		}
+
+		oldPath := filepath.Join(specsDir, name)
+		info, err := specpkg.Parse(oldPath)
+		if err != nil {
+			return false, fmt.Errorf("failed to parse %s: %w", oldPath, err)
+		}
+
+		slug := specSlugFromFilename(name)
+		newDir := fmt.Sprintf("%03d-%s", info.Number, slug)
+		newPath := filepath.Join(specsDir, newDir, "SPEC.md")
+
+		if oldPath == newPath {
+			continue
+		}
+
+		plans = append(plans, specMovePlan{
+			oldPath: oldPath,
+			newPath: newPath,
+			linkOld: "/specs/" + name,
+			linkNew: "specs/" + newDir + "/SPEC.md",
+		})
+	}
+
+	changed := false
+	for _, plan := range plans {
+		changed = true
+		if dryRun {
+			fmt.Printf("[dry-run] Would move file: %s -> %s\n", plan.oldPath, plan.newPath)
+			continue
+		}
+
+		if err := os.MkdirAll(filepath.Dir(plan.newPath), 0o755); err != nil {
+			return false, fmt.Errorf("failed to create directory %s: %w", filepath.Dir(plan.newPath), err)
+		}
+		if err := os.Rename(plan.oldPath, plan.newPath); err != nil {
+			return false, fmt.Errorf("failed to move %s to %s: %w", plan.oldPath, plan.newPath, err)
+		}
+	}
+
+	ignorePath := filepath.Join(specsDir, ".gitignore")
+	if dryRun {
+		fmt.Printf("[dry-run] Would create file: %s\n", ignorePath)
+		changed = true
+	} else {
+		if err := os.WriteFile(ignorePath, []byte(specsGitignoreContent), 0o644); err != nil {
+			return false, fmt.Errorf("failed to write specs .gitignore: %w", err)
+		}
+		if len(plans) > 0 {
+			changed = true
+		}
+	}
+
+	if len(plans) == 0 {
+		changed = true
+	}
+
+	if dryRun {
+		return changed, nil
+	}
+
+	if err := rewriteSpecLinks(specsDir, plans); err != nil {
+		return false, err
+	}
+
+	return changed, nil
 }
 
 // AddNumberToFrontmatter adds a `number: N` field to the frontmatter of a spec file.
@@ -121,6 +220,57 @@ func insertNumberInFrontmatter(content []byte, number int) ([]byte, error) {
 	}
 
 	return nil, fmt.Errorf("no frontmatter found")
+}
+
+func specSlugFromFilename(filename string) string {
+	slug := strings.TrimSuffix(filename, filepath.Ext(filename))
+	re := regexp.MustCompile(`^\d+-`)
+	return re.ReplaceAllString(slug, "")
+}
+
+func rewriteSpecLinks(specsDir string, plans []specMovePlan) error {
+	if len(plans) == 0 {
+		return nil
+	}
+
+	var markdownFiles []string
+	if err := filepath.WalkDir(specsDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if filepath.Ext(path) != ".md" {
+			return nil
+		}
+		markdownFiles = append(markdownFiles, path)
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	for _, path := range markdownFiles {
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("failed to read %s for link rewrite: %w", path, err)
+		}
+
+		updated := string(content)
+		for _, plan := range plans {
+			updated = strings.ReplaceAll(updated, plan.linkOld, plan.linkNew)
+			oldFilename := filepath.Base(plan.oldPath)
+			updated = strings.ReplaceAll(updated, "("+oldFilename+")", "("+plan.linkNew+")")
+		}
+
+		if updated != string(content) {
+			if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
+				return fmt.Errorf("failed to write %s for link rewrite: %w", path, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 // MigrateSkillsDir moves .skills/specture/ to .agents/skills/specture/ if the

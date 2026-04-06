@@ -53,34 +53,34 @@ func TestFindNextSpecNumber(t *testing.T) {
 		{
 			name: "single_spec_with_number",
 			setupFiles: map[string]string{
-				"first.md": "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
+				"000-first/SPEC.md": "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
 			},
 			expected: 1,
 		},
 		{
 			name: "multiple_specs",
 			setupFiles: map[string]string{
-				"000-first.md":  "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
-				"001-second.md": "---\nnumber: 1\n---\n\n# Second\n\n## Task List\n",
-				"002-third.md":  "---\nnumber: 2\n---\n\n# Third\n\n## Task List\n",
+				"000-first/SPEC.md":  "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
+				"001-second/SPEC.md": "---\nnumber: 1\n---\n\n# Second\n\n## Task List\n",
+				"002-third/SPEC.md":  "---\nnumber: 2\n---\n\n# Third\n\n## Task List\n",
 			},
 			expected: 3,
 		},
 		{
 			name: "non_sequential_numbers",
 			setupFiles: map[string]string{
-				"first.md": "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
-				"fifth.md": "---\nnumber: 5\n---\n\n# Fifth\n\n## Task List\n",
-				"third.md": "---\nnumber: 2\n---\n\n# Third\n\n## Task List\n",
+				"000-first/SPEC.md": "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
+				"005-fifth/SPEC.md": "---\nnumber: 5\n---\n\n# Fifth\n\n## Task List\n",
+				"002-third/SPEC.md": "---\nnumber: 2\n---\n\n# Third\n\n## Task List\n",
 			},
 			expected: 6,
 		},
 		{
 			name: "ignores_files_without_number",
 			setupFiles: map[string]string{
-				"README.md":   "# Readme\n",
-				"000-spec.md": "---\nnumber: 0\n---\n\n# Spec\n\n## Task List\n",
-				"notes.txt":   "some notes",
+				"README.md":        "# Readme\n",
+				"000-spec/SPEC.md": "---\nnumber: 0\n---\n\n# Spec\n\n## Task List\n",
+				"notes.txt":        "some notes",
 			},
 			expected: 1,
 		},
@@ -93,6 +93,9 @@ func TestFindNextSpecNumber(t *testing.T) {
 			// Create setup files
 			for file, content := range tt.setupFiles {
 				filePath := filepath.Join(tmpDir, file)
+				if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+					t.Fatalf("failed to create parent directory: %v", err)
+				}
 				if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 					t.Fatalf("failed to create test file: %v", err)
 				}

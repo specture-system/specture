@@ -57,8 +57,14 @@ func TestNewContext_ErrorHandling(t *testing.T) {
 		if ctx.Number != 0 {
 			t.Errorf("NewContext() spec number = %d, want 0", ctx.Number)
 		}
-		if ctx.FileName != "my-first-spec.md" {
-			t.Errorf("NewContext() filename = %q, want %q", ctx.FileName, "my-first-spec.md")
+		if ctx.FileName != "SPEC.md" {
+			t.Errorf("NewContext() filename = %q, want %q", ctx.FileName, "SPEC.md")
+		}
+		if ctx.RelativePath != filepath.Join("000-my-first-spec", "SPEC.md") {
+			t.Errorf("NewContext() relative path = %q, want %q", ctx.RelativePath, filepath.Join("000-my-first-spec", "SPEC.md"))
+		}
+		if ctx.FilePath != filepath.Join(tmpDir, "specs", "000-my-first-spec", "SPEC.md") {
+			t.Errorf("NewContext() file path = %q, want nested SPEC.md path", ctx.FilePath)
 		}
 
 		// Branch name should include date suffix (YYYY-MM-DD)
@@ -144,6 +150,9 @@ func TestCleanup(t *testing.T) {
 		}
 
 		// Manually create the file and branch
+		if err := os.MkdirAll(filepath.Dir(ctx.FilePath), 0o755); err != nil {
+			t.Fatalf("failed to create spec directory: %v", err)
+		}
 		if err := os.WriteFile(ctx.FilePath, []byte("test"), 0644); err != nil {
 			t.Fatalf("failed to create spec file: %v", err)
 		}
@@ -257,6 +266,9 @@ func TestCleanup(t *testing.T) {
 		}
 
 		// Create spec file and branch
+		if err := os.MkdirAll(filepath.Dir(ctx.FilePath), 0o755); err != nil {
+			t.Fatalf("failed to create spec directory: %v", err)
+		}
 		if err := os.WriteFile(ctx.FilePath, []byte("test"), 0644); err != nil {
 			t.Fatalf("failed to create spec file: %v", err)
 		}

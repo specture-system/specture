@@ -71,7 +71,7 @@ func NewContext(workDir, title, parentRef string) (*NewCommandContext, error) {
 			return nil, fmt.Errorf("failed to resolve parent spec %q: %w", parentRef, err)
 		}
 		if filepath.Base(parentPath) != "SPEC.md" {
-			return nil, fmt.Errorf("parent spec %q must be a directory-based SPEC.md spec", parentRef)
+			return nil, fmt.Errorf("parent spec %q must be a SPEC.md spec", parentRef)
 		}
 
 		parentInfo, err = specpkg.Parse(parentPath)
@@ -98,16 +98,17 @@ func NewContext(workDir, title, parentRef string) (*NewCommandContext, error) {
 	// Create branch name with date suffix
 	date := time.Now().Format("2006-01-02")
 	var branchName, fileName, relativePath, filePath string
+	dirName := fmt.Sprintf("%03d-%s", number, slug)
 	if parentPath == "" {
-		branchName = fmt.Sprintf("spec/%03d-%s-%s", number, slug, date)
-		fileName = fmt.Sprintf("%s.md", slug)
-		relativePath = fileName
-		filePath = filepath.Join(specsDir, fileName)
+		branchName = fmt.Sprintf("spec/%s-%s", dirName, date)
+		fileName = "SPEC.md"
+		relativePath = filepath.Join(dirName, fileName)
+		filePath = filepath.Join(specsDir, relativePath)
 	} else {
 		fullRef := parentInfo.FullRef + "." + strconv.Itoa(number)
 		branchName = fmt.Sprintf("spec/%s-%s-%s", strings.ReplaceAll(fullRef, ".", "-"), slug, date)
 		fileName = "SPEC.md"
-		relativePath = filepath.Join(fmt.Sprintf("%03d-%s", number, slug), fileName)
+		relativePath = filepath.Join(dirName, fileName)
 		filePath = filepath.Join(filepath.Dir(parentPath), relativePath)
 	}
 

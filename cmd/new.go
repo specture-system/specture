@@ -14,7 +14,7 @@ var newCmd = &cobra.Command{
 	Use:     "new",
 	Aliases: []string{"n", "add", "a"},
 	Short:   "Create a new spec",
-	Long: "Create a new spec file with proper numbering and branch.\n\n" +
+	Long: "Create a new spec with proper numbering and branch.\n\n" +
 		"Interactive mode (default):\n" +
 		"  Prompts for title, shows preview, opens editor\n\n" +
 		"Non-interactive mode:\n" +

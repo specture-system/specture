@@ -86,7 +86,7 @@ func TestNewCommand_DryRunMode(t *testing.T) {
 	output := runNewCommand(t, "My First Feature")
 
 	// Verify spec file was NOT created (dry-run mode)
-	specPath := filepath.Join(tmpDir, "specs", "my-first-feature.md")
+	specPath := filepath.Join(tmpDir, "specs", "000-my-first-feature", "SPEC.md")
 	if _, err := os.Stat(specPath); err == nil {
 		t.Error("spec file should not be created in dry-run mode")
 	}
@@ -101,7 +101,7 @@ func TestNewCommand_DryRunMode(t *testing.T) {
 		"Creating spec 000",
 		"My First Feature",
 		"Branch: spec/000-my-first-feature",
-		"File: my-first-feature.md",
+		"File: 000-my-first-feature/SPEC.md",
 	}
 
 	for _, item := range expectedItems {
@@ -120,7 +120,7 @@ func TestNewCommand_OutputSummary(t *testing.T) {
 		"Creating spec 000",
 		"Test Feature",
 		"Branch: spec/000-test-feature",
-		"File: test-feature.md",
+		"File: 000-test-feature/SPEC.md",
 		"Author:",
 	}
 
@@ -136,7 +136,7 @@ func TestNewCommand_UserConfirmation_DryRun(t *testing.T) {
 	_ = runNewCommand(t, "Cancelled Feature")
 
 	// Verify spec was not created in dry-run
-	specPath := filepath.Join(tmpDir, "specs", "cancelled-feature.md")
+	specPath := filepath.Join(tmpDir, "specs", "000-cancelled-feature", "SPEC.md")
 	if _, err := os.Stat(specPath); err == nil {
 		t.Error("spec file should not be created in dry-run mode")
 	}
@@ -150,8 +150,8 @@ func TestNewCommand_SpecNumbering_FirstSpec(t *testing.T) {
 	if !strings.Contains(output, "Creating spec 000") {
 		t.Errorf("first spec should be numbered 000, got: %s", output)
 	}
-	if !strings.Contains(output, "File: first-feature.md") {
-		t.Errorf("spec filename should be slug-only, got: %s", output)
+	if !strings.Contains(output, "File: 000-first-feature/SPEC.md") {
+		t.Errorf("spec path should include the numbered directory and SPEC.md, got: %s", output)
 	}
 }
 
@@ -162,7 +162,8 @@ func TestNewCommand_SpecNumbering_WithExistingSpec(t *testing.T) {
 	// Create an existing spec file with number in frontmatter and commit it
 	specsDir := filepath.Join(tmpDir, "specs")
 	os.MkdirAll(specsDir, 0755)
-	specFile := filepath.Join(specsDir, "000-existing.md")
+	specFile := filepath.Join(specsDir, "000-existing", "SPEC.md")
+	os.MkdirAll(filepath.Dir(specFile), 0755)
 	os.WriteFile(specFile, []byte("---\nnumber: 0\n---\n\n# Existing\n\n## Task List\n"), 0644)
 
 	// Commit the file so working tree is clean
@@ -172,7 +173,7 @@ func TestNewCommand_SpecNumbering_WithExistingSpec(t *testing.T) {
 	cmd.SetErr(out)
 
 	// Add and commit the file
-	gitAddCmd := exec.Command("git", "add", "specs/000-existing.md")
+	gitAddCmd := exec.Command("git", "add", "specs/000-existing/SPEC.md")
 	gitAddCmd.Dir = tmpDir
 	gitAddCmd.Run()
 
@@ -235,11 +236,11 @@ func TestNewCommand_ChildSpecOutput(t *testing.T) {
 }
 
 func TestNewCommand_KebabCaseConversion(t *testing.T) {
-	// Test that spec titles are converted to kebab-case (slug-only filename)
+	// Test that spec titles are converted to kebab-case inside the directory name.
 	newTestContext(t)
 	output := runNewCommand(t, "My Complex_Feature Title")
 
-	expectedFilename := "my-complex-feature-title.md"
+	expectedFilename := "000-my-complex-feature-title/SPEC.md"
 	if !strings.Contains(output, expectedFilename) {
 		t.Errorf("output should contain kebab-case filename %q, got: %s", expectedFilename, output)
 	}
@@ -329,7 +330,7 @@ func TestNewCommand_SpecsDirectoryCreated(t *testing.T) {
 	}
 
 	// But spec file should NOT exist (dry-run mode)
-	specFile := filepath.Join(specsDir, "first-spec.md")
+	specFile := filepath.Join(specsDir, "000-first-spec", "SPEC.md")
 	if _, err := os.Stat(specFile); err == nil {
 		t.Error("spec file should not be created in dry-run mode")
 	}

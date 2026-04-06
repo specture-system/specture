@@ -18,7 +18,7 @@ var setupCmd = &cobra.Command{
 
 Actions:
   • Create specs/ tree and specs/README.md
-  • Prepare the specs tree for directory-based SPEC.md files
+  • Migrate the specs tree to nested SPEC.md files
   • Optionally show prompts for updating AGENTS.md and CLAUDE.md`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get current working directory

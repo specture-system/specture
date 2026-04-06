@@ -1,4 +1,4 @@
-// Package rename handles renaming spec files and updating cross-references.
+// Package rename handles renaming spec directories and updating cross-references.
 package rename
 
 import (
@@ -27,36 +27,37 @@ type LinkUpdate struct {
 
 // Plan creates a rename plan for a spec without executing it.
 func Plan(specsDir string, specNumber int, newSlug string) (*RenameResult, error) {
-	// Find the spec file by number
+	// Find the spec directory by number.
 	oldPath, err := specpkg.ResolvePath(specsDir, fmt.Sprintf("%d", specNumber))
 	if err != nil {
 		return nil, err
 	}
-
-	oldFilename := filepath.Base(oldPath)
+	if filepath.Base(oldPath) != "SPEC.md" {
+		return nil, fmt.Errorf("spec %d must resolve to a SPEC.md spec", specNumber)
+	}
 
 	if newSlug == "" {
 		return nil, fmt.Errorf("slug is required")
 	}
 
-	newFilename := newSlug
-	if !strings.HasSuffix(newFilename, ".md") {
-		newFilename += ".md"
-	}
-	newPath := filepath.Join(specsDir, newFilename)
+	oldDir := filepath.Dir(oldPath)
+	parentDir := filepath.Dir(oldDir)
+	newDirName := fmt.Sprintf("%03d-%s", specNumber, newSlug)
+	newDir := filepath.Join(parentDir, newDirName)
+	newPath := filepath.Join(newDir, "SPEC.md")
 
-	// Don't rename if already the same
+	// Don't rename if already the same.
 	if oldPath == newPath {
-		return nil, fmt.Errorf("file is already named %s", newFilename)
+		return nil, fmt.Errorf("spec is already named %s", newDirName)
 	}
 
-	// Check target doesn't already exist
-	if _, err := os.Stat(newPath); err == nil {
-		return nil, fmt.Errorf("target file already exists: %s", newFilename)
+	// Check target directory doesn't already exist.
+	if _, err := os.Stat(newDir); err == nil {
+		return nil, fmt.Errorf("target spec directory already exists: %s", newDirName)
 	}
 
-	// Find all markdown link references to the old filename in specs/
-	linkUpdates, err := findLinkReferences(specsDir, oldFilename, newFilename)
+	// Find all markdown link references to the old spec path in specs/.
+	linkUpdates, err := findLinkReferences(specsDir, oldPath, newPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan for link references: %w", err)
 	}
@@ -70,9 +71,12 @@ func Plan(specsDir string, specNumber int, newSlug string) (*RenameResult, error
 
 // Execute performs a rename operation described by the result.
 func Execute(result *RenameResult) error {
-	// Rename the file
-	if err := os.Rename(result.OldPath, result.NewPath); err != nil {
-		return fmt.Errorf("failed to rename file: %w", err)
+	oldDir := filepath.Dir(result.OldPath)
+	newDir := filepath.Dir(result.NewPath)
+
+	// Rename the spec directory.
+	if err := os.Rename(oldDir, newDir); err != nil {
+		return fmt.Errorf("failed to rename spec directory: %w", err)
 	}
 
 	// Update links in other files
@@ -98,49 +102,59 @@ func stripNumericPrefix(filename string) string {
 	return re.ReplaceAllString(filename, "")
 }
 
-// findLinkReferences scans all markdown files in specsDir for links referencing the old filename
+// findLinkReferences scans all markdown files in specsDir for links referencing the old spec path
 // and returns the necessary updates.
-func findLinkReferences(specsDir, oldFilename, newFilename string) ([]LinkUpdate, error) {
-	entries, err := os.ReadDir(specsDir)
+func findLinkReferences(specsDir, oldPath, newPath string) ([]LinkUpdate, error) {
+	oldRel, err := filepath.Rel(specsDir, oldPath)
 	if err != nil {
 		return nil, err
 	}
+	newRel, err := filepath.Rel(specsDir, newPath)
+	if err != nil {
+		return nil, err
+	}
+	oldRel = filepath.ToSlash(oldRel)
+	newRel = filepath.ToSlash(newRel)
 
-	// Patterns to match: [text](/specs/old.md) or [text](old.md)
-	oldLinkAbs := "/specs/" + oldFilename
-	newLinkAbs := "/specs/" + newFilename
+	oldLinks := []string{
+		oldRel,
+		"specs/" + oldRel,
+		"/specs/" + oldRel,
+	}
+	newLinks := []string{
+		newRel,
+		"specs/" + newRel,
+		"/specs/" + newRel,
+	}
 
 	var updates []LinkUpdate
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
-			continue
+	if err := filepath.WalkDir(specsDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || filepath.Ext(path) != ".md" {
+			return nil
 		}
 
-		filePath := filepath.Join(specsDir, entry.Name())
-		content, err := os.ReadFile(filePath)
+		content, err := os.ReadFile(path)
 		if err != nil {
-			continue
+			return nil
 		}
 
 		contentStr := string(content)
 
-		// Check for absolute path references: [text](/specs/old.md)
-		if strings.Contains(contentStr, oldLinkAbs) {
-			updates = append(updates, LinkUpdate{
-				File:    filePath,
-				OldLink: oldLinkAbs,
-				NewLink: newLinkAbs,
-			})
+		for i, oldLink := range oldLinks {
+			if strings.Contains(contentStr, oldLink) {
+				updates = append(updates, LinkUpdate{
+					File:    path,
+					OldLink: oldLink,
+					NewLink: newLinks[i],
+				})
+			}
 		}
-
-		// Check for relative references: [text](old.md)
-		if strings.Contains(contentStr, "("+oldFilename+")") {
-			updates = append(updates, LinkUpdate{
-				File:    filePath,
-				OldLink: "(" + oldFilename + ")",
-				NewLink: "(" + newFilename + ")",
-			})
-		}
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
 	return updates, nil

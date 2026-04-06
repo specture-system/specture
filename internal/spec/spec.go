@@ -419,16 +419,14 @@ func inferStatus(fmStatus string, hasTaskList bool, completeCount, incompleteCou
 	return "in-progress"
 }
 
-// FindAll finds all spec files in the given specs directory.
-// It supports both the current flat .md layout and the future nested
-// SPEC.md layout inside spec directories.
+// FindAll finds all nested SPEC.md files in the given specs directory.
 func FindAll(specsDir string) ([]string, error) {
 	if _, err := os.Stat(specsDir); os.IsNotExist(err) {
 		return nil, fmt.Errorf("specs directory not found: %s", specsDir)
 	}
 
 	var paths []string
-	if err := collectSpecPaths(specsDir, specsDir, &paths); err != nil {
+	if err := collectSpecPaths(specsDir, &paths); err != nil {
 		return nil, err
 	}
 
@@ -436,9 +434,9 @@ func FindAll(specsDir string) ([]string, error) {
 	return paths, nil
 }
 
-// ResolvePath resolves a spec reference or path to a file path.
+// ResolvePath resolves a spec reference or SPEC.md path to a file path.
 // Accepts:
-//   - Full path: specs/000-mvp.md or specs/my-feature.md
+//   - Full path to a SPEC.md file
 //   - Top-level references with or without leading zeros: 0, 00, 000
 //   - Hierarchical references: 1.4.3
 //
@@ -447,6 +445,9 @@ func FindAll(specsDir string) ([]string, error) {
 func ResolvePath(specsDir, arg string) (string, error) {
 	// If it's already a path that exists, use it
 	if _, err := os.Stat(arg); err == nil {
+		if filepath.Base(arg) != "SPEC.md" {
+			return "", fmt.Errorf("spec paths must point to a SPEC.md file: %s", arg)
+		}
 		return arg, nil
 	}
 
@@ -477,6 +478,10 @@ func ResolvePath(specsDir, arg string) (string, error) {
 // With no parent path, it returns top-level specs under specsDir.
 // With a parent path, it returns only immediate child specs of that parent.
 func FindSpecsInScope(specsDir, parentPath string) ([]*SpecInfo, error) {
+	if parentPath != "" && filepath.Base(parentPath) != "SPEC.md" {
+		return nil, fmt.Errorf("parent spec must be a SPEC.md file: %s", parentPath)
+	}
+
 	paths, err := FindAll(specsDir)
 	if err != nil {
 		return nil, err
@@ -517,19 +522,9 @@ func FindSpecsInScope(specsDir, parentPath string) ([]*SpecInfo, error) {
 }
 
 // IsTopLevelSpecPath reports whether a spec path belongs directly under specsDir.
-// It accepts both current flat root markdown files and root-level SPEC.md files
-// inside spec directories.
 func IsTopLevelSpecPath(specPath, specsDir string) bool {
-	base := filepath.Base(specPath)
-	if base == "README.md" {
-		return false
-	}
-
-	if base == "SPEC.md" {
-		return filepath.Dir(filepath.Dir(specPath)) == specsDir
-	}
-
-	return filepath.Dir(specPath) == specsDir && strings.HasSuffix(base, ".md")
+	return filepath.Base(specPath) == "SPEC.md" &&
+		filepath.Dir(filepath.Dir(specPath)) == specsDir
 }
 
 // IsImmediateChildSpecPath reports whether specPath is a direct child of parentPath.
@@ -540,8 +535,7 @@ func IsImmediateChildSpecPath(specPath, parentPath string) bool {
 }
 
 // collectSpecPaths walks the specs tree and records every discoverable spec file.
-// It keeps the current flat root .md files and the future nested SPEC.md files.
-func collectSpecPaths(rootDir, dir string, paths *[]string) error {
+func collectSpecPaths(dir string, paths *[]string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to read specs directory: %w", err)
@@ -550,13 +544,13 @@ func collectSpecPaths(rootDir, dir string, paths *[]string) error {
 	for _, entry := range entries {
 		path := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
-			if err := collectSpecPaths(rootDir, path, paths); err != nil {
+			if err := collectSpecPaths(path, paths); err != nil {
 				return err
 			}
 			continue
 		}
 
-		if !shouldIncludeSpecPath(rootDir, path) {
+		if filepath.Base(path) != "SPEC.md" {
 			continue
 		}
 
@@ -564,18 +558,6 @@ func collectSpecPaths(rootDir, dir string, paths *[]string) error {
 	}
 
 	return nil
-}
-
-// shouldIncludeSpecPath returns true for files that count as specs.
-// This is a transitional compatibility rule:
-// - keep root-level flat markdown specs working for existing repos
-// - accept nested SPEC.md files for the new hierarchy
-// - ignore README.md in either layout
-//
-// Once the repository is fully migrated to nested spec directories, the
-// root-level flat markdown allowance can be removed.
-func shouldIncludeSpecPath(rootDir, path string) bool {
-	return IsTopLevelSpecPath(path, rootDir) || filepath.Base(path) == "SPEC.md"
 }
 
 // normalizeSpecRef canonicalizes a user-provided reference so lookup can match

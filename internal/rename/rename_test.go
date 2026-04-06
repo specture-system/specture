@@ -27,7 +27,11 @@ func setupSpecsDir(t *testing.T, files map[string]string) string {
 	t.Helper()
 	dir := t.TempDir()
 	for name, content := range files {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("failed to create parent dir for %s: %v", name, err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 			t.Fatalf("failed to write %s: %v", name, err)
 		}
 	}
@@ -36,7 +40,7 @@ func setupSpecsDir(t *testing.T, files map[string]string) string {
 
 func TestPlan_BasicRename(t *testing.T) {
 	dir := setupSpecsDir(t, map[string]string{
-		"003-status-command.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
+		"003-old-name/SPEC.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
 	})
 
 	result, err := Plan(dir, 3, "status-command")
@@ -44,17 +48,17 @@ func TestPlan_BasicRename(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if filepath.Base(result.OldPath) != "003-status-command.md" {
-		t.Errorf("expected old path to be 003-status-command.md, got %s", filepath.Base(result.OldPath))
+	if filepath.Base(result.OldPath) != "SPEC.md" {
+		t.Errorf("expected old path to be SPEC.md, got %s", filepath.Base(result.OldPath))
 	}
-	if filepath.Base(result.NewPath) != "status-command.md" {
-		t.Errorf("expected new path to be status-command.md, got %s", filepath.Base(result.NewPath))
+	if filepath.Base(filepath.Dir(result.NewPath)) != "003-status-command" {
+		t.Errorf("expected new spec directory to be 003-status-command, got %s", filepath.Base(filepath.Dir(result.NewPath)))
 	}
 }
 
 func TestPlan_EmptySlugError(t *testing.T) {
 	dir := setupSpecsDir(t, map[string]string{
-		"003-status-command.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
+		"003-status-command/SPEC.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
 	})
 
 	_, err := Plan(dir, 3, "")
@@ -65,7 +69,7 @@ func TestPlan_EmptySlugError(t *testing.T) {
 
 func TestPlan_CustomSlug(t *testing.T) {
 	dir := setupSpecsDir(t, map[string]string{
-		"003-status-command.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
+		"003-old-name/SPEC.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
 	})
 
 	result, err := Plan(dir, 3, "spec-status")
@@ -73,15 +77,15 @@ func TestPlan_CustomSlug(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if filepath.Base(result.NewPath) != "spec-status.md" {
-		t.Errorf("expected new path spec-status.md, got %s", filepath.Base(result.NewPath))
+	if filepath.Base(filepath.Dir(result.NewPath)) != "003-spec-status" {
+		t.Errorf("expected new path directory 003-spec-status, got %s", filepath.Base(filepath.Dir(result.NewPath)))
 	}
 }
 
 func TestPlan_FindsLinkReferences(t *testing.T) {
 	dir := setupSpecsDir(t, map[string]string{
-		"003-status-command.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
-		"005-list-command.md":   "---\nnumber: 5\n---\n\n# List Command\n\nSee [status](/specs/003-status-command.md).\n\n## Task List\n",
+		"003-old-name/SPEC.md":     "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
+		"005-list-command/SPEC.md": "---\nnumber: 5\n---\n\n# List Command\n\nSee [status](/specs/003-old-name/SPEC.md).\n\n## Task List\n",
 	})
 
 	result, err := Plan(dir, 3, "status-command")
@@ -95,21 +99,21 @@ func TestPlan_FindsLinkReferences(t *testing.T) {
 
 	found := false
 	for _, u := range result.LinkUpdates {
-		if strings.Contains(u.OldLink, "003-status-command.md") {
+		if strings.Contains(u.OldLink, "003-old-name/SPEC.md") {
 			found = true
-			if !strings.Contains(u.NewLink, "status-command.md") {
-				t.Errorf("expected new link to contain status-command.md, got %s", u.NewLink)
+			if !strings.Contains(u.NewLink, "003-status-command/SPEC.md") {
+				t.Errorf("expected new link to contain updated spec path, got %s", u.NewLink)
 			}
 		}
 	}
 	if !found {
-		t.Error("expected to find link update for 003-status-command.md")
+		t.Error("expected to find link update for 003-old-name/SPEC.md")
 	}
 }
 
 func TestPlan_SameNameError(t *testing.T) {
 	dir := setupSpecsDir(t, map[string]string{
-		"status-command.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
+		"003-status-command/SPEC.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
 	})
 
 	_, err := Plan(dir, 3, "status-command")
@@ -120,8 +124,8 @@ func TestPlan_SameNameError(t *testing.T) {
 
 func TestPlan_TargetExistsError(t *testing.T) {
 	dir := setupSpecsDir(t, map[string]string{
-		"003-status-command.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
-		"status-command.md":     "---\nnumber: 99\n---\n\n# Other\n\n## Task List\n",
+		"003-old-name/SPEC.md":       "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
+		"003-status-command/SPEC.md": "---\nnumber: 99\n---\n\n# Other\n\n## Task List\n",
 	})
 
 	_, err := Plan(dir, 3, "status-command")
@@ -135,7 +139,7 @@ func TestPlan_TargetExistsError(t *testing.T) {
 
 func TestExecute_RenamesFile(t *testing.T) {
 	dir := setupSpecsDir(t, map[string]string{
-		"003-status-command.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
+		"003-old-name/SPEC.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
 	})
 
 	result, err := Plan(dir, 3, "status-command")
@@ -147,21 +151,21 @@ func TestExecute_RenamesFile(t *testing.T) {
 		t.Fatalf("Execute error: %v", err)
 	}
 
-	// Old file should be gone
-	if _, err := os.Stat(filepath.Join(dir, "003-status-command.md")); err == nil {
-		t.Error("old file should not exist after rename")
+	// Old directory should be gone
+	if _, err := os.Stat(filepath.Join(dir, "003-old-name")); err == nil {
+		t.Error("old directory should not exist after rename")
 	}
 
-	// New file should exist
-	if _, err := os.Stat(filepath.Join(dir, "status-command.md")); err != nil {
-		t.Error("new file should exist after rename")
+	// New directory should exist
+	if _, err := os.Stat(filepath.Join(dir, "003-status-command", "SPEC.md")); err != nil {
+		t.Error("new spec should exist after rename")
 	}
 }
 
 func TestExecute_UpdatesLinks(t *testing.T) {
 	dir := setupSpecsDir(t, map[string]string{
-		"003-status-command.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
-		"005-list-command.md":   "---\nnumber: 5\n---\n\n# List\n\nSee [status](/specs/003-status-command.md).\n\n## Task List\n",
+		"003-old-name/SPEC.md":     "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
+		"005-list-command/SPEC.md": "---\nnumber: 5\n---\n\n# List\n\nSee [status](/specs/003-old-name/SPEC.md).\n\n## Task List\n",
 	})
 
 	result, err := Plan(dir, 3, "status-command")
@@ -174,22 +178,22 @@ func TestExecute_UpdatesLinks(t *testing.T) {
 	}
 
 	// Check that the link was updated
-	content, err := os.ReadFile(filepath.Join(dir, "005-list-command.md"))
+	content, err := os.ReadFile(filepath.Join(dir, "005-list-command", "SPEC.md"))
 	if err != nil {
 		t.Fatalf("failed to read updated file: %v", err)
 	}
 
-	if strings.Contains(string(content), "003-status-command.md") {
+	if strings.Contains(string(content), "003-old-name/SPEC.md") {
 		t.Error("old link should be updated")
 	}
-	if !strings.Contains(string(content), "/specs/status-command.md") {
+	if !strings.Contains(string(content), "/specs/003-status-command/SPEC.md") {
 		t.Errorf("expected new link, got: %s", string(content))
 	}
 }
 
 func TestPlan_DryRunDoesNotModify(t *testing.T) {
 	dir := setupSpecsDir(t, map[string]string{
-		"003-status-command.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
+		"003-old-name/SPEC.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
 	})
 
 	// Plan only, don't execute
@@ -199,7 +203,7 @@ func TestPlan_DryRunDoesNotModify(t *testing.T) {
 	}
 
 	// File should still exist with old name
-	if _, err := os.Stat(filepath.Join(dir, "003-status-command.md")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "003-old-name", "SPEC.md")); err != nil {
 		t.Error("file should still exist after Plan (no Execute)")
 	}
 }
@@ -209,9 +213,9 @@ func TestStripNumericPrefix(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"003-status-command.md", "status-command.md"},
-		{"000-basic-cli.md", "basic-cli.md"},
-		{"status-command.md", "status-command.md"}, // no prefix, unchanged
+		{"003-status-command/SPEC.md", "status-command/SPEC.md"},
+		{"000-basic-cli/SPEC.md", "basic-cli/SPEC.md"},
+		{"status-command/SPEC.md", "status-command/SPEC.md"}, // no prefix, unchanged
 	}
 
 	for _, tt := range tests {

@@ -39,7 +39,7 @@ Then follow this loop:
 **Critical rules:**
 
 - Use plain-language markdown headings in specs. Do **not** number section headers (`## 1. Design Decisions`, `### 2.1 Foundation`, etc.).
-- Any cross-spec mention MUST use an inline markdown link to the other spec file with the correct repo-root-relative path (for example, `[Status command](specs/3-status-command/SPEC.md)`).
+- Any cross-spec mention MUST use an inline markdown link to the other spec file with the correct repo-root-relative path (for example, `[Status command](specs/002-status-command/SPEC.md)`).
 - Do NOT edit spec design decisions or descriptions without explicit user permission.
 - When all work is complete, update the frontmatter `status` to `completed`.
 

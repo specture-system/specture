@@ -5,16 +5,16 @@ description: Follow the Specture System for spec-driven development. Use when cr
 
 # Specture System
 
-Specture is a spec-driven development system. Specs are design documents in the `specs/` directory that describe planned changes — features, refactors, redesigns, tooling improvements. Each spec contains metadata, goals, and design decisions.
+Specture is a spec-driven development system. Specs are design documents in the `specs/` tree that live in `SPEC.md` files and may nest to any number of levels. Each spec contains metadata, goals, and design decisions.
 
-Spec numbers are stored in the YAML frontmatter `number` field. New specs use slug-only filenames (e.g., `my-feature.md`). Older specs may retain `NNN-slug.md` filenames — both naming patterns are valid.
+Spec numbers are stored in the YAML frontmatter `number` field. The number is a local identifier within its parent scope, and the full dotted reference is derived from the directory tree.
 
 ## Design Workflow
 
 When designing a spec (writing or refining a `draft` spec):
 
 1. Create a new branch for the spec design work (e.g., `spec/my-feature`)
-2. Write or refine the spec content — description and design decisions
+2. Write or refine the spec content — description, goals, and design decisions
 3. Commit and push the spec changes
 4. Open a PR for review and discussion
 
@@ -30,19 +30,17 @@ Then follow this loop:
 
 1. Read the spec
 2. Analyze the codebase
-3. Update the sibling `PROGRESS.md` file next to `SPEC.md` with the next slice of work
-4. Implement one small chunk of the spec
+3. Implement one small chunk of the spec
+4. Update the spec docs and tests as needed
 5. Commit the implementation changes
 6. Push the changes
 7. Repeat from step 1
 
 **Critical rules:**
 
-- Keep implementation progress in the sibling `PROGRESS.md` file, not in the spec itself.
 - Use plain-language markdown headings in specs. Do **not** number section headers (`## 1. Design Decisions`, `### 2.1 Foundation`, etc.).
-- Any cross-spec mention MUST use an inline markdown link to the other spec file with the correct relative path (for example, `[Status command](status-command.md)`).
-- Do NOT edit spec design decisions or descriptions without explicit user permission. You may update the temporary progress file during implementation.
-- When updating progress notes, keep them aligned with the work you are actually doing.
+- Any cross-spec mention MUST use an inline markdown link to the other spec file with the correct repo-root-relative path (for example, `[Status command](specs/status-command/SPEC.md)`).
+- Do NOT edit spec design decisions or descriptions without explicit user permission.
 - When all work is complete, update the frontmatter `status` to `completed`.
 
 ## CLI Commands
@@ -73,11 +71,11 @@ specture status --spec 3                 # Specific spec by number
 specture status -f json                  # JSON output
 ```
 
-Typical workflow: run `specture list` to find the spec you need, then `specture status --spec N` to see its status.
+Typical workflow: run `specture list` to find the spec you need, then `specture status --spec N` to see its full reference and status.
 
 ### specture new
 
-Create a new spec file with automatic numbering and branch.
+Create a new spec directory with automatic numbering and branch.
 
 ```bash
 # Non-interactive: provide title via flag (required for agents)
@@ -134,10 +132,10 @@ Aliases: `setup`, `update`, `u`
 
 ### specture rename
 
-Rename a spec file and update all markdown links in the specs directory.
+Rename a spec directory and update all markdown links in the specs tree.
 
 ```bash
-# Rename spec 3 to status-command.md
+# Rename spec 3 to status-command
 specture rename --spec 3 status-command
 
 # Preview changes
@@ -168,7 +166,7 @@ Use conventional commits:
 
 ## Precedence
 
-Higher-numbered specs take precedence over lower-numbered ones when they conflict. Completed specs are historical records — do not retroactively update them (except to fix typos or factual errors).
+Completed specs are historical records — do not retroactively update them (except to fix typos or factual errors).
 
 ## Spec Format Reference
 

@@ -21,9 +21,9 @@ var validateCmd = &cobra.Command{
 It validates frontmatter, status, and descriptions.
 
 Examples:
-  specture validate              # Validate all specs in specs/
-  specture validate --spec 0     # Validate spec 000-*.md by number
-  specture validate -s 42        # Short form, validates spec 042-*.md`,
+  specture validate              # Validate all specs in the specs tree
+  specture validate --spec 0     # Validate a specific spec by reference
+  specture validate -s 42        # Short form, validates a specific spec`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		invalidCount, err := runValidate(cmd, args)
 		if err != nil {

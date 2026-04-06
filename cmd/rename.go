@@ -12,11 +12,11 @@ import (
 var renameCmd = &cobra.Command{
 	Use:   "rename [slug]",
 	Args:  cobra.ExactArgs(1),
-	Short: "Rename a spec file and update cross-references",
-	Long: `Rename a spec file and update all markdown links that reference it in the specs directory.
+	Short: "Rename a spec directory and update cross-references",
+	Long: `Rename a spec directory and update all markdown links that reference it in the specs tree.
 
 Examples:
-  specture rename --spec 3 status-command           # Rename to status-command.md
+  specture rename --spec 3 status-command           # Rename to status-command
   specture rename --spec 3 status-command --dry-run  # Preview changes`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runRename(cmd, args)

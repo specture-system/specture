@@ -17,7 +17,8 @@ var setupCmd = &cobra.Command{
 	Long: `Initialize the Specture System in a repository and manage AI agent config files.
 
 Actions:
-  • Create specs/ directory and specs/README.md
+  • Create specs/ tree and specs/README.md
+  • Prepare the specs tree for directory-based SPEC.md files
   • Optionally show prompts for updating AGENTS.md and CLAUDE.md`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get current working directory
@@ -41,7 +42,7 @@ Actions:
 		// Show summary of what will happen
 		cmd.Printf("Detected forge: %s (%s)\n", ctx.Forge, ctx.ContributionType)
 		cmd.Println("\nSetup will:")
-		cmd.Println("  • Create specs/ directory")
+		cmd.Println("  • Create specs/ tree")
 		cmd.Println("  • Create specs/README.md with Specture System guidelines")
 		cmd.Println("  • Install Specture skill files into .agents/skills/")
 
@@ -118,7 +119,7 @@ Actions:
 			return err
 		}
 
-		// Migrate specs: add number to frontmatter of NNN-slug.md files
+		// Migrate existing flat specs to add number to frontmatter
 		specsDir := filepath.Join(cwd, "specs")
 		migrations, err := setup.FindSpecsNeedingMigration(specsDir)
 		if err == nil && len(migrations) > 0 {

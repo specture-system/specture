@@ -25,7 +25,11 @@ func setupImplementTest(t *testing.T, specs map[string]string) string {
 	}
 
 	for name, content := range specs {
-		if err := os.WriteFile(filepath.Join(specsDir, name), []byte(content), 0644); err != nil {
+		path := filepath.Join(specsDir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("failed to create spec dir for %s: %v", name, err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 			t.Fatalf("failed to write spec %s: %v", name, err)
 		}
 	}
@@ -124,7 +128,7 @@ Description.
 
 func TestImplementCommand_RequiresSpecFlag(t *testing.T) {
 	tmpDir := setupImplementTest(t, map[string]string{
-		"007-agent.md": implementApprovedSpec,
+		"007-agent/SPEC.md": implementApprovedSpec,
 	})
 
 	implementLookPath = func(file string) (string, error) {
@@ -143,7 +147,7 @@ func TestImplementCommand_RequiresSpecFlag(t *testing.T) {
 
 func TestImplementCommand_RejectsInvalidAgentOverride(t *testing.T) {
 	tmpDir := setupImplementTest(t, map[string]string{
-		"007-agent.md": implementApprovedSpec,
+		"007-agent/SPEC.md": implementApprovedSpec,
 	})
 
 	implementLookPath = func(file string) (string, error) {
@@ -162,7 +166,7 @@ func TestImplementCommand_RejectsInvalidAgentOverride(t *testing.T) {
 
 func TestImplementCommand_RejectsDisallowedSpecStatus(t *testing.T) {
 	tmpDir := setupImplementTest(t, map[string]string{
-		"009-draft.md": implementDraftSpec,
+		"009-draft/SPEC.md": implementDraftSpec,
 	})
 
 	implementLookPath = func(file string) (string, error) {
@@ -186,8 +190,8 @@ func TestImplementCommand_AllowsApprovedAndInProgressStatuses(t *testing.T) {
 		specBody string
 		specFlag string
 	}{
-		{name: "approved", specFile: "007-agent.md", specBody: implementApprovedSpec, specFlag: "7"},
-		{name: "in-progress", specFile: "008-progress.md", specBody: implementInProgressSpec, specFlag: "8"},
+		{name: "approved", specFile: "007-agent/SPEC.md", specBody: implementApprovedSpec, specFlag: "7"},
+		{name: "in-progress", specFile: "008-progress/SPEC.md", specBody: implementInProgressSpec, specFlag: "8"},
 	}
 
 	for _, tt := range tests {
@@ -261,7 +265,7 @@ status: approved
 
 func TestImplementCommand_PlansRemainingSectionsAndTasks(t *testing.T) {
 	tmpDir := setupImplementTest(t, map[string]string{
-		"007-agent.md": implementApprovedSpec,
+		"007-agent/SPEC.md": implementApprovedSpec,
 	})
 
 	implementLookPath = func(file string) (string, error) {
@@ -298,7 +302,7 @@ func TestImplementCommand_PlansRemainingSectionsAndTasks(t *testing.T) {
 
 func TestImplementCommand_AgentOverrideBeatsAutoDetect(t *testing.T) {
 	tmpDir := setupImplementTest(t, map[string]string{
-		"007-agent.md": implementApprovedSpec,
+		"007-agent/SPEC.md": implementApprovedSpec,
 	})
 
 	implementLookPath = func(file string) (string, error) {
@@ -338,7 +342,7 @@ func TestImplementCommand_HelpMentionsOrchestratorAndExample(t *testing.T) {
 
 func TestImplementCommand_DryRunSkipsExecution(t *testing.T) {
 	tmpDir := setupImplementTest(t, map[string]string{
-		"007-agent.md": implementApprovedSpec,
+		"007-agent/SPEC.md": implementApprovedSpec,
 	})
 
 	implementLookPath = func(file string) (string, error) {

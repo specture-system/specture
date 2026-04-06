@@ -18,7 +18,7 @@ var setupCmd = &cobra.Command{
 
 Actions:
   • Create specs/ tree and specs/README.md
-  • Prepare the specs tree for directory-based SPEC.md files
+  • Migrate the specs tree to nested SPEC.md files
   • Optionally show prompts for updating AGENTS.md and CLAUDE.md`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get current working directory
@@ -44,6 +44,8 @@ Actions:
 		cmd.Println("\nSetup will:")
 		cmd.Println("  • Create specs/ tree")
 		cmd.Println("  • Create specs/README.md with Specture System guidelines")
+		cmd.Println("  • Create specs/.gitignore to keep only SPEC.md and README.md")
+		cmd.Println("  • Migrate existing flat specs into numbered SPEC.md directories")
 		cmd.Println("  • Install Specture skill files into .agents/skills/")
 
 		// Get update flags
@@ -135,6 +137,14 @@ Actions:
 			if dryRun {
 				cmd.Println("  [dry-run] No changes made")
 			}
+		}
+
+		specsMigrated, err := setup.MigrateSpecsLayout(specsDir, dryRun)
+		if err != nil {
+			return err
+		}
+		if specsMigrated && !dryRun {
+			cmd.Println("Migrated existing flat specs into numbered SPEC.md directories")
 		}
 
 		// Handle AGENTS.md and CLAUDE.md update prompts (skip in dry-run mode)

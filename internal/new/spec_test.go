@@ -53,34 +53,34 @@ func TestFindNextSpecNumber(t *testing.T) {
 		{
 			name: "single_spec_with_number",
 			setupFiles: map[string]string{
-				"first.md": "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
+				"000-first/SPEC.md": "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
 			},
 			expected: 1,
 		},
 		{
 			name: "multiple_specs",
 			setupFiles: map[string]string{
-				"000-first.md":  "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
-				"001-second.md": "---\nnumber: 1\n---\n\n# Second\n\n## Task List\n",
-				"002-third.md":  "---\nnumber: 2\n---\n\n# Third\n\n## Task List\n",
+				"000-first/SPEC.md":  "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
+				"001-second/SPEC.md": "---\nnumber: 1\n---\n\n# Second\n\n## Task List\n",
+				"002-third/SPEC.md":  "---\nnumber: 2\n---\n\n# Third\n\n## Task List\n",
 			},
 			expected: 3,
 		},
 		{
 			name: "non_sequential_numbers",
 			setupFiles: map[string]string{
-				"first.md": "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
-				"fifth.md": "---\nnumber: 5\n---\n\n# Fifth\n\n## Task List\n",
-				"third.md": "---\nnumber: 2\n---\n\n# Third\n\n## Task List\n",
+				"000-first/SPEC.md": "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
+				"005-fifth/SPEC.md": "---\nnumber: 5\n---\n\n# Fifth\n\n## Task List\n",
+				"002-third/SPEC.md": "---\nnumber: 2\n---\n\n# Third\n\n## Task List\n",
 			},
 			expected: 6,
 		},
 		{
 			name: "ignores_files_without_number",
 			setupFiles: map[string]string{
-				"README.md":   "# Readme\n",
-				"000-spec.md": "---\nnumber: 0\n---\n\n# Spec\n\n## Task List\n",
-				"notes.txt":   "some notes",
+				"README.md":        "# Readme\n",
+				"000-spec/SPEC.md": "---\nnumber: 0\n---\n\n# Spec\n\n## Task List\n",
+				"notes.txt":        "some notes",
 			},
 			expected: 1,
 		},
@@ -93,12 +93,15 @@ func TestFindNextSpecNumber(t *testing.T) {
 			// Create setup files
 			for file, content := range tt.setupFiles {
 				filePath := filepath.Join(tmpDir, file)
+				if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+					t.Fatalf("failed to create parent directory: %v", err)
+				}
 				if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 					t.Fatalf("failed to create test file: %v", err)
 				}
 			}
 
-			result, err := FindNextSpecNumber(tmpDir)
+			result, err := FindNextSpecNumber(tmpDir, "")
 			if (err != nil) != tt.expectError {
 				t.Errorf("FindNextSpecNumber() error = %v, want error = %v", err, tt.expectError)
 			}
@@ -141,6 +144,44 @@ func TestRenderSpec(t *testing.T) {
 			t.Errorf("rendered spec doesn't contain creation_date")
 		}
 	})
+}
+
+func TestFindNextSpecNumber_ScopedToParent(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	parentDir := filepath.Join(tmpDir, "0-parent")
+	if err := os.MkdirAll(parentDir, 0o755); err != nil {
+		t.Fatalf("failed to create parent directory: %v", err)
+	}
+
+	parentPath := filepath.Join(parentDir, "SPEC.md")
+	if err := os.WriteFile(parentPath, []byte("---\nnumber: 0\n---\n\n# Parent\n"), 0o644); err != nil {
+		t.Fatalf("failed to create parent spec: %v", err)
+	}
+
+	files := map[string]string{
+		filepath.Join(parentDir, "000-first", "SPEC.md"):                    "---\nnumber: 0\n---\n\n# First Child\n",
+		filepath.Join(parentDir, "002-third", "SPEC.md"):                    "---\nnumber: 2\n---\n\n# Third Child\n",
+		filepath.Join(parentDir, "001-second", "SPEC.md"):                   "---\nnumber: 1\n---\n\n# Second Child\n",
+		filepath.Join(parentDir, "001-second", "notes.txt"):                 "ignore me",
+		filepath.Join(parentDir, "001-second", "000-grandchild", "SPEC.md"): "---\nnumber: 0\n---\n\n# Grandchild\n",
+	}
+	for name, content := range files {
+		if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil {
+			t.Fatalf("failed to create directory for %s: %v", name, err)
+		}
+		if err := os.WriteFile(name, []byte(content), 0o644); err != nil {
+			t.Fatalf("failed to create file %s: %v", name, err)
+		}
+	}
+
+	result, err := FindNextSpecNumber(tmpDir, parentPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != 3 {
+		t.Fatalf("expected next child number 3, got %d", result)
+	}
 }
 
 func TestGenerateFrontmatter(t *testing.T) {

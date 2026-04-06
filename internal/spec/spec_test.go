@@ -266,12 +266,12 @@ func TestFindAll_MatchesOnlySpecFiles(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create spec files and non-spec files.
-	// FindAll includes top-level flat .md files and nested SPEC.md files.
+	// FindAll should include nested SPEC.md files only.
 	files := map[string]bool{
-		"001-first.md":         true,
-		"002-second.md":        true,
-		"010-tenth.md":         true,
-		"my-feature.md":        true, // slug-only filename
+		"001-first/SPEC.md":    true,
+		"002-second/SPEC.md":   true,
+		"010-tenth/SPEC.md":    true,
+		"my-feature/SPEC.md":   true,
 		"README.md":            false,
 		"notes.txt":            false,
 		"nested/SPEC.md":       true,
@@ -339,10 +339,17 @@ func TestResolvePath(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create a spec file with number in frontmatter
-	specFile := "007-feature.md"
+	specFile := "007-feature/SPEC.md"
 	specPath := filepath.Join(dir, specFile)
+	if err := os.MkdirAll(filepath.Dir(specPath), 0o755); err != nil {
+		t.Fatalf("failed to create spec directory: %v", err)
+	}
 	if err := os.WriteFile(specPath, []byte("---\nnumber: 7\n---\n\n# Feature\n"), 0644); err != nil {
 		t.Fatalf("failed to create spec file: %v", err)
+	}
+	flatPath := filepath.Join(dir, "007-feature.md")
+	if err := os.WriteFile(flatPath, []byte("---\nnumber: 7\n---\n\n# Legacy Feature\n"), 0644); err != nil {
+		t.Fatalf("failed to create flat spec file: %v", err)
 	}
 
 	tests := []struct {
@@ -370,6 +377,11 @@ func TestResolvePath(t *testing.T) {
 			name:     "full path",
 			arg:      specPath,
 			wantPath: specPath,
+		},
+		{
+			name:      "flat path rejected",
+			arg:       flatPath,
+			wantError: true,
 		},
 		{
 			name:      "nonexistent spec number",
@@ -433,6 +445,68 @@ func TestResolvePath_DottedRef(t *testing.T) {
 	}
 }
 
+func TestFindSpecsInScope(t *testing.T) {
+	dir := t.TempDir()
+
+	topLevel := map[string]string{
+		"002-second/SPEC.md": "---\nnumber: 2\n---\n\n# Second\n",
+		"001-first/SPEC.md":  "---\nnumber: 1\n---\n\n# First\n",
+	}
+	for name, content := range topLevel {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("failed to create directory for top-level spec %s: %v", name, err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatalf("failed to create top-level spec %s: %v", name, err)
+		}
+	}
+
+	parentDir := filepath.Join(dir, "0-parent")
+	childDir := filepath.Join(parentDir, "000-child")
+	grandchildDir := filepath.Join(childDir, "000-grandchild")
+	for _, path := range []string{parentDir, childDir, grandchildDir} {
+		if err := os.MkdirAll(path, 0o755); err != nil {
+			t.Fatalf("failed to create directory %s: %v", path, err)
+		}
+	}
+
+	parentPath := filepath.Join(parentDir, "SPEC.md")
+	childPath := filepath.Join(childDir, "SPEC.md")
+	grandchildPath := filepath.Join(grandchildDir, "SPEC.md")
+	if err := os.WriteFile(parentPath, []byte("---\nnumber: 0\n---\n\n# Parent\n"), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(childPath, []byte("---\nnumber: 0\n---\n\n# Child\n"), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+	if err := os.WriteFile(grandchildPath, []byte("---\nnumber: 0\n---\n\n# Grandchild\n"), 0o644); err != nil {
+		t.Fatalf("failed to write grandchild spec: %v", err)
+	}
+
+	topLevelSpecs, err := FindSpecsInScope(dir, "")
+	if err != nil {
+		t.Fatalf("unexpected error reading top-level scope: %v", err)
+	}
+	if len(topLevelSpecs) != 3 {
+		t.Fatalf("expected 3 top-level specs, got %d", len(topLevelSpecs))
+	}
+	if topLevelSpecs[0].FullRef != "0" || topLevelSpecs[1].FullRef != "1" || topLevelSpecs[2].FullRef != "2" {
+		t.Fatalf("unexpected top-level refs: %q, %q, %q", topLevelSpecs[0].FullRef, topLevelSpecs[1].FullRef, topLevelSpecs[2].FullRef)
+	}
+
+	childSpecs, err := FindSpecsInScope(dir, parentPath)
+	if err != nil {
+		t.Fatalf("unexpected error reading child scope: %v", err)
+	}
+	if len(childSpecs) != 1 {
+		t.Fatalf("expected 1 child spec, got %d", len(childSpecs))
+	}
+	if childSpecs[0].Path != childPath {
+		t.Fatalf("expected child path %q, got %q", childPath, childSpecs[0].Path)
+	}
+}
+
 // ---------- ParseAll tests ----------
 
 func TestParseAll_SortedByNumber(t *testing.T) {
@@ -440,12 +514,16 @@ func TestParseAll_SortedByNumber(t *testing.T) {
 
 	// Create specs out of order, with number in frontmatter
 	specs := map[string]string{
-		"003-third.md":  "---\nnumber: 3\n---\n\n# Third\n",
-		"001-first.md":  "---\nnumber: 1\n---\n\n# First\n",
-		"002-second.md": "---\nnumber: 2\n---\n\n# Second\n",
+		"003-third/SPEC.md":  "---\nnumber: 3\n---\n\n# Third\n",
+		"001-first/SPEC.md":  "---\nnumber: 1\n---\n\n# First\n",
+		"002-second/SPEC.md": "---\nnumber: 2\n---\n\n# Second\n",
 	}
 	for name, content := range specs {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("failed to create directory for %s: %v", name, err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 			t.Fatalf("failed to create %s: %v", name, err)
 		}
 	}
@@ -487,12 +565,16 @@ func TestFindCurrent_ReturnsFirstInProgress(t *testing.T) {
 	spec3 := buildSpec("number: 3", "Third", "- [x] A\n- [ ] B")
 
 	files := map[string][]byte{
-		"001-first.md":  spec1,
-		"002-second.md": spec2,
-		"003-third.md":  spec3,
+		"001-first/SPEC.md":  spec1,
+		"002-second/SPEC.md": spec2,
+		"003-third/SPEC.md":  spec3,
 	}
 	for name, content := range files {
-		if err := os.WriteFile(filepath.Join(dir, name), content, 0644); err != nil {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("failed to create directory for %s: %v", name, err)
+		}
+		if err := os.WriteFile(path, content, 0644); err != nil {
 			t.Fatalf("failed to create %s: %v", name, err)
 		}
 	}
@@ -520,11 +602,15 @@ func TestFindCurrent_NoInProgress(t *testing.T) {
 	spec2 := buildSpec("number: 2", "Second", "- [ ] Not started")
 
 	files := map[string][]byte{
-		"001-first.md":  spec1,
-		"002-second.md": spec2,
+		"001-first/SPEC.md":  spec1,
+		"002-second/SPEC.md": spec2,
 	}
 	for name, content := range files {
-		if err := os.WriteFile(filepath.Join(dir, name), content, 0644); err != nil {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("failed to create directory for %s: %v", name, err)
+		}
+		if err := os.WriteFile(path, content, 0644); err != nil {
 			t.Fatalf("failed to create %s: %v", name, err)
 		}
 	}

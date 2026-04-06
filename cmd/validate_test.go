@@ -42,7 +42,11 @@ Description.
 
 - [ ] Task 1
 `
-	if err := os.WriteFile(filepath.Join(specsDir, "000-test.md"), []byte(validSpec), 0644); err != nil {
+	specPath := filepath.Join(specsDir, "000-test", "SPEC.md")
+	if err := os.MkdirAll(filepath.Dir(specPath), 0755); err != nil {
+		t.Fatalf("failed to create spec dir: %v", err)
+	}
+	if err := os.WriteFile(specPath, []byte(validSpec), 0644); err != nil {
 		t.Fatalf("failed to write spec: %v", err)
 	}
 
@@ -86,7 +90,11 @@ Description without frontmatter.
 
 - [ ] Task 1
 `
-	if err := os.WriteFile(filepath.Join(specsDir, "000-test.md"), []byte(invalidSpec), 0644); err != nil {
+	specPath := filepath.Join(specsDir, "000-test", "SPEC.md")
+	if err := os.MkdirAll(filepath.Dir(specPath), 0755); err != nil {
+		t.Fatalf("failed to create spec dir: %v", err)
+	}
+	if err := os.WriteFile(specPath, []byte(invalidSpec), 0644); err != nil {
 		t.Fatalf("failed to write spec: %v", err)
 	}
 
@@ -152,10 +160,18 @@ status: draft
 
 - [ ] Task
 `
-	if err := os.WriteFile(filepath.Join(specsDir, "000-first.md"), []byte(validSpec0), 0644); err != nil {
+	firstPath := filepath.Join(specsDir, "000-first", "SPEC.md")
+	if err := os.MkdirAll(filepath.Dir(firstPath), 0755); err != nil {
+		t.Fatalf("failed to create spec dir: %v", err)
+	}
+	if err := os.WriteFile(firstPath, []byte(validSpec0), 0644); err != nil {
 		t.Fatalf("failed to write spec: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(specsDir, "001-second.md"), []byte(validSpec1), 0644); err != nil {
+	secondPath := filepath.Join(specsDir, "001-second", "SPEC.md")
+	if err := os.MkdirAll(filepath.Dir(secondPath), 0755); err != nil {
+		t.Fatalf("failed to create spec dir: %v", err)
+	}
+	if err := os.WriteFile(secondPath, []byte(validSpec1), 0644); err != nil {
 		t.Fatalf("failed to write spec: %v", err)
 	}
 
@@ -183,11 +199,8 @@ status: draft
 	}
 
 	output := out.String()
-	if !strings.Contains(output, "001-second.md") {
-		t.Errorf("expected 001-second.md in output, got: %s", output)
-	}
-	if strings.Contains(output, "000-first.md") {
-		t.Errorf("did not expect 000-first.md in output, got: %s", output)
+	if !strings.Contains(output, "✓ SPEC.md") {
+		t.Errorf("expected SPEC.md in output, got: %s", output)
 	}
 	if !strings.Contains(output, "1 of 1 specs valid") {
 		t.Errorf("expected summary in output, got: %s", output)
@@ -214,7 +227,10 @@ status: approved
 
 - [x] Done
 `
-	specPath := filepath.Join(specsDir, "000-test.md")
+	specPath := filepath.Join(specsDir, "000-test", "SPEC.md")
+	if err := os.MkdirAll(filepath.Dir(specPath), 0755); err != nil {
+		t.Fatalf("failed to create spec dir: %v", err)
+	}
 	if err := os.WriteFile(specPath, []byte(validSpec), 0644); err != nil {
 		t.Fatalf("failed to write spec: %v", err)
 	}
@@ -243,8 +259,8 @@ status: approved
 	}
 
 	output := out.String()
-	if !strings.Contains(output, "000-test.md") {
-		t.Errorf("expected 000-test.md in output, got: %s", output)
+	if !strings.Contains(output, "✓ SPEC.md") {
+		t.Errorf("expected SPEC.md in output, got: %s", output)
 	}
 }
 
@@ -355,7 +371,11 @@ status: draft
 
 - [ ] Task
 `
-	if err := os.WriteFile(filepath.Join(specsDir, "000-valid.md"), []byte(validSpec), 0644); err != nil {
+	validPath := filepath.Join(specsDir, "000-valid", "SPEC.md")
+	if err := os.MkdirAll(filepath.Dir(validPath), 0755); err != nil {
+		t.Fatalf("failed to create spec dir: %v", err)
+	}
+	if err := os.WriteFile(validPath, []byte(validSpec), 0644); err != nil {
 		t.Fatalf("failed to write spec: %v", err)
 	}
 
@@ -364,7 +384,11 @@ status: draft
 
 No frontmatter.
 `
-	if err := os.WriteFile(filepath.Join(specsDir, "001-invalid.md"), []byte(invalidSpec), 0644); err != nil {
+	invalidPath := filepath.Join(specsDir, "001-invalid", "SPEC.md")
+	if err := os.MkdirAll(filepath.Dir(invalidPath), 0755); err != nil {
+		t.Fatalf("failed to create spec dir: %v", err)
+	}
+	if err := os.WriteFile(invalidPath, []byte(invalidSpec), 0644); err != nil {
 		t.Fatalf("failed to write spec: %v", err)
 	}
 
@@ -400,14 +424,17 @@ func TestFindAllSpecs(t *testing.T) {
 
 	// Create various files
 	files := []string{
-		"000-first.md",
-		"001-second.md",
+		"000-first/SPEC.md",
+		"001-second/SPEC.md",
 		"README.md",
 		"notes.txt",
 	}
 
 	for _, f := range files {
 		path := filepath.Join(tmpDir, f)
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("failed to create parent dir for %s: %v", f, err)
+		}
 		if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
 			t.Fatalf("failed to write file: %v", err)
 		}
@@ -427,7 +454,10 @@ func TestResolveSpecPath(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create a spec file with number in frontmatter
-	specPath := filepath.Join(tmpDir, "000-test.md")
+	specPath := filepath.Join(tmpDir, "000-test", "SPEC.md")
+	if err := os.MkdirAll(filepath.Dir(specPath), 0755); err != nil {
+		t.Fatalf("failed to create spec dir: %v", err)
+	}
 	if err := os.WriteFile(specPath, []byte("---\nnumber: 0\n---\n\n# Test\n"), 0644); err != nil {
 		t.Fatalf("failed to write file: %v", err)
 	}

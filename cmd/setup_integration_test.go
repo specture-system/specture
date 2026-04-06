@@ -81,6 +81,9 @@ func TestSetupCommand_CompleteWorkflow_DryRun(t *testing.T) {
 	if !strings.Contains(output, "Create specs/ tree") {
 		t.Errorf("output should list what will be created, got: %s", output)
 	}
+	if !strings.Contains(output, "Create specs/.gitignore") {
+		t.Errorf("output should list specs/.gitignore creation, got: %s", output)
+	}
 }
 
 func TestSetupCommand_OutputSummary(t *testing.T) {
@@ -97,6 +100,9 @@ func TestSetupCommand_OutputSummary(t *testing.T) {
 	if !strings.Contains(output, "Create specs/README.md") {
 		t.Errorf("output should list README.md creation, got: %s", output)
 	}
+	if !strings.Contains(output, "Create specs/.gitignore") {
+		t.Errorf("output should list specs/.gitignore creation, got: %s", output)
+	}
 }
 
 func TestSetupCommand_DryRunPreviewsAllActions(t *testing.T) {
@@ -109,6 +115,7 @@ func TestSetupCommand_DryRunPreviewsAllActions(t *testing.T) {
 		"Setup will:",
 		"Create specs/ tree",
 		"Create specs/README.md",
+		"Create specs/.gitignore",
 	}
 
 	for _, item := range expectedItems {
@@ -180,6 +187,16 @@ func TestSetupCommand_CreatesFilesWithCorrectContent(t *testing.T) {
 		if !strings.Contains(contentStr, expected) {
 			t.Errorf("README.md should contain %q, full content:\n%s", expected, contentStr)
 		}
+	}
+
+	// Verify specs/.gitignore was created with the hierarchy rules.
+	gitignorePath := filepath.Join(tmpDir, "specs", ".gitignore")
+	gitignore, err := os.ReadFile(gitignorePath)
+	if err != nil {
+		t.Errorf("specs/.gitignore should be created, got error: %v", err)
+	}
+	if string(gitignore) != "*\n!*/\n!**/SPEC.md\n!README.md\n" {
+		t.Errorf("unexpected specs/.gitignore content:\n%s", string(gitignore))
 	}
 }
 

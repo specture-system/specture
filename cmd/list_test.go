@@ -19,7 +19,11 @@ func setupListTest(t *testing.T, specs map[string]string) string {
 			t.Fatalf("failed to create specs dir: %v", err)
 		}
 		for name, content := range specs {
-			if err := os.WriteFile(filepath.Join(specsDir, name), []byte(content), 0644); err != nil {
+			path := filepath.Join(specsDir, name)
+			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+				t.Fatalf("failed to create spec parent dir %s: %v", name, err)
+			}
+			if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 				t.Fatalf("failed to write spec %s: %v", name, err)
 			}
 		}
@@ -36,6 +40,7 @@ func execList(t *testing.T, tmpDir string, flags map[string]string) (string, err
 		os.Chdir(originalWd)
 		listCmd.Flags().Set("status", "")
 		listCmd.Flags().Set("format", "text")
+		listCmd.Flags().Set("parent", "")
 	})
 	os.Chdir(tmpDir)
 
@@ -60,20 +65,7 @@ status: in-progress
 ---
 
 # Status Command
-
 Description.
-
-## Task List
-
-### Phase One
-
-- [x] Create SpecInfo struct
-- [x] Create Task struct
-
-### Phase Two
-
-- [ ] Write tests
-- [ ] Implement feature
 `
 
 const listCompletedSpec = `---
@@ -84,12 +76,6 @@ status: completed
 # Setup Command
 
 All done.
-
-## Task List
-
-- [x] Task A
-- [x] Task B
-- [x] Task C
 `
 
 const listDraftSpec = `---
@@ -100,11 +86,6 @@ status: draft
 # Future Feature
 
 Just an idea.
-
-## Task List
-
-- [ ] Think about it
-- [ ] Plan it
 `
 
 const listApprovedSpec = `---
@@ -115,19 +96,15 @@ status: approved
 # Approved Feature
 
 Ready to go.
-
-## Task List
-
-- [ ] Do the thing
 `
 
 // ---- Text output tests ----
 
 func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{
-		"001-setup.md":  listCompletedSpec,
-		"002-draft.md":  listDraftSpec,
-		"003-status.md": listInProgressSpec,
+		"001-setup/SPEC.md":  listCompletedSpec,
+		"002-draft/SPEC.md":  listDraftSpec,
+		"003-status/SPEC.md": listInProgressSpec,
 	})
 
 	output, err := execList(t, tmpDir, nil)
@@ -143,7 +120,7 @@ func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 
 	// Check header
 	header := lines[0]
-	for _, col := range []string{"NUM", "STATUS", "PROGRESS", "NAME"} {
+	for _, col := range []string{"REF", "NAME", "STATUS", "PATH"} {
 		if !strings.Contains(header, col) {
 			t.Errorf("header missing %q: %s", col, header)
 		}
@@ -151,38 +128,38 @@ func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 
 	// Check each data row has expected columns
 	expected := []struct {
-		number   string
-		status   string
-		progress string
-		name     string
+		ref    string
+		status string
+		name   string
+		path   string
 	}{
-		{"001", "completed", "3/3", "Setup Command"},
-		{"002", "draft", "0/2", "Future Feature"},
-		{"003", "in-progress", "2/4", "Status Command"},
+		{"1", "completed", "Setup Command", filepath.Join("specs", "001-setup", "SPEC.md")},
+		{"2", "draft", "Future Feature", filepath.Join("specs", "002-draft", "SPEC.md")},
+		{"3", "in-progress", "Status Command", filepath.Join("specs", "003-status", "SPEC.md")},
 	}
 
 	for i, exp := range expected {
 		row := lines[i+1] // skip header
-		if !strings.Contains(row, exp.number) {
-			t.Errorf("row %d: expected number %s, got: %s", i, exp.number, row)
+		if !strings.Contains(row, exp.ref) {
+			t.Errorf("row %d: expected ref %s, got: %s", i, exp.ref, row)
 		}
 		if !strings.Contains(row, exp.status) {
 			t.Errorf("row %d: expected status %s, got: %s", i, exp.status, row)
 		}
-		if !strings.Contains(row, exp.progress) {
-			t.Errorf("row %d: expected progress %s, got: %s", i, exp.progress, row)
-		}
 		if !strings.Contains(row, exp.name) {
 			t.Errorf("row %d: expected name %s, got: %s", i, exp.name, row)
+		}
+		if !strings.HasSuffix(strings.TrimRight(row, " "), exp.path) {
+			t.Errorf("row %d: expected path suffix %s, got: %s", i, exp.path, row)
 		}
 	}
 }
 
 func TestListCommand_TextOutput_SortedByNumber(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{
-		"003-third.md":  listInProgressSpec,
-		"001-first.md":  listCompletedSpec,
-		"002-second.md": listDraftSpec,
+		"003-third/SPEC.md":  listInProgressSpec,
+		"001-first/SPEC.md":  listCompletedSpec,
+		"002-second/SPEC.md": listDraftSpec,
 	})
 
 	output, err := execList(t, tmpDir, nil)
@@ -196,14 +173,14 @@ func TestListCommand_TextOutput_SortedByNumber(t *testing.T) {
 	}
 
 	// Skip header (lines[0]), check data rows
-	if !strings.HasPrefix(lines[1], "001") {
-		t.Errorf("first data row should start with 001, got: %s", lines[1])
+	if !strings.HasPrefix(lines[1], "1") {
+		t.Errorf("first data row should start with 1, got: %s", lines[1])
 	}
-	if !strings.HasPrefix(lines[2], "002") {
-		t.Errorf("second data row should start with 002, got: %s", lines[2])
+	if !strings.HasPrefix(lines[2], "2") {
+		t.Errorf("second data row should start with 2, got: %s", lines[2])
 	}
-	if !strings.HasPrefix(lines[3], "003") {
-		t.Errorf("third data row should start with 003, got: %s", lines[3])
+	if !strings.HasPrefix(lines[3], "3") {
+		t.Errorf("third data row should start with 3, got: %s", lines[3])
 	}
 }
 
@@ -222,7 +199,7 @@ func TestListCommand_TextOutput_NoSpecs(t *testing.T) {
 
 func TestListCommand_TextOutput_IgnoresNestedSpecs(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{
-		"001-setup.md": listCompletedSpec,
+		"001-setup/SPEC.md": listCompletedSpec,
 	})
 
 	parentDir := filepath.Join(tmpDir, "specs", "1-root")
@@ -262,8 +239,70 @@ status: draft
 	if !strings.Contains(output, "Root") {
 		t.Fatalf("expected top-level nested-dir spec in output, got:\n%s", output)
 	}
-	if strings.Contains(output, "Nested") {
+	if strings.Contains(output, "  Nested") {
 		t.Fatalf("did not expect nested spec in top-level list output, got:\n%s", output)
+	}
+}
+
+func TestListCommand_TextOutput_ParentScope(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup/SPEC.md": listCompletedSpec,
+	})
+
+	parentDir := filepath.Join(tmpDir, "specs", "0-parent")
+	childDir := filepath.Join(parentDir, "000-child")
+	grandchildDir := filepath.Join(childDir, "000-grandchild")
+	for _, dir := range []string{parentDir, childDir, grandchildDir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatalf("failed to create directory %s: %v", dir, err)
+		}
+	}
+
+	parentSpec := `---
+number: 0
+status: approved
+---
+
+# Parent
+`
+	childSpec := `---
+number: 0
+status: draft
+---
+
+# Child
+`
+	grandchildSpec := `---
+number: 0
+status: draft
+---
+
+# Grandchild
+`
+	if err := os.WriteFile(filepath.Join(parentDir, "SPEC.md"), []byte(parentSpec), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(childDir, "SPEC.md"), []byte(childSpec), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(grandchildDir, "SPEC.md"), []byte(grandchildSpec), 0o644); err != nil {
+		t.Fatalf("failed to write grandchild spec: %v", err)
+	}
+
+	output, err := execList(t, tmpDir, map[string]string{"parent": "0"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 lines (header + 1 child), got %d:\n%s", len(lines), output)
+	}
+	if !strings.Contains(lines[1], "Child") {
+		t.Fatalf("expected direct child spec in output, got:\n%s", output)
+	}
+	if strings.Contains(output, "Grandchild") {
+		t.Fatalf("did not expect grandchild in parent-scoped output, got:\n%s", output)
 	}
 }
 
@@ -281,7 +320,7 @@ func TestListCommand_NoSpecsDirectory(t *testing.T) {
 
 func TestListCommand_InvalidFormat(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{
-		"001-setup.md": listCompletedSpec,
+		"001-setup/SPEC.md": listCompletedSpec,
 	})
 
 	_, err := execList(t, tmpDir, map[string]string{"format": "xml"})
@@ -297,9 +336,9 @@ func TestListCommand_InvalidFormat(t *testing.T) {
 
 func TestListCommand_JSONOutput_AllSpecs(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{
-		"001-setup.md":  listCompletedSpec,
-		"002-draft.md":  listDraftSpec,
-		"003-status.md": listInProgressSpec,
+		"001-setup/SPEC.md":  listCompletedSpec,
+		"002-draft/SPEC.md":  listDraftSpec,
+		"003-status/SPEC.md": listInProgressSpec,
 	})
 
 	output, err := execList(t, tmpDir, map[string]string{"format": "json"})
@@ -317,8 +356,8 @@ func TestListCommand_JSONOutput_AllSpecs(t *testing.T) {
 	}
 
 	// Check first spec (001)
-	if result[0]["number"] != float64(1) {
-		t.Errorf("expected first spec number 1, got %v", result[0]["number"])
+	if result[0]["ref"] != "1" {
+		t.Errorf("expected first spec ref 1, got %v", result[0]["ref"])
 	}
 	if result[0]["name"] != "Setup Command" {
 		t.Errorf("expected name 'Setup Command', got %v", result[0]["name"])
@@ -326,48 +365,25 @@ func TestListCommand_JSONOutput_AllSpecs(t *testing.T) {
 	if result[0]["status"] != "completed" {
 		t.Errorf("expected status 'completed', got %v", result[0]["status"])
 	}
+	if path, ok := result[0]["path"].(string); !ok || !strings.HasSuffix(path, filepath.Join("specs", "001-setup", "SPEC.md")) {
+		t.Errorf("expected first spec path to end with %q, got %v", filepath.Join("specs", "001-setup", "SPEC.md"), result[0]["path"])
+	}
 
 	// Check second spec (002)
 	if result[1]["status"] != "draft" {
 		t.Errorf("expected status 'draft', got %v", result[1]["status"])
 	}
+	if result[1]["ref"] != "2" {
+		t.Errorf("expected second spec ref 2, got %v", result[1]["ref"])
+	}
 
-	// Check third spec has full metadata
+	// Check third spec has the expected metadata fields
 	spec3 := result[2]
-	if spec3["current_task"] != "Write tests" {
-		t.Errorf("expected current_task 'Write tests', got %v", spec3["current_task"])
+	if spec3["ref"] != "3" {
+		t.Errorf("expected ref '3', got %v", spec3["ref"])
 	}
-	if spec3["current_task_section"] != "Phase Two" {
-		t.Errorf("expected current_task_section 'Phase Two', got %v", spec3["current_task_section"])
-	}
-
-	// Validate progress on spec 3
-	progress, ok := spec3["progress"].(map[string]any)
-	if !ok {
-		t.Fatalf("progress is not an object")
-	}
-	if progress["complete"] != float64(2) {
-		t.Errorf("expected progress.complete 2, got %v", progress["complete"])
-	}
-	if progress["total"] != float64(4) {
-		t.Errorf("expected progress.total 4, got %v", progress["total"])
-	}
-
-	// Validate complete_tasks and incomplete_tasks are arrays
-	completeTasks, ok := spec3["complete_tasks"].([]any)
-	if !ok {
-		t.Fatalf("complete_tasks is not an array")
-	}
-	if len(completeTasks) != 2 {
-		t.Errorf("expected 2 complete tasks, got %d", len(completeTasks))
-	}
-
-	incompleteTasks, ok := spec3["incomplete_tasks"].([]any)
-	if !ok {
-		t.Fatalf("incomplete_tasks is not an array")
-	}
-	if len(incompleteTasks) != 2 {
-		t.Errorf("expected 2 incomplete tasks, got %d", len(incompleteTasks))
+	if path, ok := spec3["path"].(string); !ok || !strings.HasSuffix(path, filepath.Join("specs", "003-status", "SPEC.md")) {
+		t.Errorf("expected path to end with %q, got %v", filepath.Join("specs", "003-status", "SPEC.md"), spec3["path"])
 	}
 }
 
@@ -388,40 +404,13 @@ func TestListCommand_JSONOutput_EmptyList(t *testing.T) {
 	}
 }
 
-func TestListCommand_JSONOutput_IncludesTaskSections(t *testing.T) {
-	tmpDir := setupListTest(t, map[string]string{
-		"003-status.md": listInProgressSpec,
-	})
-
-	output, err := execList(t, tmpDir, map[string]string{"format": "json"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	var result []map[string]any
-	if err := json.Unmarshal([]byte(output), &result); err != nil {
-		t.Fatalf("failed to parse JSON: %v", err)
-	}
-
-	if len(result) != 1 {
-		t.Fatalf("expected 1 spec, got %d", len(result))
-	}
-
-	// Check that tasks include section info
-	completeTasks := result[0]["complete_tasks"].([]any)
-	firstTask := completeTasks[0].(map[string]any)
-	if firstTask["section"] != "Phase One" {
-		t.Errorf("expected section 'Phase One', got %v", firstTask["section"])
-	}
-}
-
 // ---- Filter tests ----
 
 func TestListCommand_FilterSingleStatus(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{
-		"001-setup.md":  listCompletedSpec,
-		"002-draft.md":  listDraftSpec,
-		"003-status.md": listInProgressSpec,
+		"001-setup/SPEC.md":  listCompletedSpec,
+		"002-draft/SPEC.md":  listDraftSpec,
+		"003-status/SPEC.md": listInProgressSpec,
 	})
 
 	output, err := execList(t, tmpDir, map[string]string{"status": "completed"})
@@ -441,10 +430,10 @@ func TestListCommand_FilterSingleStatus(t *testing.T) {
 
 func TestListCommand_FilterMultipleStatuses(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{
-		"001-setup.md":    listCompletedSpec,
-		"002-draft.md":    listDraftSpec,
-		"003-status.md":   listInProgressSpec,
-		"004-approved.md": listApprovedSpec,
+		"001-setup/SPEC.md":    listCompletedSpec,
+		"002-draft/SPEC.md":    listDraftSpec,
+		"003-status/SPEC.md":   listInProgressSpec,
+		"004-approved/SPEC.md": listApprovedSpec,
 	})
 
 	output, err := execList(t, tmpDir, map[string]string{"status": "draft,in-progress"})
@@ -467,8 +456,8 @@ func TestListCommand_FilterMultipleStatuses(t *testing.T) {
 
 func TestListCommand_FilterNoMatches(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{
-		"001-setup.md": listCompletedSpec,
-		"002-draft.md": listDraftSpec,
+		"001-setup/SPEC.md": listCompletedSpec,
+		"002-draft/SPEC.md": listDraftSpec,
 	})
 
 	output, err := execList(t, tmpDir, map[string]string{"status": "rejected"})
@@ -483,9 +472,9 @@ func TestListCommand_FilterNoMatches(t *testing.T) {
 
 func TestListCommand_FilterJSON(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{
-		"001-setup.md":  listCompletedSpec,
-		"002-draft.md":  listDraftSpec,
-		"003-status.md": listInProgressSpec,
+		"001-setup/SPEC.md":  listCompletedSpec,
+		"002-draft/SPEC.md":  listDraftSpec,
+		"003-status/SPEC.md": listInProgressSpec,
 	})
 
 	output, err := execList(t, tmpDir, map[string]string{"format": "json", "status": "in-progress"})

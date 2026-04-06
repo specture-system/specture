@@ -14,12 +14,13 @@ var newCmd = &cobra.Command{
 	Use:     "new",
 	Aliases: []string{"n", "add", "a"},
 	Short:   "Create a new spec",
-	Long: "Create a new spec file with proper numbering and branch.\n\n" +
+	Long: "Create a new spec with proper numbering and branch.\n\n" +
 		"Interactive mode (default):\n" +
 		"  Prompts for title, shows preview, opens editor\n\n" +
 		"Non-interactive mode:\n" +
-		"  specture new --title \"My Spec\"           # Provide title via flag\n" +
-		"  cat body.md | specture new --title \"...\" # Pipe content (requires --title)",
+		"  specture new --title \"My Spec\"                   # Provide title via flag\n" +
+		"  specture new --title \"My Spec\" --parent 1.4      # Create a child spec\n" +
+		"  cat body.md | specture new --title \"...\"         # Pipe content (requires --title)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get current working directory
 		cwd, err := os.Getwd()
@@ -72,7 +73,12 @@ var newCmd = &cobra.Command{
 		}
 
 		// Create context
-		ctx, err := new.NewContext(cwd, title)
+		parentRef, err := cmd.Flags().GetString("parent")
+		if err != nil {
+			return fmt.Errorf("failed to get parent flag: %w", err)
+		}
+
+		ctx, err := new.NewContext(cwd, title, parentRef)
 		if err != nil {
 			return err
 		}
@@ -88,7 +94,7 @@ var newCmd = &cobra.Command{
 		if !noBranch {
 			cmd.Printf("Branch: %s\n", ctx.BranchName)
 		}
-		cmd.Printf("File: %s\n", ctx.FileName)
+		cmd.Printf("File: %s\n", ctx.RelativePath)
 		cmd.Printf("Author: %s\n", ctx.Author)
 
 		if dryRun {
@@ -164,6 +170,7 @@ var newCmd = &cobra.Command{
 func init() {
 	newCmd.Flags().Bool("dry-run", false, "Preview changes without modifying files")
 	newCmd.Flags().StringP("title", "t", "", "Spec title (skips title prompt)")
+	newCmd.Flags().String("parent", "", "Parent spec reference for a child spec (e.g., 1.4)")
 	newCmd.Flags().Bool("no-editor", false, "Skip opening editor after creating spec")
 	newCmd.Flags().Bool("no-branch", false, "Skip creating git branch for spec")
 }

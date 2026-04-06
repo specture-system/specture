@@ -26,7 +26,7 @@ Move spec numbers into frontmatter and use plain slug filenames.
   - Frontmatter becomes: `number: 3`
   - `specture new` auto-assigns the next available number
   - `specture validate` detects duplicate numbers
-  - `specture list` is the primary way to see spec numbers (per the [List Command](/specs/list-command.md) spec)
+  - `specture list` is the primary way to see spec numbers (per the [List Command](specs/004-list-command/SPEC.md) spec)
   - Reordering precedence is a frontmatter edit, not a file rename
 - Considered: Keep numbers in filenames
   - Simple and visible in file explorers
@@ -63,7 +63,7 @@ After migration, old files keep their `NNN-slug.md` filenames and new files use 
 specture rename --spec 3 --slug status-command
 ```
 
-This would rename `003-status-command.md` to `status-command.md` and update any `[text](/specs/status-command.md)` links in other specs to `[text](/specs/status-command.md)`.
+This would rename `003-status-command.md` to `status-command.md` and update any `[text](specs/002-status-command/SPEC.md)` links in other specs to `[text](specs/002-status-command/SPEC.md)`.
 
 - `--dry-run` previews changes without applying them
 - If `--slug` is omitted, the command strips the numeric prefix from the current filename

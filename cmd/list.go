@@ -147,6 +147,16 @@ type listJSONOutput struct {
 	Progress        jsonProgress `json:"progress"`
 }
 
+type jsonTask struct {
+	Text    string `json:"text"`
+	Section string `json:"section"`
+}
+
+type jsonProgress struct {
+	Complete int `json:"complete"`
+	Total    int `json:"total"`
+}
+
 // formatListJSON outputs specs as a JSON array with full metadata.
 func formatListJSON(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 	output := make([]listJSONOutput, 0, len(specs))

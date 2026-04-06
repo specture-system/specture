@@ -26,7 +26,6 @@ func init() {
 	rootCmd.AddCommand(setupCmd)
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(validateCmd)
-	rootCmd.AddCommand(statusCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(renameCmd)
 	rootCmd.AddCommand(implementCmd)

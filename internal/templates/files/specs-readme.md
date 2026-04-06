@@ -5,7 +5,7 @@ Specs are design documents that describe planned changes to this project. Specs 
 When writing specs:
 
 - Do not number section headers (`##`/`###`).
-- Use inline markdown links relative to this README for any cross-spec mentions (for example, `[Status command](status-command/SPEC.md)`).
+- Use inline markdown links relative to this README for any cross-spec mentions (for example, `[Status command](../specs/status-command/SPEC.md)`).
 - Keep specs focused on goals, rationale, and design decisions.
 
 For full documentation on the spec system, workflow, and file format, see the [Specture System](https://github.com/specture-system/specture) repository. Run `specture help` for CLI usage.

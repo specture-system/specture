@@ -14,7 +14,7 @@ Describe the proposed change clearly. Include:
 - What problem it solves
 - High-level approach
 
-Track implementation progress in a sibling `PROGRESS.md` file next to this `SPEC.md`. Keep it ephemeral and untracked.
+Keep the spec focused on design rather than step-by-step implementation progress.
 
 ## Design Decisions
 

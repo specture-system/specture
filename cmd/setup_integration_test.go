@@ -78,7 +78,7 @@ func TestSetupCommand_CompleteWorkflow_DryRun(t *testing.T) {
 	if !strings.Contains(output, "Detected forge") {
 		t.Errorf("output should contain forge detection, got: %s", output)
 	}
-	if !strings.Contains(output, "Create specs/ directory") {
+	if !strings.Contains(output, "Create specs/ tree") {
 		t.Errorf("output should list what will be created, got: %s", output)
 	}
 }
@@ -91,7 +91,7 @@ func TestSetupCommand_OutputSummary(t *testing.T) {
 	if !strings.Contains(output, "Setup will:") {
 		t.Errorf("output should contain 'Setup will:' summary, got: %s", output)
 	}
-	if !strings.Contains(output, "Create specs/ directory") {
+	if !strings.Contains(output, "Create specs/ tree") {
 		t.Errorf("output should list specs directory creation, got: %s", output)
 	}
 	if !strings.Contains(output, "Create specs/README.md") {
@@ -107,7 +107,7 @@ func TestSetupCommand_DryRunPreviewsAllActions(t *testing.T) {
 	expectedItems := []string{
 		"Detected forge",
 		"Setup will:",
-		"Create specs/ directory",
+		"Create specs/ tree",
 		"Create specs/README.md",
 	}
 

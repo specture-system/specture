@@ -4,17 +4,15 @@ Detailed format specification for Specture spec files. Loaded on demand when cre
 
 ## File Location and Naming
 
-Specs live in the `specs/` directory with kebab-case slug filenames:
+Specs live in the `specs/` tree as directories containing `SPEC.md` files. Nested specs are created as child directories under their parent spec directory.
 
 ```
-specs/mvp.md
-specs/add-authentication-system.md
-specs/refactor-database-layer.md
+specs/mvp/SPEC.md
+specs/mvp/backend/SPEC.md
+specs/refactor-database-layer/SPEC.md
 ```
 
-Spec numbers are stored in the YAML frontmatter `number` field (not in the filename). The number determines precedence (higher number = higher precedence). `specture new` auto-assigns the next available number.
-
-Older specs may retain `NNN-slug.md` filenames — both naming patterns are valid. The CLI reads numbers exclusively from frontmatter. Use `specture rename` to strip numeric prefixes from old filenames.
+Spec numbers are stored in the YAML frontmatter `number` field (not in the directory name). The number is a local identifier within the spec's parent scope, and the full dotted reference is derived from the directory tree. `specture new` auto-assigns the next available number within the selected scope.
 
 ## Complete Example
 
@@ -90,9 +88,9 @@ Overview of the proposed change, immediately after the title. Can be paragraphs 
 
 For large descriptions, use additional `##` sections (e.g., `## Ideas`, `## Goals`, `## Benefits`).
 
-Implementation progress belongs in a sibling `PROGRESS.md` file next to the spec. Keep it temporary and ignored by git.
+Keep implementation progress out of the spec content. Use the spec for rationale and design decisions rather than a step-by-step task checklist.
 
-When referencing another spec, always use an inline markdown link with the correct relative path to that file (for example, `[Status command](status-command.md)`).
+When referencing another spec, always use an inline markdown link with the correct repo-root-relative path to that file (for example, `[Status command](specs/3-status-command/SPEC.md)`).
 
 ### Goals
 

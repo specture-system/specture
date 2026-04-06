@@ -21,9 +21,9 @@ var listCmd = &cobra.Command{
 	Short:   "List specs with filtering and output options",
 	Long: `List top-level specs or the children of a specific spec with optional filtering by status.
 
-By default, shows a compact table with Number, Status, and Name for top-level specs.
+By default, shows a compact table with Ref, Name, Status, and Path for top-level specs.
 Use --parent to show the immediate children of a parent spec.
-Use --format json for machine-readable output with full metadata.
+Use --format json for machine-readable output with ref, name, status, and path.
 
 Examples:
   specture list                          # List top-level specs
@@ -107,25 +107,33 @@ func formatListText(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 		return nil
 	}
 
-	// Calculate column widths from data
+	// Calculate column widths from data.
+	refWidth := len("REF")
 	statusWidth := len("STATUS")
 	nameWidth := len("NAME")
+	pathWidth := len("PATH")
 	for _, spec := range specs {
+		if len(spec.FullRef) > refWidth {
+			refWidth = len(spec.FullRef)
+		}
 		if len(spec.Status) > statusWidth {
 			statusWidth = len(spec.Status)
 		}
 		if len(spec.Name) > nameWidth {
 			nameWidth = len(spec.Name)
 		}
+		if len(spec.Path) > pathWidth {
+			pathWidth = len(spec.Path)
+		}
 	}
 
-	rowFmt := fmt.Sprintf("%%03d  %%-%ds  %%-%ds\n", statusWidth, nameWidth)
-	headerFmt := fmt.Sprintf("%%s  %%-%ds  %%s\n", statusWidth)
+	rowFmt := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%-%ds\n", refWidth, nameWidth, statusWidth, pathWidth)
+	headerFmt := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%-%ds\n", refWidth, nameWidth, statusWidth, pathWidth)
 
-	cmd.Printf(headerFmt, "NUM", "STATUS", "NAME")
+	cmd.Printf(headerFmt, "REF", "NAME", "STATUS", "PATH")
 
 	for _, spec := range specs {
-		cmd.Printf(rowFmt, spec.Number, spec.Status, spec.Name)
+		cmd.Printf(rowFmt, spec.FullRef, spec.Name, spec.Status, spec.Path)
 	}
 
 	return nil
@@ -133,11 +141,10 @@ func formatListText(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 
 // listJSONOutput represents a single spec in the JSON array output.
 type listJSONOutput struct {
-	Number  int    `json:"number"`
-	FullRef string `json:"full_ref"`
-	Name    string `json:"name"`
-	Status  string `json:"status"`
-	Path    string `json:"path"`
+	Ref    string `json:"ref"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
+	Path   string `json:"path"`
 }
 
 // formatListJSON outputs specs as a JSON array with full metadata.
@@ -146,11 +153,10 @@ func formatListJSON(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 
 	for _, spec := range specs {
 		output = append(output, listJSONOutput{
-			Number:  spec.Number,
-			FullRef: spec.FullRef,
-			Name:    spec.Name,
-			Status:  spec.Status,
-			Path:    spec.Path,
+			Ref:    spec.FullRef,
+			Name:   spec.Name,
+			Status: spec.Status,
+			Path:   spec.Path,
 		})
 	}
 

@@ -116,7 +116,7 @@ func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 
 	// Check header
 	header := lines[0]
-	for _, col := range []string{"NUM", "STATUS", "NAME"} {
+	for _, col := range []string{"REF", "NAME", "STATUS", "PATH"} {
 		if !strings.Contains(header, col) {
 			t.Errorf("header missing %q: %s", col, header)
 		}
@@ -124,25 +124,29 @@ func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 
 	// Check each data row has expected columns
 	expected := []struct {
-		number string
+		ref    string
 		status string
 		name   string
+		path   string
 	}{
-		{"001", "completed", "Setup Command"},
-		{"002", "draft", "Future Feature"},
-		{"003", "in-progress", "Status Command"},
+		{"1", "completed", "Setup Command", filepath.Join("specs", "001-setup.md")},
+		{"2", "draft", "Future Feature", filepath.Join("specs", "002-draft.md")},
+		{"3", "in-progress", "Status Command", filepath.Join("specs", "003-status.md")},
 	}
 
 	for i, exp := range expected {
 		row := lines[i+1] // skip header
-		if !strings.Contains(row, exp.number) {
-			t.Errorf("row %d: expected number %s, got: %s", i, exp.number, row)
+		if !strings.Contains(row, exp.ref) {
+			t.Errorf("row %d: expected ref %s, got: %s", i, exp.ref, row)
 		}
 		if !strings.Contains(row, exp.status) {
 			t.Errorf("row %d: expected status %s, got: %s", i, exp.status, row)
 		}
 		if !strings.Contains(row, exp.name) {
 			t.Errorf("row %d: expected name %s, got: %s", i, exp.name, row)
+		}
+		if !strings.HasSuffix(strings.TrimRight(row, " "), exp.path) {
+			t.Errorf("row %d: expected path suffix %s, got: %s", i, exp.path, row)
 		}
 	}
 }
@@ -165,14 +169,14 @@ func TestListCommand_TextOutput_SortedByNumber(t *testing.T) {
 	}
 
 	// Skip header (lines[0]), check data rows
-	if !strings.HasPrefix(lines[1], "001") {
-		t.Errorf("first data row should start with 001, got: %s", lines[1])
+	if !strings.HasPrefix(lines[1], "1") {
+		t.Errorf("first data row should start with 1, got: %s", lines[1])
 	}
-	if !strings.HasPrefix(lines[2], "002") {
-		t.Errorf("second data row should start with 002, got: %s", lines[2])
+	if !strings.HasPrefix(lines[2], "2") {
+		t.Errorf("second data row should start with 2, got: %s", lines[2])
 	}
-	if !strings.HasPrefix(lines[3], "003") {
-		t.Errorf("third data row should start with 003, got: %s", lines[3])
+	if !strings.HasPrefix(lines[3], "3") {
+		t.Errorf("third data row should start with 3, got: %s", lines[3])
 	}
 }
 
@@ -231,7 +235,7 @@ status: draft
 	if !strings.Contains(output, "Root") {
 		t.Fatalf("expected top-level nested-dir spec in output, got:\n%s", output)
 	}
-	if strings.Contains(output, "Nested") {
+	if strings.Contains(output, "  Nested") {
 		t.Fatalf("did not expect nested spec in top-level list output, got:\n%s", output)
 	}
 }
@@ -348,8 +352,8 @@ func TestListCommand_JSONOutput_AllSpecs(t *testing.T) {
 	}
 
 	// Check first spec (001)
-	if result[0]["number"] != float64(1) {
-		t.Errorf("expected first spec number 1, got %v", result[0]["number"])
+	if result[0]["ref"] != "1" {
+		t.Errorf("expected first spec ref 1, got %v", result[0]["ref"])
 	}
 	if result[0]["name"] != "Setup Command" {
 		t.Errorf("expected name 'Setup Command', got %v", result[0]["name"])
@@ -357,16 +361,22 @@ func TestListCommand_JSONOutput_AllSpecs(t *testing.T) {
 	if result[0]["status"] != "completed" {
 		t.Errorf("expected status 'completed', got %v", result[0]["status"])
 	}
+	if path, ok := result[0]["path"].(string); !ok || !strings.HasSuffix(path, filepath.Join("specs", "001-setup.md")) {
+		t.Errorf("expected first spec path to end with %q, got %v", filepath.Join("specs", "001-setup.md"), result[0]["path"])
+	}
 
 	// Check second spec (002)
 	if result[1]["status"] != "draft" {
 		t.Errorf("expected status 'draft', got %v", result[1]["status"])
 	}
+	if result[1]["ref"] != "2" {
+		t.Errorf("expected second spec ref 2, got %v", result[1]["ref"])
+	}
 
 	// Check third spec has the expected metadata fields
 	spec3 := result[2]
-	if spec3["full_ref"] != "3" {
-		t.Errorf("expected full_ref '3', got %v", spec3["full_ref"])
+	if spec3["ref"] != "3" {
+		t.Errorf("expected ref '3', got %v", spec3["ref"])
 	}
 	if path, ok := spec3["path"].(string); !ok || !strings.HasSuffix(path, filepath.Join("specs", "003-status.md")) {
 		t.Errorf("expected path to end with %q, got %v", filepath.Join("specs", "003-status.md"), spec3["path"])

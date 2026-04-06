@@ -501,8 +501,13 @@ func collectSpecPaths(rootDir, dir string, paths *[]string) error {
 }
 
 // shouldIncludeSpecPath returns true for files that count as specs.
-// Today that means flat markdown files at the specs root and, in the new
-// hierarchy, SPEC.md files inside spec directories. README files are skipped.
+// This is a transitional compatibility rule:
+// - keep root-level flat markdown specs working for existing repos
+// - accept nested SPEC.md files for the new hierarchy
+// - ignore README.md in either layout
+//
+// Once the repository is fully migrated to nested spec directories, the
+// root-level flat markdown allowance can be removed.
 func shouldIncludeSpecPath(rootDir, path string) bool {
 	base := filepath.Base(path)
 	if base == "README.md" {

@@ -43,7 +43,7 @@ func TestPlan_BasicRename(t *testing.T) {
 		"003-old-name/SPEC.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
 	})
 
-	result, err := Plan(dir, 3, "status-command")
+	result, err := Plan(dir, "3", "status-command")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -61,7 +61,7 @@ func TestPlan_EmptySlugError(t *testing.T) {
 		"003-status-command/SPEC.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
 	})
 
-	_, err := Plan(dir, 3, "")
+	_, err := Plan(dir, "3", "")
 	if err == nil {
 		t.Fatal("expected error for empty slug")
 	}
@@ -72,7 +72,7 @@ func TestPlan_CustomSlug(t *testing.T) {
 		"003-old-name/SPEC.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
 	})
 
-	result, err := Plan(dir, 3, "spec-status")
+	result, err := Plan(dir, "3", "spec-status")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -88,7 +88,7 @@ func TestPlan_FindsLinkReferences(t *testing.T) {
 		"005-list-command/SPEC.md": "---\nnumber: 5\n---\n\n# List Command\n\nSee [status](/specs/003-old-name/SPEC.md).\n\n## Task List\n",
 	})
 
-	result, err := Plan(dir, 3, "status-command")
+	result, err := Plan(dir, "3", "status-command")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestPlan_SameNameError(t *testing.T) {
 		"003-status-command/SPEC.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
 	})
 
-	_, err := Plan(dir, 3, "status-command")
+	_, err := Plan(dir, "3", "status-command")
 	if err == nil {
 		t.Fatal("expected error for same name")
 	}
@@ -128,7 +128,7 @@ func TestPlan_TargetExistsError(t *testing.T) {
 		"003-status-command/SPEC.md": "---\nnumber: 99\n---\n\n# Other\n\n## Task List\n",
 	})
 
-	_, err := Plan(dir, 3, "status-command")
+	_, err := Plan(dir, "3", "status-command")
 	if err == nil {
 		t.Fatal("expected error when target exists")
 	}
@@ -142,7 +142,7 @@ func TestExecute_RenamesFile(t *testing.T) {
 		"003-old-name/SPEC.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
 	})
 
-	result, err := Plan(dir, 3, "status-command")
+	result, err := Plan(dir, "3", "status-command")
 	if err != nil {
 		t.Fatalf("Plan error: %v", err)
 	}
@@ -168,7 +168,7 @@ func TestExecute_UpdatesLinks(t *testing.T) {
 		"005-list-command/SPEC.md": "---\nnumber: 5\n---\n\n# List\n\nSee [status](/specs/003-old-name/SPEC.md).\n\n## Task List\n",
 	})
 
-	result, err := Plan(dir, 3, "status-command")
+	result, err := Plan(dir, "3", "status-command")
 	if err != nil {
 		t.Fatalf("Plan error: %v", err)
 	}
@@ -197,7 +197,7 @@ func TestPlan_DryRunDoesNotModify(t *testing.T) {
 	})
 
 	// Plan only, don't execute
-	_, err := Plan(dir, 3, "status-command")
+	_, err := Plan(dir, "3", "status-command")
 	if err != nil {
 		t.Fatalf("Plan error: %v", err)
 	}
@@ -205,6 +205,26 @@ func TestPlan_DryRunDoesNotModify(t *testing.T) {
 	// File should still exist with old name
 	if _, err := os.Stat(filepath.Join(dir, "003-old-name", "SPEC.md")); err != nil {
 		t.Error("file should still exist after Plan (no Execute)")
+	}
+}
+
+func TestPlan_DottedRef(t *testing.T) {
+	dir := setupSpecsDir(t, map[string]string{
+		"000-root/SPEC.md":                    "---\nnumber: 0\n---\n\n# Root\n",
+		"000-root/001-child/SPEC.md":          "---\nnumber: 1\n---\n\n# Child\n",
+		"000-root/001-child/002-leaf/SPEC.md": "---\nnumber: 2\n---\n\n# Leaf\n",
+	})
+
+	result, err := Plan(dir, "0.1.2", "leaf-renamed")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if filepath.Base(filepath.Dir(result.OldPath)) != "002-leaf" {
+		t.Fatalf("expected old path to resolve to 002-leaf, got %s", filepath.Base(filepath.Dir(result.OldPath)))
+	}
+	if filepath.Base(filepath.Dir(result.NewPath)) != "002-leaf-renamed" {
+		t.Fatalf("expected new path to be 002-leaf-renamed, got %s", filepath.Base(filepath.Dir(result.NewPath)))
 	}
 }
 

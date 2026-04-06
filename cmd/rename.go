@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/specture-system/specture/internal/rename"
+	specpkg "github.com/specture-system/specture/internal/spec"
 	"github.com/spf13/cobra"
 )
 
@@ -42,13 +43,12 @@ func runRename(cmd *cobra.Command, args []string) error {
 	slug := args[0]
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 
-	// Parse spec number
-	var specNum int
-	if _, err := fmt.Sscanf(specArg, "%d", &specNum); err != nil {
-		return fmt.Errorf("invalid spec number: %s", specArg)
+	// Resolve the requested reference first so dotted refs are supported.
+	if _, err := specpkg.ResolvePath(specsDir, specArg); err != nil {
+		return err
 	}
 
-	result, err := rename.Plan(specsDir, specNum, slug)
+	result, err := rename.Plan(specsDir, specArg, slug)
 	if err != nil {
 		return err
 	}

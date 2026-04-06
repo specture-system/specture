@@ -26,14 +26,14 @@ type LinkUpdate struct {
 }
 
 // Plan creates a rename plan for a spec without executing it.
-func Plan(specsDir string, specNumber int, newSlug string) (*RenameResult, error) {
-	// Find the spec directory by number.
-	oldPath, err := specpkg.ResolvePath(specsDir, fmt.Sprintf("%d", specNumber))
+func Plan(specsDir string, specRef string, newSlug string) (*RenameResult, error) {
+	// Find the spec directory by reference.
+	oldPath, err := specpkg.ResolvePath(specsDir, specRef)
 	if err != nil {
 		return nil, err
 	}
 	if filepath.Base(oldPath) != "SPEC.md" {
-		return nil, fmt.Errorf("spec %d must resolve to a SPEC.md spec", specNumber)
+		return nil, fmt.Errorf("spec %s must resolve to a SPEC.md spec", specRef)
 	}
 
 	if newSlug == "" {
@@ -42,7 +42,12 @@ func Plan(specsDir string, specNumber int, newSlug string) (*RenameResult, error
 
 	oldDir := filepath.Dir(oldPath)
 	parentDir := filepath.Dir(oldDir)
-	newDirName := fmt.Sprintf("%03d-%s", specNumber, newSlug)
+	info, err := specpkg.Parse(oldPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse spec: %w", err)
+	}
+
+	newDirName := fmt.Sprintf("%03d-%s", info.Number, newSlug)
 	newDir := filepath.Join(parentDir, newDirName)
 	newPath := filepath.Join(newDir, "SPEC.md")
 

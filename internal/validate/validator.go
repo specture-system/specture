@@ -10,11 +10,9 @@ import (
 )
 
 var (
-	filenamePrefixPattern     = regexp.MustCompile(`^(\d{3})-`)
-	markdownSectionPattern    = regexp.MustCompile(`^(#{2,6})\s+(.+)$`)
-	numberedSectionPattern    = regexp.MustCompile(`^\d+(?:(?:\.\d+)+|[.)]|\s)`)
-	markdownInlineLinkPattern = regexp.MustCompile(`\[([^\]]+)\]\(([^)\s]+)\)`)
-	genericSpecLinkPattern    = regexp.MustCompile(`(?i)^spec\s+#?\w+$`)
+	filenamePrefixPattern  = regexp.MustCompile(`^(\d{3})-`)
+	markdownSectionPattern = regexp.MustCompile(`^(#{2,6})\s+(.+)$`)
+	numberedSectionPattern = regexp.MustCompile(`^\d+(?:(?:\.\d+)+|[.)]|\s)`)
 )
 
 // ValidationError represents a single validation error
@@ -108,13 +106,6 @@ func ValidateSpec(spec *Spec) *ValidationResult {
 		})
 	}
 
-	if genericLabel, ok := firstGenericSpecLinkLabel(spec.Source); ok {
-		result.Errors = append(result.Errors, ValidationError{
-			Field:   "links",
-			Message: fmt.Sprintf("spec links must use the referenced spec title, not generic labels like 'spec 12' or 'spec #12' (found %q)", genericLabel),
-		})
-	}
-
 	return result
 }
 
@@ -129,26 +120,6 @@ func firstNumberedSectionHeading(source []byte) (string, bool) {
 		title := strings.TrimSpace(matches[2])
 		if numberedSectionPattern.MatchString(title) {
 			return trimmed, true
-		}
-	}
-
-	return "", false
-}
-
-func firstGenericSpecLinkLabel(source []byte) (string, bool) {
-	matches := markdownInlineLinkPattern.FindAllSubmatch(source, -1)
-	for _, match := range matches {
-		if len(match) < 3 {
-			continue
-		}
-
-		label := strings.TrimSpace(string(match[1]))
-		target := strings.TrimSpace(string(match[2]))
-		if !strings.HasSuffix(target, ".md") {
-			continue
-		}
-		if genericSpecLinkPattern.MatchString(label) {
-			return label, true
 		}
 	}
 

@@ -379,7 +379,7 @@ Description.
 	}
 }
 
-func TestValidateSpec_GenericSpecLinkLabelIsInvalid(t *testing.T) {
+func TestValidateSpec_GenericSpecLinkLabelIsAllowed(t *testing.T) {
 	content := []byte(`---
 number: 8
 status: draft
@@ -402,23 +402,12 @@ See [spec 12](status-command.md) for background.
 	}
 
 	result := ValidateSpec(spec)
-	if result.IsValid() {
-		t.Fatal("expected validation to fail")
-	}
-
-	found := false
-	for _, e := range result.Errors {
-		if e.Field == "links" && strings.Contains(e.Message, "must use the referenced spec title") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Fatalf("expected generic spec link label error, got: %v", result.Errors)
+	if !result.IsValid() {
+		t.Fatalf("expected validation to pass, got errors: %v", result.Errors)
 	}
 }
 
-func TestValidateSpec_SpecHashLinkLabelIsInvalid(t *testing.T) {
+func TestValidateSpec_SpecHashLinkLabelIsAllowed(t *testing.T) {
 	content := []byte(`---
 number: 8
 status: draft
@@ -441,19 +430,8 @@ See [spec #12](status-command.md) for background.
 	}
 
 	result := ValidateSpec(spec)
-	if result.IsValid() {
-		t.Fatal("expected validation to fail")
-	}
-
-	found := false
-	for _, e := range result.Errors {
-		if e.Field == "links" && strings.Contains(e.Message, "must use the referenced spec title") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Fatalf("expected generic spec link label error, got: %v", result.Errors)
+	if !result.IsValid() {
+		t.Fatalf("expected validation to pass, got errors: %v", result.Errors)
 	}
 }
 

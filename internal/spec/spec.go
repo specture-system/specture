@@ -22,15 +22,13 @@ import (
 
 // SpecInfo represents a parsed spec file with all extracted metadata.
 type SpecInfo struct {
-	Path               string
-	Name               string
-	Number             int
-	FullRef            string
-	Status             string
-	CurrentTask        string
-	CurrentTaskSection string
-	CompleteTasks      []Task
-	IncompleteTasks    []Task
+	Path            string
+	Name            string
+	Number          int
+	FullRef         string
+	Status          string
+	CompleteTasks   []Task
+	IncompleteTasks []Task
 }
 
 // Task represents a single task item from a spec's task list.
@@ -100,15 +98,14 @@ func ParseContent(path string, content []byte) (*SpecInfo, error) {
 	// Extract title (first H1 heading)
 	info.Name = extractTitle(doc, content)
 
-	// Parse tasks from raw markdown lines
-	hasTaskList, completeTasks, incompleteTasks, currentTask, currentTaskSection := parseTasks(content)
+	// Parse tasks from raw markdown lines.
+	completeTasks, incompleteTasks := parseTasks(content)
 	info.CompleteTasks = completeTasks
 	info.IncompleteTasks = incompleteTasks
-	info.CurrentTask = currentTask
-	info.CurrentTaskSection = currentTaskSection
 
-	// Infer status
-	info.Status = inferStatus(fmStatus, hasTaskList, len(completeTasks), len(incompleteTasks))
+	// Status now comes from frontmatter only; specs are no longer inferred from
+	// task completion state.
+	info.Status = inferStatus(fmStatus)
 
 	return info, nil
 }
@@ -240,8 +237,8 @@ func extractTitle(doc ast.Node, source []byte) string {
 }
 
 // parseTasks parses the raw markdown to extract tasks from the ## Task List section.
-// Returns: hasTaskList, completeTasks, incompleteTasks, currentTask, currentTaskSection
-func parseTasks(content []byte) (bool, []Task, []Task, string, string) {
+// Returns completeTasks and incompleteTasks.
+func parseTasks(content []byte) ([]Task, []Task) {
 	scanner := bufio.NewScanner(bytes.NewReader(content))
 
 	// Collect all lines
@@ -267,16 +264,12 @@ func parseTasks(content []byte) (bool, []Task, []Task, string, string) {
 	}
 
 	if taskListStart < 0 {
-		return false, nil, nil, "", ""
+		return nil, nil
 	}
 
 	var completeTasks []Task
 	var incompleteTasks []Task
-	currentTask := ""
-	currentTaskSection := ""
 	currentSection := ""
-	// Track line index of first incomplete top-level task for section scan
-	firstIncompleteIdx := -1
 
 	for i := taskListStart; i < taskListEnd; i++ {
 		line := lines[i]
@@ -311,25 +304,10 @@ func parseTasks(content []byte) (bool, []Task, []Task, string, string) {
 				Section:  currentSection,
 				Subtree:  taskSubtree,
 			})
-			if currentTask == "" {
-				currentTask = taskText
-				firstIncompleteIdx = i
-			}
 		}
 	}
 
-	// Find the current task section by scanning upward from the first incomplete task
-	if firstIncompleteIdx >= 0 {
-		for i := firstIncompleteIdx - 1; i >= taskListStart; i-- {
-			trimmed := strings.TrimSpace(lines[i])
-			if strings.HasPrefix(trimmed, "### ") {
-				currentTaskSection = strings.TrimPrefix(trimmed, "### ")
-				break
-			}
-		}
-	}
-
-	return true, completeTasks, incompleteTasks, currentTask, currentTaskSection
+	return completeTasks, incompleteTasks
 }
 
 func isTopLevelTaskLine(line string) bool {
@@ -387,36 +365,13 @@ func extractTaskListSectionOrders(lines []string) map[string]int {
 	return orders
 }
 
-// inferStatus determines the spec status based on frontmatter and task state.
-// Explicit frontmatter status always overrides inference.
-func inferStatus(fmStatus string, hasTaskList bool, completeCount, incompleteCount int) string {
-	// Explicit frontmatter status always wins
+// inferStatus determines the spec status from frontmatter only.
+func inferStatus(fmStatus string) string {
 	if fmStatus != "" {
 		return fmStatus
 	}
 
-	// No task list → draft
-	if !hasTaskList {
-		return "draft"
-	}
-
-	// Has task list but no tasks at all → draft
-	if completeCount == 0 && incompleteCount == 0 {
-		return "draft"
-	}
-
-	// No complete tasks → draft
-	if completeCount == 0 {
-		return "draft"
-	}
-
-	// All complete → completed
-	if incompleteCount == 0 {
-		return "completed"
-	}
-
-	// Mixed → in-progress
-	return "in-progress"
+	return "draft"
 }
 
 // FindAll finds all nested SPEC.md files in the given specs directory.

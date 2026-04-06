@@ -9,7 +9,6 @@ import (
 const (
 	StatusApproved   = "approved"
 	StatusInProgress = "in-progress"
-	StatusCompleted  = "completed"
 )
 
 // RemainingSection groups all remaining tasks for a task-list section.

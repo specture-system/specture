@@ -164,7 +164,6 @@ func executeTaskWithReviewWithContext(workDir, specPath, sectionName, backend st
 func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, backend string, printf PrintfFunc, deps executeDeps) error {
 	deps = withExecuteDepDefaults(deps)
 	sectionOrderByName := specpkg.TaskListSectionOrders(info.Path)
-	currentStatus := info.Status
 	initialBranch, err := deps.getCurrentBranch(workDir)
 	if err != nil {
 		return fmt.Errorf("failed to determine current branch before execution: %w", err)
@@ -206,22 +205,8 @@ func executePlanWithDeps(workDir string, info *specpkg.SpecInfo, plan Plan, back
 				return err
 			}
 
-			nextStatus := ""
-			if currentStatus == StatusApproved {
-				nextStatus = StatusInProgress
-			}
-
-			if err := applyTaskProgress(info.Path, section.Name, task.Text, nextStatus); err != nil {
-				return fmt.Errorf("failed to update spec progress for task %q: %w", task.Text, err)
-			}
-
 			if err := commitAcceptedTaskWithRetries(workDir, info, section.Name, backend, task, printf, deps); err != nil {
 				return err
-			}
-
-			if nextStatus == StatusInProgress {
-				currentStatus = StatusInProgress
-				info.Status = StatusInProgress
 			}
 		}
 

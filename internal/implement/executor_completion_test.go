@@ -9,7 +9,7 @@ import (
 	specpkg "github.com/specture-system/specture/internal/spec"
 )
 
-func TestExecutePlan_UpdatesApprovedSpecAndCommitsAcceptedTasks(t *testing.T) {
+func TestExecutePlan_LeavesApprovedSpecUnchangedAndCommitsAcceptedTasks(t *testing.T) {
 	tmpDir := t.TempDir()
 	specPath := filepath.Join(tmpDir, "spec.md")
 	specBody := `---
@@ -81,14 +81,14 @@ status: approved
 	}
 
 	updatedText := string(updated)
-	if !strings.Contains(updatedText, "status: in-progress") {
-		t.Fatalf("expected spec status to transition to in-progress, got:\n%s", updatedText)
+	if !strings.Contains(updatedText, "status: approved") {
+		t.Fatalf("expected spec status to remain approved, got:\n%s", updatedText)
 	}
-	if !strings.Contains(updatedText, "- [x] Add failing tests for in-progress transition") {
-		t.Fatalf("expected first task to be checked off, got:\n%s", updatedText)
+	if !strings.Contains(updatedText, "- [ ] Add failing tests for in-progress transition") {
+		t.Fatalf("expected first task to remain unchecked, got:\n%s", updatedText)
 	}
-	if !strings.Contains(updatedText, "- [x] Implement deterministic task commits") {
-		t.Fatalf("expected second task to be checked off, got:\n%s", updatedText)
+	if !strings.Contains(updatedText, "- [ ] Implement deterministic task commits") {
+		t.Fatalf("expected second task to remain unchecked, got:\n%s", updatedText)
 	}
 
 	expectedCommits := []string{
@@ -111,7 +111,7 @@ status: approved
 	}
 }
 
-func TestExecutePlan_MarksSpecCompletedAfterAllRemainingTasksFinish(t *testing.T) {
+func TestExecutePlan_LeavesInProgressSpecUnchangedAfterAllRemainingTasksFinish(t *testing.T) {
 	tmpDir := t.TempDir()
 	specPath := filepath.Join(tmpDir, "spec.md")
 	specBody := `---
@@ -168,8 +168,11 @@ status: in-progress
 	}
 
 	updatedText := string(updated)
-	if !strings.Contains(updatedText, "status: completed") {
-		t.Fatalf("expected spec status to transition to completed when all remaining tasks are done, got:\n%s", updatedText)
+	if !strings.Contains(updatedText, "status: in-progress") {
+		t.Fatalf("expected spec status to remain in-progress, got:\n%s", updatedText)
+	}
+	if !strings.Contains(updatedText, "- [ ] Implement the final completion update when all remaining tasks are done") {
+		t.Fatalf("expected task to remain unchecked, got:\n%s", updatedText)
 	}
 }
 

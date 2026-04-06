@@ -142,61 +142,6 @@ func TestParseTasks_SectionField(t *testing.T) {
 	}
 }
 
-// ---------- Current task / section tests ----------
-
-func TestCurrentTask_HappyPath(t *testing.T) {
-	content := buildSpec("", "Test", "### Setup\n\n- [x] Done task\n- [ ] Current task\n- [ ] Future task")
-	info, err := ParseContent("001-test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if info.CurrentTask != "Current task" {
-		t.Errorf("expected CurrentTask 'Current task', got %q", info.CurrentTask)
-	}
-	if info.CurrentTaskSection != "Setup" {
-		t.Errorf("expected CurrentTaskSection 'Setup', got %q", info.CurrentTaskSection)
-	}
-}
-
-func TestCurrentTask_NoIncompleteTasks(t *testing.T) {
-	content := buildSpec("", "Test", "- [x] Done 1\n- [x] Done 2")
-	info, err := ParseContent("001-test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if info.CurrentTask != "" {
-		t.Errorf("expected empty CurrentTask, got %q", info.CurrentTask)
-	}
-}
-
-func TestCurrentTask_NoSectionHeader(t *testing.T) {
-	content := buildSpec("", "Test", "- [x] Done\n- [ ] No section above me")
-	info, err := ParseContent("001-test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if info.CurrentTask != "No section above me" {
-		t.Errorf("expected CurrentTask 'No section above me', got %q", info.CurrentTask)
-	}
-	if info.CurrentTaskSection != "" {
-		t.Errorf("expected empty CurrentTaskSection, got %q", info.CurrentTaskSection)
-	}
-}
-
-func TestCurrentTask_MultipleSections(t *testing.T) {
-	content := buildSpec("", "Test", "### Phase 1\n\n- [x] Done 1\n- [x] Done 2\n\n### Phase 2\n\n- [ ] First in phase 2\n- [ ] Second in phase 2\n\n### Phase 3\n\n- [ ] Task in phase 3")
-	info, err := ParseContent("001-test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if info.CurrentTask != "First in phase 2" {
-		t.Errorf("expected CurrentTask 'First in phase 2', got %q", info.CurrentTask)
-	}
-	if info.CurrentTaskSection != "Phase 2" {
-		t.Errorf("expected CurrentTaskSection 'Phase 2', got %q", info.CurrentTaskSection)
-	}
-}
-
 // ---------- Status inference tests ----------
 
 func TestStatusInference(t *testing.T) {
@@ -206,44 +151,29 @@ func TestStatusInference(t *testing.T) {
 		wantStatus string
 	}{
 		{
-			name:       "no task list, no frontmatter → draft",
+			name:       "no frontmatter, no task list → draft",
 			content:    []byte("# Test\n\nJust a description.\n"),
 			wantStatus: "draft",
 		},
 		{
-			name:       "no task list, frontmatter approved → approved",
-			content:    buildSpec("status: approved", "Test", ""),
+			name:       "no frontmatter, task list present → draft",
+			content:    buildSpec("", "Test", "- [x] Done\n- [ ] Not done"),
+			wantStatus: "draft",
+		},
+		{
+			name:       "frontmatter approved wins over task list state → approved",
+			content:    buildSpec("status: approved", "Test", "- [x] Done\n- [ ] Not done"),
 			wantStatus: "approved",
 		},
 		{
-			name:       "task list with no tasks → draft",
-			content:    buildSpec("", "Test", "No actual tasks here."),
-			wantStatus: "draft",
-		},
-		{
-			name:       "all incomplete → draft",
-			content:    buildSpec("", "Test", "- [ ] Task 1\n- [ ] Task 2"),
-			wantStatus: "draft",
-		},
-		{
-			name:       "mixed → in-progress",
-			content:    buildSpec("", "Test", "- [x] Done\n- [ ] Not done"),
-			wantStatus: "in-progress",
-		},
-		{
-			name:       "all complete → completed",
-			content:    buildSpec("", "Test", "- [x] Done 1\n- [x] Done 2"),
-			wantStatus: "completed",
-		},
-		{
-			name:       "frontmatter draft overrides mixed tasks → draft",
-			content:    buildSpec("status: draft", "Test", "- [x] Done\n- [ ] Not done"),
-			wantStatus: "draft",
-		},
-		{
-			name:       "frontmatter completed overrides incomplete tasks → completed",
+			name:       "frontmatter completed wins over task list state → completed",
 			content:    buildSpec("status: completed", "Test", "- [ ] Not done\n- [ ] Also not done"),
 			wantStatus: "completed",
+		},
+		{
+			name:       "frontmatter draft wins over task list state → draft",
+			content:    buildSpec("status: draft", "Test", "- [x] Done\n- [ ] Not done"),
+			wantStatus: "draft",
 		},
 	}
 
@@ -557,12 +487,12 @@ func TestParseAll_NonexistentDir(t *testing.T) {
 func TestFindCurrent_ReturnsFirstInProgress(t *testing.T) {
 	dir := t.TempDir()
 
-	// Spec 1: completed (all tasks done)
-	spec1 := buildSpec("number: 1", "First", "- [x] Done")
-	// Spec 2: in-progress (mixed tasks)
-	spec2 := buildSpec("number: 2", "Second", "- [x] Done\n- [ ] Not done")
+	// Spec 1: completed
+	spec1 := buildSpec("number: 1\nstatus: completed", "First", "")
+	// Spec 2: in-progress
+	spec2 := buildSpec("number: 2\nstatus: in-progress", "Second", "")
 	// Spec 3: also in-progress
-	spec3 := buildSpec("number: 3", "Third", "- [x] A\n- [ ] B")
+	spec3 := buildSpec("number: 3\nstatus: in-progress", "Third", "")
 
 	files := map[string][]byte{
 		"001-first/SPEC.md":  spec1,
@@ -597,9 +527,9 @@ func TestFindCurrent_NoInProgress(t *testing.T) {
 	dir := t.TempDir()
 
 	// Spec 1: completed
-	spec1 := buildSpec("number: 1", "First", "- [x] Done")
-	// Spec 2: draft (all incomplete)
-	spec2 := buildSpec("number: 2", "Second", "- [ ] Not started")
+	spec1 := buildSpec("number: 1\nstatus: completed", "First", "")
+	// Spec 2: draft
+	spec2 := buildSpec("number: 2\nstatus: draft", "Second", "")
 
 	files := map[string][]byte{
 		"001-first/SPEC.md":  spec1,

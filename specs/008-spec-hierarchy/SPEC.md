@@ -1,6 +1,6 @@
 ---
 number: 8
-status: in-progress
+status: completed
 author: Addison Emig
 creation_date: 2026-03-27
 approved_by: Bennett Moore

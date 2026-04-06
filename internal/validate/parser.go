@@ -7,7 +7,6 @@ import (
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 	gmfrontmatter "go.abhg.dev/goldmark/frontmatter"
@@ -28,16 +27,13 @@ type Frontmatter struct {
 // Spec represents a parsed spec file for validation purposes.
 //
 // Note: The internal/spec package provides a higher-level SpecInfo type used
-// for status display, task extraction, and spec discovery. This Spec type
-// serves a different purpose: it retains the raw goldmark AST (Document) and
-// validation-specific fields (HasTaskList, Source) needed by the validator.
-// File discovery (FindAll, ResolvePath) is already delegated to internal/spec
-// via cmd/validate.go.
+// for status display and spec discovery. This Spec type serves a different
+// purpose: it retains the raw goldmark AST (Document) and source bytes needed
+// by the validator.
 type Spec struct {
 	Path        string
 	Frontmatter *Frontmatter
 	Title       string
-	HasTaskList bool
 	Source      []byte
 	Document    ast.Node
 }
@@ -57,11 +53,10 @@ func ParseSpec(path string) (*Spec, error) {
 // This parser retains the raw goldmark AST for validation rules.
 // For higher-level spec info (tasks, status inference), see internal/spec.ParseContent.
 func ParseSpecContent(path string, content []byte) (*Spec, error) {
-	// Create goldmark parser with frontmatter and task list extensions
+	// Create goldmark parser with frontmatter support.
 	md := goldmark.New(
 		goldmark.WithExtensions(
 			&gmfrontmatter.Extender{},
-			extension.TaskList,
 		),
 	)
 
@@ -83,9 +78,6 @@ func ParseSpecContent(path string, content []byte) (*Spec, error) {
 
 	// Extract title (first H1 heading)
 	spec.Title = extractTitle(doc, content)
-
-	// Check for task list heading
-	spec.HasTaskList = hasTaskList(doc, content)
 
 	return spec, nil
 }
@@ -126,29 +118,4 @@ func extractTitle(doc ast.Node, source []byte) string {
 		return ast.WalkContinue, nil
 	})
 	return title
-}
-
-// hasTaskList checks if the document contains a "Task List" heading (H2)
-func hasTaskList(doc ast.Node, source []byte) bool {
-	found := false
-	ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-		if !entering {
-			return ast.WalkContinue, nil
-		}
-		if heading, ok := n.(*ast.Heading); ok && heading.Level == 2 {
-			// Get the text content of the heading
-			var buf bytes.Buffer
-			for child := heading.FirstChild(); child != nil; child = child.NextSibling() {
-				if textNode, ok := child.(*ast.Text); ok {
-					buf.Write(textNode.Segment.Value(source))
-				}
-			}
-			if buf.String() == "Task List" {
-				found = true
-				return ast.WalkStop, nil
-			}
-		}
-		return ast.WalkContinue, nil
-	})
-	return found
 }

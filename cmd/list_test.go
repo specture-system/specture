@@ -220,6 +220,53 @@ func TestListCommand_TextOutput_NoSpecs(t *testing.T) {
 	}
 }
 
+func TestListCommand_TextOutput_IgnoresNestedSpecs(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup.md": listCompletedSpec,
+	})
+
+	parentDir := filepath.Join(tmpDir, "specs", "1-root")
+	nestedDir := filepath.Join(parentDir, "2-child")
+	if err := os.MkdirAll(nestedDir, 0o755); err != nil {
+		t.Fatalf("failed to create nested dir: %v", err)
+	}
+	parentSpec := `---
+number: 1
+status: approved
+---
+
+# Root
+`
+	nestedSpec := `---
+number: 2
+status: draft
+---
+
+# Nested
+`
+	if err := os.WriteFile(filepath.Join(parentDir, "SPEC.md"), []byte(parentSpec), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(nestedDir, "SPEC.md"), []byte(nestedSpec), 0o644); err != nil {
+		t.Fatalf("failed to write nested spec: %v", err)
+	}
+
+	output, err := execList(t, tmpDir, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(output, "Setup Command") {
+		t.Fatalf("expected top-level spec in output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "Root") {
+		t.Fatalf("expected top-level nested-dir spec in output, got:\n%s", output)
+	}
+	if strings.Contains(output, "Nested") {
+		t.Fatalf("did not expect nested spec in top-level list output, got:\n%s", output)
+	}
+}
+
 func TestListCommand_NoSpecsDirectory(t *testing.T) {
 	tmpDir := setupListTest(t, nil) // no specs dir created
 

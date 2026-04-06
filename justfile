@@ -40,7 +40,7 @@ lint:
 tidy:
   go mod tidy
 
-check: format lint
+check: format lint test
 
 # Install the CLI locally
 install:

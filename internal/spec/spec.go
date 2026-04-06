@@ -420,54 +420,41 @@ func inferStatus(fmStatus string, hasTaskList bool, completeCount, incompleteCou
 }
 
 // FindAll finds all spec files in the given specs directory.
-// Spec files are .md files excluding README.md.
-// Both NNN-slug.md and slug.md naming patterns are supported.
+// It supports both the current flat .md layout and the future nested
+// SPEC.md layout inside spec directories.
 func FindAll(specsDir string) ([]string, error) {
 	if _, err := os.Stat(specsDir); os.IsNotExist(err) {
 		return nil, fmt.Errorf("specs directory not found: %s", specsDir)
 	}
 
-	entries, err := os.ReadDir(specsDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read specs directory: %w", err)
-	}
-
 	var paths []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		if strings.HasSuffix(name, ".md") && name != "README.md" {
-			paths = append(paths, filepath.Join(specsDir, name))
-		}
+	if err := collectSpecPaths(specsDir, specsDir, &paths); err != nil {
+		return nil, err
 	}
 
+	sort.Strings(paths)
 	return paths, nil
 }
 
-// ResolvePath resolves a spec argument to a file path.
+// ResolvePath resolves a spec reference or path to a file path.
 // Accepts:
 //   - Full path: specs/000-mvp.md or specs/my-feature.md
-//   - Just number with or without leading zeros: 0, 00, 000
+//   - Numeric references with or without leading zeros: 0, 00, 000
+//   - Hierarchical references: 1.4.3
 //
-// Looks up by frontmatter number field.
+// Lookups are performed against the parsed full reference derived from the
+// directory tree.
 func ResolvePath(specsDir, arg string) (string, error) {
 	// If it's already a path that exists, use it
 	if _, err := os.Stat(arg); err == nil {
 		return arg, nil
 	}
 
-	// Try to find by number - accept 1-3 digit numbers
-	numberPattern := regexp.MustCompile(`^(\d{1,3})$`)
-	matches := numberPattern.FindStringSubmatch(arg)
-	if len(matches) < 2 {
-		return "", fmt.Errorf("invalid spec reference: %s (expected number like 0, 00, or 000)", arg)
+	fullRef, err := normalizeSpecRef(arg)
+	if err != nil {
+		return "", err
 	}
 
-	targetNum, _ := strconv.Atoi(matches[1])
-
-	// Parse all specs and find by frontmatter number
 	paths, err := FindAll(specsDir)
 	if err != nil {
 		return "", err
@@ -478,10 +465,85 @@ func ResolvePath(specsDir, arg string) (string, error) {
 		if err != nil {
 			continue
 		}
-		if info.Number == targetNum {
+		if info.FullRef == fullRef {
 			return p, nil
 		}
 	}
 
 	return "", fmt.Errorf("spec not found: %s", arg)
+}
+
+// collectSpecPaths walks the specs tree and records every discoverable spec file.
+// It keeps the current flat root .md files and the future nested SPEC.md files.
+func collectSpecPaths(rootDir, dir string, paths *[]string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("failed to read specs directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		path := filepath.Join(dir, entry.Name())
+		if entry.IsDir() {
+			if err := collectSpecPaths(rootDir, path, paths); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if !shouldIncludeSpecPath(rootDir, path) {
+			continue
+		}
+
+		*paths = append(*paths, path)
+	}
+
+	return nil
+}
+
+// shouldIncludeSpecPath returns true for files that count as specs.
+// This is a transitional compatibility rule:
+// - keep root-level flat markdown specs working for existing repos
+// - accept nested SPEC.md files for the new hierarchy
+// - ignore README.md in either layout
+//
+// Once the repository is fully migrated to nested spec directories, the
+// root-level flat markdown allowance can be removed.
+func shouldIncludeSpecPath(rootDir, path string) bool {
+	base := filepath.Base(path)
+	if base == "README.md" {
+		return false
+	}
+
+	if base == "SPEC.md" {
+		return true
+	}
+
+	parentDir := filepath.Dir(path)
+	return parentDir == rootDir && strings.HasSuffix(base, ".md")
+}
+
+// normalizeSpecRef canonicalizes a user-provided reference so lookup can match
+// against parsed FullRef values. It trims whitespace and removes leading zeros
+// from each segment, so values like 001.002 compare as 1.2.
+func normalizeSpecRef(arg string) (string, error) {
+	trimmed := strings.TrimSpace(arg)
+	if trimmed == "" {
+		return "", fmt.Errorf("invalid spec reference: %s (expected a numeric reference like 0, 00, 000, or 1.4.3)", arg)
+	}
+
+	parts := strings.Split(trimmed, ".")
+	normalized := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part == "" {
+			return "", fmt.Errorf("invalid spec reference: %s (expected a numeric reference like 0, 00, 000, or 1.4.3)", arg)
+		}
+
+		number, err := strconv.Atoi(part)
+		if err != nil || number < 0 {
+			return "", fmt.Errorf("invalid spec reference: %s (expected a numeric reference like 0, 00, 000, or 1.4.3)", arg)
+		}
+		normalized = append(normalized, strconv.Itoa(number))
+	}
+
+	return strings.Join(normalized, "."), nil
 }

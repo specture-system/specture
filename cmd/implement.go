@@ -27,6 +27,7 @@ task.
 
 Examples:
   specture implement --spec 7
+  specture implement --spec 1.4.3
   specture implement --spec 7 --agent codex`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runImplement(cmd, args)
@@ -34,7 +35,7 @@ Examples:
 }
 
 func init() {
-	implementCmd.Flags().StringP("spec", "s", "", "Spec number to implement (required)")
+	implementCmd.Flags().StringP("spec", "s", "", "Spec reference to implement (required)")
 	implementCmd.Flags().String("agent", "", "Agent backend override: opencode or codex")
 	implementCmd.Flags().Bool("dry-run", false, "Print execution plan and exit before making changes")
 	implementCmd.MarkFlagRequired("spec")

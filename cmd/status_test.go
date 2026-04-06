@@ -251,6 +251,70 @@ func TestStatusCommand_SpecFlag(t *testing.T) {
 	}
 }
 
+func TestStatusCommand_SpecFlag_DottedRef(t *testing.T) {
+	tmpDir := t.TempDir()
+	specsDir := filepath.Join(tmpDir, "specs")
+	parentDir := filepath.Join(specsDir, "1-root")
+	childDir := filepath.Join(parentDir, "2-child")
+	if err := os.MkdirAll(childDir, 0o755); err != nil {
+		t.Fatalf("failed to create nested spec dirs: %v", err)
+	}
+
+	parentSpec := `---
+number: 1
+status: approved
+---
+
+# Root
+`
+	childSpec := `---
+number: 2
+status: in-progress
+---
+
+# Child
+
+## Task List
+
+- [x] Done
+- [ ] Remaining
+`
+	if err := os.WriteFile(filepath.Join(parentDir, "SPEC.md"), []byte(parentSpec), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(childDir, "SPEC.md"), []byte(childSpec), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+
+	originalWd, _ := os.Getwd()
+	t.Cleanup(func() { os.Chdir(originalWd) })
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("failed to chdir: %v", err)
+	}
+
+	out := &bytes.Buffer{}
+	cmd := statusCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	if err := cmd.Flags().Set("spec", "1.2"); err != nil {
+		t.Fatalf("failed to set spec flag: %v", err)
+	}
+	defer cmd.Flags().Set("spec", "")
+
+	if err := runStatus(cmd, []string{}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "Spec 002: Child") {
+		t.Fatalf("expected child spec output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "Reference: 1.2") {
+		t.Fatalf("expected dotted reference in output, got:\n%s", output)
+	}
+}
+
 func TestStatusCommand_NoSpecsDirectory(t *testing.T) {
 	// No specs dir at all
 	tmpDir := setupStatusTest(t, nil)

@@ -265,19 +265,34 @@ func TestStatusInference(t *testing.T) {
 func TestFindAll_MatchesOnlySpecFiles(t *testing.T) {
 	dir := t.TempDir()
 
-	// Create spec files and non-spec files
-	// FindAll includes all .md files except README.md
+	// Create spec files and non-spec files.
+	// FindAll includes top-level flat .md files and nested SPEC.md files.
 	files := map[string]bool{
-		"001-first.md":  true,
-		"002-second.md": true,
-		"010-tenth.md":  true,
-		"my-feature.md": true, // slug-only filename
-		"README.md":     false,
-		"notes.txt":     false,
+		"001-first.md":         true,
+		"002-second.md":        true,
+		"010-tenth.md":         true,
+		"my-feature.md":        true, // slug-only filename
+		"README.md":            false,
+		"notes.txt":            false,
+		"nested/SPEC.md":       true,
+		"nested/README.md":     false,
+		"nested/notes.txt":     false,
+		"nested/deeper.md":     false,
+		"nested/sub/SPEC.md":   true,
+		"nested/sub/README.md": false,
 	}
 
-	for name := range files {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte("# Test\n"), 0644); err != nil {
+	for name, isSpec := range files {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("failed to create parent dir for %s: %v", name, err)
+		}
+
+		content := "# Test\n"
+		if isSpec {
+			content = "---\nnumber: 0\n---\n\n# Test\n"
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 			t.Fatalf("failed to create file %s: %v", name, err)
 		}
 	}
@@ -301,9 +316,12 @@ func TestFindAll_MatchesOnlySpecFiles(t *testing.T) {
 
 	// Verify all returned paths are actual spec files
 	for _, p := range paths {
-		base := filepath.Base(p)
-		if !files[base] {
-			t.Errorf("unexpected file in results: %s", base)
+		rel, err := filepath.Rel(dir, p)
+		if err != nil {
+			t.Fatalf("failed to compute relative path: %v", err)
+		}
+		if !files[rel] {
+			t.Errorf("unexpected file in results: %s", rel)
 		}
 	}
 }
@@ -376,6 +394,42 @@ func TestResolvePath(t *testing.T) {
 				t.Errorf("expected path %q, got %q", tt.wantPath, result)
 			}
 		})
+	}
+}
+
+func TestResolvePath_DottedRef(t *testing.T) {
+	dir := t.TempDir()
+
+	parentDir := filepath.Join(dir, "1-root")
+	childDir := filepath.Join(parentDir, "2-child")
+	if err := os.MkdirAll(childDir, 0o755); err != nil {
+		t.Fatalf("failed to create nested directories: %v", err)
+	}
+
+	parentPath := filepath.Join(parentDir, "SPEC.md")
+	childPath := filepath.Join(childDir, "SPEC.md")
+
+	if err := os.WriteFile(parentPath, []byte("---\nnumber: 1\n---\n\n# Root\n"), 0o644); err != nil {
+		t.Fatalf("failed to create parent spec: %v", err)
+	}
+	if err := os.WriteFile(childPath, []byte("---\nnumber: 2\n---\n\n# Child\n"), 0o644); err != nil {
+		t.Fatalf("failed to create child spec: %v", err)
+	}
+
+	result, err := ResolvePath(dir, "1.2")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != childPath {
+		t.Fatalf("expected child path %q, got %q", childPath, result)
+	}
+
+	result, err = ResolvePath(dir, "001.002")
+	if err != nil {
+		t.Fatalf("unexpected error for padded dotted ref: %v", err)
+	}
+	if result != childPath {
+		t.Fatalf("expected child path %q for padded ref, got %q", childPath, result)
 	}
 }
 

@@ -18,13 +18,13 @@ var listCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{"ls"},
 	Short:   "List specs with filtering and output options",
-	Long: `List all specs with optional filtering by status and task display.
+	Long: `List top-level specs with optional filtering by status and task display.
 
-By default, shows a compact table with Number, Status, Progress, and Name.
+By default, shows a compact table with Number, Status, Progress, and Name for top-level specs.
 Use --format json for machine-readable output with full metadata.
 
 Examples:
-  specture list                          # List all specs
+  specture list                          # List top-level specs
   specture list --status in-progress     # Filter by status
   specture list --status draft,approved  # Multiple statuses
   specture list -f json                  # JSON output`,
@@ -56,6 +56,9 @@ func runList(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Keep list output scoped to top-level specs until --parent filtering lands.
+	specs = filterTopLevelSpecs(specs, specsDir)
+
 	// Apply status filter
 	statusFilter, _ := cmd.Flags().GetString("status")
 	if statusFilter != "" {
@@ -85,6 +88,27 @@ func filterByStatus(specs []*specpkg.SpecInfo, filter string) []*specpkg.SpecInf
 		}
 	}
 	return filtered
+}
+
+// filterTopLevelSpecs keeps only specs that live directly under the specs
+// directory. This preserves the current list command behavior while discovery
+// becomes recursive.
+func filterTopLevelSpecs(specs []*specpkg.SpecInfo, specsDir string) []*specpkg.SpecInfo {
+	var filtered []*specpkg.SpecInfo
+	for _, spec := range specs {
+		if isTopLevelSpec(spec.Path, specsDir) {
+			filtered = append(filtered, spec)
+		}
+	}
+	return filtered
+}
+
+func isTopLevelSpec(specPath, specsDir string) bool {
+	if filepath.Dir(specPath) == specsDir {
+		return filepath.Base(specPath) != "README.md"
+	}
+
+	return filepath.Base(specPath) == "SPEC.md" && filepath.Dir(filepath.Dir(specPath)) == specsDir
 }
 
 // formatListText outputs specs as a human-readable table with aligned columns.

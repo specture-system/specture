@@ -454,3 +454,31 @@ func TestResolveSpecPath(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveSpecPath_DottedRef(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	parentDir := filepath.Join(tmpDir, "1-root")
+	childDir := filepath.Join(parentDir, "2-child")
+	if err := os.MkdirAll(childDir, 0o755); err != nil {
+		t.Fatalf("failed to create nested directories: %v", err)
+	}
+
+	parentPath := filepath.Join(parentDir, "SPEC.md")
+	childPath := filepath.Join(childDir, "SPEC.md")
+
+	if err := os.WriteFile(parentPath, []byte("---\nnumber: 1\n---\n\n# Root\n"), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(childPath, []byte("---\nnumber: 2\n---\n\n# Child\n"), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+
+	result, err := spec.ResolvePath(tmpDir, "1.2")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != childPath {
+		t.Fatalf("expected child path %q, got %q", childPath, result)
+	}
+}

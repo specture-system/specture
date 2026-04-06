@@ -23,6 +23,7 @@ It validates frontmatter, status, and descriptions.
 Examples:
   specture validate              # Validate all specs in the specs tree
   specture validate --spec 0     # Validate a specific spec by reference
+  specture validate --spec 1.4   # Validate a nested spec by reference
   specture validate -s 42        # Short form, validates a specific spec`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		invalidCount, err := runValidate(cmd, args)
@@ -40,7 +41,7 @@ Examples:
 }
 
 func init() {
-	validateCmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Spec number to validate (e.g., 0, 00, or 000)")
+	validateCmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Spec reference to validate (e.g., 0, 00, 000, or 1.4.3)")
 }
 
 // runValidate performs validation and returns the count of invalid specs.

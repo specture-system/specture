@@ -211,6 +211,54 @@ func TestImplementCommand_AllowsApprovedAndInProgressStatuses(t *testing.T) {
 	}
 }
 
+func TestImplementCommand_ResolvesDottedSpecRef(t *testing.T) {
+	tmpDir := t.TempDir()
+	specsDir := filepath.Join(tmpDir, "specs")
+	parentDir := filepath.Join(specsDir, "1-root")
+	childDir := filepath.Join(parentDir, "2-child")
+	if err := os.MkdirAll(childDir, 0o755); err != nil {
+		t.Fatalf("failed to create nested spec dirs: %v", err)
+	}
+
+	parentSpec := `---
+number: 1
+status: approved
+---
+
+# Root
+`
+	childSpec := `---
+number: 2
+status: approved
+---
+
+# Child
+
+## Task List
+
+- [x] Done
+`
+	if err := os.WriteFile(filepath.Join(parentDir, "SPEC.md"), []byte(parentSpec), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(childDir, "SPEC.md"), []byte(childSpec), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+
+	implementLookPath = func(file string) (string, error) {
+		return "/usr/bin/opencode", nil
+	}
+
+	output, err := execImplement(t, tmpDir, map[string]string{"spec": "1.2"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(output, filepath.Join("1-root", "2-child", "SPEC.md")) {
+		t.Fatalf("expected output to include nested spec path, got:\n%s", output)
+	}
+}
+
 func TestImplementCommand_PlansRemainingSectionsAndTasks(t *testing.T) {
 	tmpDir := setupImplementTest(t, map[string]string{
 		"007-agent.md": implementApprovedSpec,
@@ -281,6 +329,10 @@ func TestImplementCommand_HelpMentionsOrchestratorAndExample(t *testing.T) {
 
 	if !strings.Contains(implementCmd.Long, "specture implement --spec 7") {
 		t.Fatalf("expected implement help to include example usage, got:\n%s", implementCmd.Long)
+	}
+
+	if !strings.Contains(implementCmd.Long, "specture implement --spec 1.4.3") {
+		t.Fatalf("expected implement help to include dotted example usage, got:\n%s", implementCmd.Long)
 	}
 }
 

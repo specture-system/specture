@@ -17,15 +17,16 @@ var statusCmd = &cobra.Command{
 	Use:     "status",
 	Aliases: []string{"s"},
 	Short:   "Show status of current or specified spec",
-	Long: `Show the status of the current in-progress spec, or a specific spec by number.
+	Long: `Show the status of the current in-progress spec, or a specific spec by reference.
 
 By default, finds the first in-progress spec and displays its status.
-Use --spec to target a specific spec by number.
+Use --spec to target a specific spec by number or dotted reference.
 Use --format to choose between human-readable text and JSON output.
 
 Examples:
   specture status              # Show current in-progress spec
   specture status --spec 3     # Show status of spec 003
+  specture status --spec 1.4   # Show status of a nested spec
   specture status -f json      # Output as JSON`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runStatus(cmd, args)
@@ -33,7 +34,7 @@ Examples:
 }
 
 func init() {
-	statusCmd.Flags().StringVarP(&statusSpecFlag, "spec", "s", "", "Spec number to target (e.g., 0, 00, or 000)")
+	statusCmd.Flags().StringVarP(&statusSpecFlag, "spec", "s", "", "Spec reference to target (e.g., 0, 00, 000, or 1.4.3)")
 	statusCmd.Flags().StringVarP(&statusFormatFlag, "format", "f", "text", "Output format: text or json")
 }
 

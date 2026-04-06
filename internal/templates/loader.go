@@ -25,11 +25,6 @@ func GetSpecTemplate() (string, error) {
 	return readTemplate("spec-template.md", "spec template")
 }
 
-// GetAgentPromptTemplate returns the agent prompt template.
-func GetAgentPromptTemplate() (string, error) {
-	return readTemplate("agent-prompt.md", "agent prompt template")
-}
-
 // GetImplementWorkerPromptTemplate returns the implement worker prompt template.
 func GetImplementWorkerPromptTemplate() (string, error) {
 	return readTemplate("task-worker-prompt.md", "implement worker prompt template")

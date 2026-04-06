@@ -41,7 +41,7 @@ Examples:
 }
 
 func init() {
-	validateCmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Spec reference to validate (e.g., 0, 00, 000, or 1.4.3)")
+	validateCmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Spec reference to validate (e.g., 3 or 1.4.3)")
 }
 
 // runValidate performs validation and returns the count of invalid specs.
@@ -69,7 +69,7 @@ func runValidate(cmd *cobra.Command, args []string) (invalidCount int, err error
 		}
 		specPaths = paths
 	} else {
-		// Validate specific spec
+		// Resolve the requested reference to a single spec file.
 		path, err := specpkg.ResolvePath(specsDir, spec)
 		if err != nil {
 			return 0, err

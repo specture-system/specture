@@ -20,7 +20,7 @@ var statusCmd = &cobra.Command{
 	Long: `Show the status of the current in-progress spec, or a specific spec by reference.
 
 By default, finds the first in-progress spec and displays its status.
-Use --spec to target a specific spec by number or dotted reference.
+Use --spec to target a specific reference.
 Use --format to choose between human-readable text and JSON output.
 
 Examples:
@@ -34,7 +34,7 @@ Examples:
 }
 
 func init() {
-	statusCmd.Flags().StringVarP(&statusSpecFlag, "spec", "s", "", "Spec reference to target (e.g., 0, 00, 000, or 1.4.3)")
+	statusCmd.Flags().StringVarP(&statusSpecFlag, "spec", "s", "", "Spec reference to target (e.g., 3 or 1.4.3)")
 	statusCmd.Flags().StringVarP(&statusFormatFlag, "format", "f", "text", "Output format: text or json")
 }
 
@@ -60,7 +60,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 
 	specArg, _ := cmd.Flags().GetString("spec")
 	if specArg != "" {
-		// Target a specific spec by number
+		// Resolve the requested reference to a concrete spec file.
 		path, err := specpkg.ResolvePath(specsDir, specArg)
 		if err != nil {
 			return err

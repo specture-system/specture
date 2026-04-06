@@ -12,8 +12,8 @@ import (
 var renameCmd = &cobra.Command{
 	Use:   "rename [slug]",
 	Args:  cobra.ExactArgs(1),
-	Short: "Rename a spec directory and update cross-references",
-	Long: `Rename a spec directory and update all markdown links that reference it in the specs tree.
+	Short: "Rename a spec and update cross-references",
+	Long: `Rename a spec and update all markdown links that reference it in the specs tree.
 
 Examples:
   specture rename --spec 3 status-command           # Rename to status-command

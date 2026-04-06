@@ -53,8 +53,11 @@ func runRename(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	oldRelativePath, _ := filepath.Rel(specsDir, result.OldPath)
+	newRelativePath, _ := filepath.Rel(specsDir, result.NewPath)
+
 	// Display plan
-	cmd.Printf("Rename: %s → %s\n", filepath.Base(result.OldPath), filepath.Base(result.NewPath))
+	cmd.Printf("Rename: %s → %s\n", oldRelativePath, newRelativePath)
 	if len(result.LinkUpdates) > 0 {
 		cmd.Printf("\nLink updates:\n")
 		for _, u := range result.LinkUpdates {

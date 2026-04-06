@@ -27,7 +27,7 @@ type specMovePlan struct {
 	linkNew string
 }
 
-const specsGitignoreContent = "*\n!**/SPEC.md\n!README.md\n"
+const specsGitignoreContent = "*\n!*/\n!**/SPEC.md\n!README.md\n"
 
 // FindSpecsNeedingMigration scans the specs directory for files matching NNN-slug.md
 // that don't already have a number field in frontmatter.

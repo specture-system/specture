@@ -195,7 +195,7 @@ func TestSetupCommand_CreatesFilesWithCorrectContent(t *testing.T) {
 	if err != nil {
 		t.Errorf("specs/.gitignore should be created, got error: %v", err)
 	}
-	if string(gitignore) != "*\n!**/SPEC.md\n!README.md\n" {
+	if string(gitignore) != "*\n!*/\n!**/SPEC.md\n!README.md\n" {
 		t.Errorf("unexpected specs/.gitignore content:\n%s", string(gitignore))
 	}
 }

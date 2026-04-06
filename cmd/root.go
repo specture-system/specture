@@ -28,5 +28,4 @@ func init() {
 	rootCmd.AddCommand(validateCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(renameCmd)
-	rootCmd.AddCommand(implementCmd)
 }

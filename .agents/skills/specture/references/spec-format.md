@@ -90,7 +90,7 @@ For large descriptions, use additional `##` sections (e.g., `## Ideas`, `## Goal
 
 Keep implementation progress out of the spec content. Use the spec for rationale and design decisions rather than a step-by-step task checklist.
 
-When referencing another spec, always use an inline markdown link with the correct repo-root-relative path to that file (for example, `[Status command](specs/3-status-command/SPEC.md)`).
+When referencing another spec, always use an inline markdown link with the correct repo-root-relative path to that file (for example, `[Status command](specs/002-status-command/SPEC.md)`).
 
 ### Goals
 

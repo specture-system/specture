@@ -7,8 +7,6 @@ creation_date: {{.CreationDate}}
 
 # {{.Title}}
 
-This file is the spec's `SPEC.md`.
-
 Describe the proposed change clearly. Include:
 
 - What is being proposed

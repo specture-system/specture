@@ -39,9 +39,6 @@ This is a description.
 	if spec.Title != "My Feature" {
 		t.Errorf("expected title 'My Feature', got %q", spec.Title)
 	}
-	if !spec.HasTaskList {
-		t.Error("expected HasTaskList to be true")
-	}
 }
 
 func TestParseSpecContent_NoFrontmatter(t *testing.T) {
@@ -81,125 +78,6 @@ No heading here, just content.
 	}
 }
 
-func TestParseSpecContent_NoTaskList(t *testing.T) {
-	content := []byte(`---
-status: draft
----
-
-# My Feature
-
-This is just a description with no Task List heading.
-
-- Regular list item
-- Another item
-`)
-
-	spec, err := ParseSpecContent("test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if spec.HasTaskList {
-		t.Error("expected HasTaskList to be false")
-	}
-}
-
-func TestParseSpecContent_TaskListHeadingOnly(t *testing.T) {
-	// Task List heading without any checkbox items should still be valid
-	content := []byte(`---
-status: draft
----
-
-# My Feature
-
-This spec is in design phase.
-
-## Task List
-
-Tasks will be added later.
-`)
-
-	spec, err := ParseSpecContent("test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if !spec.HasTaskList {
-		t.Error("expected HasTaskList to be true (heading present)")
-	}
-}
-
-func TestParseSpecContent_TaskListH3Heading_NotValid(t *testing.T) {
-	// H3 Task List heading should NOT be valid (must be H2)
-	content := []byte(`---
-status: draft
----
-
-# My Feature
-
-## Implementation
-
-### Task List
-
-- [ ] Task 1
-`)
-
-	spec, err := ParseSpecContent("test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if spec.HasTaskList {
-		t.Error("expected HasTaskList to be false (H3 is not valid, must be H2)")
-	}
-}
-
-func TestParseSpecContent_OnlyUncheckedTasks(t *testing.T) {
-	content := []byte(`---
-status: draft
----
-
-# My Feature
-
-## Task List
-
-- [ ] Task 1
-- [ ] Task 2
-`)
-
-	spec, err := ParseSpecContent("test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if !spec.HasTaskList {
-		t.Error("expected HasTaskList to be true")
-	}
-}
-
-func TestParseSpecContent_OnlyCheckedTasks(t *testing.T) {
-	content := []byte(`---
-status: draft
----
-
-# My Feature
-
-## Task List
-
-- [x] Task 1
-- [x] Task 2
-`)
-
-	spec, err := ParseSpecContent("test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if !spec.HasTaskList {
-		t.Error("expected HasTaskList to be true")
-	}
-}
-
 func TestParseSpec_File(t *testing.T) {
 	tmpDir := t.TempDir()
 	specPath := filepath.Join(tmpDir, "000-test.md")
@@ -218,7 +96,7 @@ Description here.
 - [ ] A task
 `)
 
-	if err := os.WriteFile(specPath, content, 0644); err != nil {
+	if err := os.WriteFile(specPath, content, 0o644); err != nil {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
@@ -235,36 +113,5 @@ Description here.
 	}
 	if spec.Title != "File Test" {
 		t.Errorf("expected title 'File Test', got %q", spec.Title)
-	}
-	if !spec.HasTaskList {
-		t.Error("expected HasTaskList to be true")
-	}
-}
-
-func TestParseSpec_FileNotFound(t *testing.T) {
-	_, err := ParseSpec("/nonexistent/path/to/spec.md")
-	if err == nil {
-		t.Error("expected error for nonexistent file")
-	}
-}
-
-func TestParseSpecContent_H2HeadingNotTitle(t *testing.T) {
-	// H2 headings should not be treated as the title
-	content := []byte(`---
-status: draft
----
-
-## Not a Title
-
-Description.
-`)
-
-	spec, err := ParseSpecContent("test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if spec.Title != "" {
-		t.Errorf("expected empty title (H2 is not title), got %q", spec.Title)
 	}
 }

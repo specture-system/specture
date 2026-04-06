@@ -439,7 +439,7 @@ func FindAll(specsDir string) ([]string, error) {
 // ResolvePath resolves a spec reference or path to a file path.
 // Accepts:
 //   - Full path: specs/000-mvp.md or specs/my-feature.md
-//   - Numeric references with or without leading zeros: 0, 00, 000
+//   - Top-level references with or without leading zeros: 0, 00, 000
 //   - Hierarchical references: 1.4.3
 //
 // Lookups are performed against the parsed full reference derived from the
@@ -471,6 +471,72 @@ func ResolvePath(specsDir, arg string) (string, error) {
 	}
 
 	return "", fmt.Errorf("spec not found: %s", arg)
+}
+
+// FindSpecsInScope returns parsed specs that belong directly under the requested scope.
+// With no parent path, it returns top-level specs under specsDir.
+// With a parent path, it returns only immediate child specs of that parent.
+func FindSpecsInScope(specsDir, parentPath string) ([]*SpecInfo, error) {
+	paths, err := FindAll(specsDir)
+	if err != nil {
+		return nil, err
+	}
+
+	var scopedPaths []string
+	if parentPath == "" {
+		for _, path := range paths {
+			if IsTopLevelSpecPath(path, specsDir) {
+				scopedPaths = append(scopedPaths, path)
+			}
+		}
+	} else {
+		for _, path := range paths {
+			if IsImmediateChildSpecPath(path, parentPath) {
+				scopedPaths = append(scopedPaths, path)
+			}
+		}
+	}
+
+	var specs []*SpecInfo
+	for _, path := range scopedPaths {
+		info, err := Parse(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse %s: %w", path, err)
+		}
+		specs = append(specs, info)
+	}
+
+	sort.Slice(specs, func(i, j int) bool {
+		if specs[i].Number == specs[j].Number {
+			return specs[i].FullRef < specs[j].FullRef
+		}
+		return specs[i].Number < specs[j].Number
+	})
+
+	return specs, nil
+}
+
+// IsTopLevelSpecPath reports whether a spec path belongs directly under specsDir.
+// It accepts both current flat root markdown files and root-level SPEC.md files
+// inside spec directories.
+func IsTopLevelSpecPath(specPath, specsDir string) bool {
+	base := filepath.Base(specPath)
+	if base == "README.md" {
+		return false
+	}
+
+	if base == "SPEC.md" {
+		return filepath.Dir(filepath.Dir(specPath)) == specsDir
+	}
+
+	return filepath.Dir(specPath) == specsDir && strings.HasSuffix(base, ".md")
+}
+
+// IsImmediateChildSpecPath reports whether specPath is a direct child of parentPath.
+// This is the path shape used for nested specs created under a parent spec directory.
+func IsImmediateChildSpecPath(specPath, parentPath string) bool {
+	return filepath.Base(specPath) == "SPEC.md" &&
+		filepath.Dir(filepath.Dir(specPath)) == filepath.Dir(parentPath)
 }
 
 // collectSpecPaths walks the specs tree and records every discoverable spec file.
@@ -509,17 +575,7 @@ func collectSpecPaths(rootDir, dir string, paths *[]string) error {
 // Once the repository is fully migrated to nested spec directories, the
 // root-level flat markdown allowance can be removed.
 func shouldIncludeSpecPath(rootDir, path string) bool {
-	base := filepath.Base(path)
-	if base == "README.md" {
-		return false
-	}
-
-	if base == "SPEC.md" {
-		return true
-	}
-
-	parentDir := filepath.Dir(path)
-	return parentDir == rootDir && strings.HasSuffix(base, ".md")
+	return IsTopLevelSpecPath(path, rootDir) || filepath.Base(path) == "SPEC.md"
 }
 
 // normalizeSpecRef canonicalizes a user-provided reference so lookup can match
@@ -528,19 +584,19 @@ func shouldIncludeSpecPath(rootDir, path string) bool {
 func normalizeSpecRef(arg string) (string, error) {
 	trimmed := strings.TrimSpace(arg)
 	if trimmed == "" {
-		return "", fmt.Errorf("invalid spec reference: %s (expected a numeric reference like 0, 00, 000, or 1.4.3)", arg)
+		return "", fmt.Errorf("invalid spec reference: %s (expected a reference like 0, 00, 000, or 1.4.3)", arg)
 	}
 
 	parts := strings.Split(trimmed, ".")
 	normalized := make([]string, 0, len(parts))
 	for _, part := range parts {
 		if part == "" {
-			return "", fmt.Errorf("invalid spec reference: %s (expected a numeric reference like 0, 00, 000, or 1.4.3)", arg)
+			return "", fmt.Errorf("invalid spec reference: %s (expected a reference like 0, 00, 000, or 1.4.3)", arg)
 		}
 
 		number, err := strconv.Atoi(part)
 		if err != nil || number < 0 {
-			return "", fmt.Errorf("invalid spec reference: %s (expected a numeric reference like 0, 00, 000, or 1.4.3)", arg)
+			return "", fmt.Errorf("invalid spec reference: %s (expected a reference like 0, 00, 000, or 1.4.3)", arg)
 		}
 		normalized = append(normalized, strconv.Itoa(number))
 	}

@@ -46,6 +46,10 @@ func newTestContext(t *testing.T) string {
 // runNewCommand runs the new command with the given title in dry-run mode.
 // This avoids stdin complexity and focuses on testing the core logic.
 func runNewCommand(t *testing.T, title string) string {
+	return runNewCommandWithParent(t, title, "")
+}
+
+func runNewCommandWithParent(t *testing.T, title, parent string) string {
 	out := &bytes.Buffer{}
 	cmd := newCmd
 	cmd.SetOut(out)
@@ -54,11 +58,15 @@ func runNewCommand(t *testing.T, title string) string {
 	// Reset flags
 	cmd.Flags().Set("dry-run", "false")
 	cmd.Flags().Set("title", "")
+	cmd.Flags().Set("parent", "")
 	cmd.Flags().Set("no-editor", "false")
 
 	// Set title flag
 	if err := cmd.Flags().Set("title", title); err != nil {
 		t.Fatalf("failed to set title flag: %v", err)
+	}
+	if err := cmd.Flags().Set("parent", parent); err != nil {
+		t.Fatalf("failed to set parent flag: %v", err)
 	}
 
 	// Set dry-run flag
@@ -187,6 +195,42 @@ func TestNewCommand_BranchNameGeneration(t *testing.T) {
 	expectedBranch := "spec/000-api-authentication"
 	if !strings.Contains(output, expectedBranch) {
 		t.Errorf("output should contain branch name %q, got: %s", expectedBranch, output)
+	}
+}
+
+func TestNewCommand_ChildSpecOutput(t *testing.T) {
+	tmpDir := newTestContext(t)
+
+	parentDir := filepath.Join(tmpDir, "specs", "0-parent")
+	if err := os.MkdirAll(parentDir, 0o755); err != nil {
+		t.Fatalf("failed to create parent directory: %v", err)
+	}
+	parentPath := filepath.Join(parentDir, "SPEC.md")
+	parentSpec := "---\nnumber: 0\n---\n\n# Parent Spec\n"
+	if err := os.WriteFile(parentPath, []byte(parentSpec), 0o644); err != nil {
+		t.Fatalf("failed to create parent spec: %v", err)
+	}
+
+	addCmd := exec.Command("git", "add", "specs/0-parent/SPEC.md")
+	addCmd.Dir = tmpDir
+	if err := addCmd.Run(); err != nil {
+		t.Fatalf("failed to stage parent spec: %v", err)
+	}
+	commitCmd := exec.Command("git", "commit", "-m", "Add parent spec")
+	commitCmd.Dir = tmpDir
+	if err := commitCmd.Run(); err != nil {
+		t.Fatalf("failed to commit parent spec: %v", err)
+	}
+
+	output := runNewCommandWithParent(t, "Child Spec", "0")
+	if !strings.Contains(output, "Creating spec 000") {
+		t.Errorf("child spec should start at 000, got: %s", output)
+	}
+	if !strings.Contains(output, "File: 000-child-spec/SPEC.md") {
+		t.Errorf("output should contain nested relative file path, got: %s", output)
+	}
+	if !strings.Contains(output, "Branch: spec/0-0-child-spec") {
+		t.Errorf("output should contain nested branch prefix, got: %s", output)
 	}
 }
 

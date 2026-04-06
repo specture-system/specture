@@ -13,18 +13,21 @@ import (
 
 var listStatusFilter string
 var listFormatFlag string
+var listParentFlag string
 
 var listCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{"ls"},
 	Short:   "List specs with filtering and output options",
-	Long: `List top-level specs with optional filtering by status and task display.
+	Long: `List top-level specs or the children of a specific spec with optional filtering by status and task display.
 
 By default, shows a compact table with Number, Status, Progress, and Name for top-level specs.
+Use --parent to show the immediate children of a parent spec.
 Use --format json for machine-readable output with full metadata.
 
 Examples:
   specture list                          # List top-level specs
+  specture list --parent 1.4             # List the children of spec 1.4
   specture list --status in-progress     # Filter by status
   specture list --status draft,approved  # Multiple statuses
   specture list -f json                  # JSON output`,
@@ -36,6 +39,7 @@ Examples:
 func init() {
 	listCmd.Flags().StringVarP(&listStatusFilter, "status", "s", "", "Filter by status (comma-separated for multiple)")
 	listCmd.Flags().StringVarP(&listFormatFlag, "format", "f", "text", "Output format: text or json")
+	listCmd.Flags().StringVarP(&listParentFlag, "parent", "p", "", "Parent spec reference to list children for")
 }
 
 func runList(cmd *cobra.Command, args []string) error {
@@ -51,13 +55,19 @@ func runList(cmd *cobra.Command, args []string) error {
 
 	specsDir := filepath.Join(cwd, "specs")
 
-	specs, err := specpkg.ParseAll(specsDir)
+	parentRef, _ := cmd.Flags().GetString("parent")
+	var parentPath string
+	if strings.TrimSpace(parentRef) != "" {
+		parentPath, err = specpkg.ResolvePath(specsDir, parentRef)
+		if err != nil {
+			return err
+		}
+	}
+
+	specs, err := specpkg.FindSpecsInScope(specsDir, parentPath)
 	if err != nil {
 		return err
 	}
-
-	// Keep list output scoped to top-level specs until --parent filtering lands.
-	specs = filterTopLevelSpecs(specs, specsDir)
 
 	// Apply status filter
 	statusFilter, _ := cmd.Flags().GetString("status")
@@ -88,27 +98,6 @@ func filterByStatus(specs []*specpkg.SpecInfo, filter string) []*specpkg.SpecInf
 		}
 	}
 	return filtered
-}
-
-// filterTopLevelSpecs keeps only specs that live directly under the specs
-// directory. This preserves the current list command behavior while discovery
-// becomes recursive.
-func filterTopLevelSpecs(specs []*specpkg.SpecInfo, specsDir string) []*specpkg.SpecInfo {
-	var filtered []*specpkg.SpecInfo
-	for _, spec := range specs {
-		if isTopLevelSpec(spec.Path, specsDir) {
-			filtered = append(filtered, spec)
-		}
-	}
-	return filtered
-}
-
-func isTopLevelSpec(specPath, specsDir string) bool {
-	if filepath.Dir(specPath) == specsDir {
-		return filepath.Base(specPath) != "README.md"
-	}
-
-	return filepath.Base(specPath) == "SPEC.md" && filepath.Dir(filepath.Dir(specPath)) == specsDir
 }
 
 // formatListText outputs specs as a human-readable table with aligned columns.

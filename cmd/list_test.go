@@ -36,6 +36,7 @@ func execList(t *testing.T, tmpDir string, flags map[string]string) (string, err
 		os.Chdir(originalWd)
 		listCmd.Flags().Set("status", "")
 		listCmd.Flags().Set("format", "text")
+		listCmd.Flags().Set("parent", "")
 	})
 	os.Chdir(tmpDir)
 
@@ -264,6 +265,68 @@ status: draft
 	}
 	if strings.Contains(output, "Nested") {
 		t.Fatalf("did not expect nested spec in top-level list output, got:\n%s", output)
+	}
+}
+
+func TestListCommand_TextOutput_ParentScope(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup.md": listCompletedSpec,
+	})
+
+	parentDir := filepath.Join(tmpDir, "specs", "0-parent")
+	childDir := filepath.Join(parentDir, "000-child")
+	grandchildDir := filepath.Join(childDir, "000-grandchild")
+	for _, dir := range []string{parentDir, childDir, grandchildDir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatalf("failed to create directory %s: %v", dir, err)
+		}
+	}
+
+	parentSpec := `---
+number: 0
+status: approved
+---
+
+# Parent
+`
+	childSpec := `---
+number: 0
+status: draft
+---
+
+# Child
+`
+	grandchildSpec := `---
+number: 0
+status: draft
+---
+
+# Grandchild
+`
+	if err := os.WriteFile(filepath.Join(parentDir, "SPEC.md"), []byte(parentSpec), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(childDir, "SPEC.md"), []byte(childSpec), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(grandchildDir, "SPEC.md"), []byte(grandchildSpec), 0o644); err != nil {
+		t.Fatalf("failed to write grandchild spec: %v", err)
+	}
+
+	output, err := execList(t, tmpDir, map[string]string{"parent": "0"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 lines (header + 1 child), got %d:\n%s", len(lines), output)
+	}
+	if !strings.Contains(lines[1], "Child") {
+		t.Fatalf("expected direct child spec in output, got:\n%s", output)
+	}
+	if strings.Contains(output, "Grandchild") {
+		t.Fatalf("did not expect grandchild in parent-scoped output, got:\n%s", output)
 	}
 }
 

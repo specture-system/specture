@@ -3,9 +3,7 @@ package new
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -44,45 +42,32 @@ func ToSlug(s string) string {
 	return s
 }
 
-// FindNextSpecNumber returns the next available spec number as max(existing) + 1.
-// It reads numbers from spec frontmatter. Returns 0 if no specs exist.
-func FindNextSpecNumber(specsDir string) (int, error) {
+// FindNextSpecNumber returns the next available spec number in a scope.
+// With no parentPath, it allocates from the top-level specs under specsDir.
+// With a parentPath, it allocates from that parent spec's immediate children.
+func FindNextSpecNumber(specsDir, parentPath string) (int, error) {
 	// Check if directory exists
 	if _, err := os.Stat(specsDir); os.IsNotExist(err) {
 		return 0, nil
 	}
 
-	// Read all markdown files and parse numbers from frontmatter
-	entries, err := os.ReadDir(specsDir)
+	specs, err := specpkg.FindSpecsInScope(specsDir, parentPath)
 	if err != nil {
-		return 0, fmt.Errorf("failed to read specs directory: %w", err)
+		return 0, err
 	}
 
-	var numbers []int
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
-			continue
-		}
-		if entry.Name() == "README.md" {
-			continue
-		}
-
-		path := filepath.Join(specsDir, entry.Name())
-		info, err := specpkg.Parse(path)
-		if err != nil {
-			continue // Skip unparseable files
-		}
-		if info.Number >= 0 {
-			numbers = append(numbers, info.Number)
+	maxNumber := -1
+	for _, info := range specs {
+		if info.Number > maxNumber {
+			maxNumber = info.Number
 		}
 	}
 
-	if len(numbers) == 0 {
+	if maxNumber < 0 {
 		return 0, nil
 	}
 
-	sort.Ints(numbers)
-	return numbers[len(numbers)-1] + 1, nil
+	return maxNumber + 1, nil
 }
 
 // GenerateFrontmatter generates the YAML frontmatter for a spec.

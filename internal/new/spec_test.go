@@ -98,7 +98,7 @@ func TestFindNextSpecNumber(t *testing.T) {
 				}
 			}
 
-			result, err := FindNextSpecNumber(tmpDir)
+			result, err := FindNextSpecNumber(tmpDir, "")
 			if (err != nil) != tt.expectError {
 				t.Errorf("FindNextSpecNumber() error = %v, want error = %v", err, tt.expectError)
 			}
@@ -141,6 +141,44 @@ func TestRenderSpec(t *testing.T) {
 			t.Errorf("rendered spec doesn't contain creation_date")
 		}
 	})
+}
+
+func TestFindNextSpecNumber_ScopedToParent(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	parentDir := filepath.Join(tmpDir, "0-parent")
+	if err := os.MkdirAll(parentDir, 0o755); err != nil {
+		t.Fatalf("failed to create parent directory: %v", err)
+	}
+
+	parentPath := filepath.Join(parentDir, "SPEC.md")
+	if err := os.WriteFile(parentPath, []byte("---\nnumber: 0\n---\n\n# Parent\n"), 0o644); err != nil {
+		t.Fatalf("failed to create parent spec: %v", err)
+	}
+
+	files := map[string]string{
+		filepath.Join(parentDir, "000-first", "SPEC.md"):                    "---\nnumber: 0\n---\n\n# First Child\n",
+		filepath.Join(parentDir, "002-third", "SPEC.md"):                    "---\nnumber: 2\n---\n\n# Third Child\n",
+		filepath.Join(parentDir, "001-second", "SPEC.md"):                   "---\nnumber: 1\n---\n\n# Second Child\n",
+		filepath.Join(parentDir, "001-second", "notes.txt"):                 "ignore me",
+		filepath.Join(parentDir, "001-second", "000-grandchild", "SPEC.md"): "---\nnumber: 0\n---\n\n# Grandchild\n",
+	}
+	for name, content := range files {
+		if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil {
+			t.Fatalf("failed to create directory for %s: %v", name, err)
+		}
+		if err := os.WriteFile(name, []byte(content), 0o644); err != nil {
+			t.Fatalf("failed to create file %s: %v", name, err)
+		}
+	}
+
+	result, err := FindNextSpecNumber(tmpDir, parentPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != 3 {
+		t.Fatalf("expected next child number 3, got %d", result)
+	}
 }
 
 func TestGenerateFrontmatter(t *testing.T) {

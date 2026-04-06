@@ -16,7 +16,7 @@ func TestNewContext_ErrorHandling(t *testing.T) {
 	t.Run("fails_for_non_git_repo", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
-		_, err := NewContext(tmpDir, "Test Spec")
+		_, err := NewContext(tmpDir, "Test Spec", "")
 		if err == nil {
 			t.Errorf("NewContext() expected error for non-git repo")
 		}
@@ -32,7 +32,7 @@ func TestNewContext_ErrorHandling(t *testing.T) {
 			t.Fatalf("failed to create dirty file: %v", err)
 		}
 
-		_, err := NewContext(tmpDir, "Test Spec")
+		_, err := NewContext(tmpDir, "Test Spec", "")
 		if err == nil {
 			t.Errorf("NewContext() expected error for dirty working tree")
 		}
@@ -49,7 +49,7 @@ func TestNewContext_ErrorHandling(t *testing.T) {
 			t.Fatalf("failed to create initial commit: %v", err)
 		}
 
-		ctx, err := NewContext(tmpDir, "My First Spec")
+		ctx, err := NewContext(tmpDir, "My First Spec", "")
 		if err != nil {
 			t.Fatalf("NewContext() error = %v", err)
 		}
@@ -68,6 +68,61 @@ func TestNewContext_ErrorHandling(t *testing.T) {
 			t.Errorf("NewContext() branch = %q, want pattern %q", ctx.BranchName, expectedBranchPattern)
 		}
 	})
+
+	t.Run("creates_child_spec_context_with_parent", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		testhelpers.InitGitRepo(t, tmpDir)
+
+		// Create initial commit so there's a branch to check out.
+		cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
+		cmd.Dir = tmpDir
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("failed to create initial commit: %v", err)
+		}
+
+		parentDir := filepath.Join(tmpDir, "specs", "0-parent")
+		if err := os.MkdirAll(parentDir, 0o755); err != nil {
+			t.Fatalf("failed to create parent spec directory: %v", err)
+		}
+		parentPath := filepath.Join(parentDir, "SPEC.md")
+		parentSpec := "---\nnumber: 0\n---\n\n# Parent Spec\n"
+		if err := os.WriteFile(parentPath, []byte(parentSpec), 0o644); err != nil {
+			t.Fatalf("failed to write parent spec: %v", err)
+		}
+
+		addCmd := exec.Command("git", "add", "specs/0-parent/SPEC.md")
+		addCmd.Dir = tmpDir
+		if err := addCmd.Run(); err != nil {
+			t.Fatalf("failed to stage parent spec: %v", err)
+		}
+
+		commitCmd := exec.Command("git", "commit", "-m", "Add parent spec")
+		commitCmd.Dir = tmpDir
+		if err := commitCmd.Run(); err != nil {
+			t.Fatalf("failed to commit parent spec: %v", err)
+		}
+
+		ctx, err := NewContext(tmpDir, "Child Spec", "0")
+		if err != nil {
+			t.Fatalf("NewContext() error = %v", err)
+		}
+
+		if ctx.ParentRef != "0" {
+			t.Errorf("ParentRef = %q, want %q", ctx.ParentRef, "0")
+		}
+		if ctx.Number != 0 {
+			t.Errorf("child spec number = %d, want 0", ctx.Number)
+		}
+		if ctx.FilePath != filepath.Join(tmpDir, "specs", "0-parent", "000-child-spec", "SPEC.md") {
+			t.Errorf("FilePath = %q, want child spec path", ctx.FilePath)
+		}
+		if ctx.RelativePath != filepath.Join("000-child-spec", "SPEC.md") {
+			t.Errorf("RelativePath = %q, want %q", ctx.RelativePath, filepath.Join("000-child-spec", "SPEC.md"))
+		}
+		if ctx.FileName != "SPEC.md" {
+			t.Errorf("FileName = %q, want SPEC.md", ctx.FileName)
+		}
+	})
 }
 
 func TestCleanup(t *testing.T) {
@@ -83,7 +138,7 @@ func TestCleanup(t *testing.T) {
 		}
 
 		// Create context and spec
-		ctx, err := NewContext(tmpDir, "Test Spec")
+		ctx, err := NewContext(tmpDir, "Test Spec", "")
 		if err != nil {
 			t.Fatalf("NewContext() error = %v", err)
 		}
@@ -147,7 +202,7 @@ func TestCleanup(t *testing.T) {
 		}
 
 		// Create context
-		ctx, err := NewContext(tmpDir, "Test Spec")
+		ctx, err := NewContext(tmpDir, "Test Spec", "")
 		if err != nil {
 			t.Fatalf("NewContext() error = %v", err)
 		}
@@ -191,7 +246,7 @@ func TestCleanup(t *testing.T) {
 		}
 
 		// Create context while on feature-branch
-		ctx, err := NewContext(tmpDir, "Test Spec")
+		ctx, err := NewContext(tmpDir, "Test Spec", "")
 		if err != nil {
 			t.Fatalf("NewContext() error = %v", err)
 		}

@@ -433,6 +433,64 @@ func TestResolvePath_DottedRef(t *testing.T) {
 	}
 }
 
+func TestFindSpecsInScope(t *testing.T) {
+	dir := t.TempDir()
+
+	topLevel := map[string]string{
+		"002-second.md": "---\nnumber: 2\n---\n\n# Second\n",
+		"001-first.md":  "---\nnumber: 1\n---\n\n# First\n",
+	}
+	for name, content := range topLevel {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatalf("failed to create top-level spec %s: %v", name, err)
+		}
+	}
+
+	parentDir := filepath.Join(dir, "0-parent")
+	childDir := filepath.Join(parentDir, "000-child")
+	grandchildDir := filepath.Join(childDir, "000-grandchild")
+	for _, path := range []string{parentDir, childDir, grandchildDir} {
+		if err := os.MkdirAll(path, 0o755); err != nil {
+			t.Fatalf("failed to create directory %s: %v", path, err)
+		}
+	}
+
+	parentPath := filepath.Join(parentDir, "SPEC.md")
+	childPath := filepath.Join(childDir, "SPEC.md")
+	grandchildPath := filepath.Join(grandchildDir, "SPEC.md")
+	if err := os.WriteFile(parentPath, []byte("---\nnumber: 0\n---\n\n# Parent\n"), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(childPath, []byte("---\nnumber: 0\n---\n\n# Child\n"), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+	if err := os.WriteFile(grandchildPath, []byte("---\nnumber: 0\n---\n\n# Grandchild\n"), 0o644); err != nil {
+		t.Fatalf("failed to write grandchild spec: %v", err)
+	}
+
+	topLevelSpecs, err := FindSpecsInScope(dir, "")
+	if err != nil {
+		t.Fatalf("unexpected error reading top-level scope: %v", err)
+	}
+	if len(topLevelSpecs) != 3 {
+		t.Fatalf("expected 3 top-level specs, got %d", len(topLevelSpecs))
+	}
+	if topLevelSpecs[0].FullRef != "0" || topLevelSpecs[1].FullRef != "1" || topLevelSpecs[2].FullRef != "2" {
+		t.Fatalf("unexpected top-level refs: %q, %q, %q", topLevelSpecs[0].FullRef, topLevelSpecs[1].FullRef, topLevelSpecs[2].FullRef)
+	}
+
+	childSpecs, err := FindSpecsInScope(dir, parentPath)
+	if err != nil {
+		t.Fatalf("unexpected error reading child scope: %v", err)
+	}
+	if len(childSpecs) != 1 {
+		t.Fatalf("expected 1 child spec, got %d", len(childSpecs))
+	}
+	if childSpecs[0].Path != childPath {
+		t.Fatalf("expected child path %q, got %q", childPath, childSpecs[0].Path)
+	}
+}
+
 // ---------- ParseAll tests ----------
 
 func TestParseAll_SortedByNumber(t *testing.T) {

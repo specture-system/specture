@@ -13,6 +13,7 @@ var (
 	filenamePrefixPattern  = regexp.MustCompile(`^(\d{3})-`)
 	markdownSectionPattern = regexp.MustCompile(`^(#{2,6})\s+(.+)$`)
 	numberedSectionPattern = regexp.MustCompile(`^\d+(?:(?:\.\d+)+|[.)]|\s)`)
+	specDirPrefixPattern   = regexp.MustCompile(`^(\d+)`)
 )
 
 // ValidationError represents a single validation error
@@ -126,7 +127,7 @@ func firstNumberedSectionHeading(source []byte) (string, bool) {
 	return "", false
 }
 
-// ValidateSpecs validates multiple specs, including cross-spec checks like scoped duplicate numbers.
+// ValidateSpecs validates multiple specs, including cross-spec checks like duplicate full refs.
 // Returns one ValidationResult per spec.
 func ValidateSpecs(specs []*Spec) []*ValidationResult {
 	results := make([]*ValidationResult, len(specs))
@@ -134,29 +135,20 @@ func ValidateSpecs(specs []*Spec) []*ValidationResult {
 		results[i] = ValidateSpec(spec)
 	}
 
-	type scopedNumber struct {
-		scope  string
-		number int
-	}
-
-	// Cross-spec: detect duplicate numbers within the same parent scope.
-	numberToIdx := make(map[scopedNumber][]int)
+	// Cross-spec: detect duplicate full refs.
+	refToIdx := make(map[string][]int)
 	for i, spec := range specs {
-		if spec.Frontmatter != nil && spec.Frontmatter.Number != nil && *spec.Frontmatter.Number >= 0 {
-			scope := filepath.Clean(filepath.Dir(filepath.Dir(spec.Path)))
-			key := scopedNumber{
-				scope:  scope,
-				number: *spec.Frontmatter.Number,
-			}
-			numberToIdx[key] = append(numberToIdx[key], i)
+		fullRef := fullRefFromPath(spec.Path)
+		if fullRef != "" {
+			refToIdx[fullRef] = append(refToIdx[fullRef], i)
 		}
 	}
-	for key, indices := range numberToIdx {
+	for fullRef, indices := range refToIdx {
 		if len(indices) > 1 {
 			for _, idx := range indices {
 				results[idx].Errors = append(results[idx].Errors, ValidationError{
-					Field:   "number",
-					Message: fmt.Sprintf("duplicate number %d", key.number),
+					Field:   "fullref",
+					Message: fmt.Sprintf("duplicate ref %s", fullRef),
 				})
 			}
 		}
@@ -194,4 +186,35 @@ func FormatValidationResult(result *ValidationResult) string {
 		output += fmt.Sprintf("  ⚠ %s: %s\n", w.Field, w.Message)
 	}
 	return output
+}
+
+func fullRefFromPath(path string) string {
+	cleaned := filepath.Clean(path)
+	parts := strings.Split(cleaned, string(filepath.Separator))
+
+	specsIdx := -1
+	for i, part := range parts {
+		if part == "specs" {
+			specsIdx = i
+		}
+	}
+	if specsIdx < 0 || specsIdx+1 >= len(parts)-1 {
+		return ""
+	}
+
+	var refs []string
+	for _, part := range parts[specsIdx+1 : len(parts)-1] {
+		matches := specDirPrefixPattern.FindStringSubmatch(part)
+		if len(matches) != 2 {
+			return ""
+		}
+
+		num, err := strconv.Atoi(matches[1])
+		if err != nil {
+			return ""
+		}
+		refs = append(refs, strconv.Itoa(num))
+	}
+
+	return strings.Join(refs, ".")
 }

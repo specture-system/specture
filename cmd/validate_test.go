@@ -485,7 +485,7 @@ status: draft
 	}
 
 	output := out.String()
-	if strings.Contains(output, "duplicate number") {
+	if strings.Contains(output, "duplicate ref") {
 		t.Fatalf("expected scoped numbers to be allowed, got output:\n%s", output)
 	}
 	if !strings.Contains(output, "3 of 3 specs valid") {

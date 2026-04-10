@@ -689,9 +689,9 @@ status: draft
 	}
 }
 
-func TestValidateSpecs_DuplicateNumbers(t *testing.T) {
+func TestValidateSpecs_DuplicateFullRefs(t *testing.T) {
 	content1 := []byte(`---
-number: 3
+number: 1
 status: draft
 ---
 
@@ -702,7 +702,7 @@ status: draft
 - [ ] Task 1
 `)
 	content2 := []byte(`---
-number: 3
+number: 1
 status: draft
 ---
 
@@ -722,29 +722,29 @@ status: draft
 		t.Fatalf("unexpected parse error: %v", err)
 	}
 
-	spec1.Path = "specs/000-mvp/001-feature-a/SPEC.md"
-	spec2.Path = "specs/000-mvp/002-feature-b/SPEC.md"
+	spec1.Path = "specs/001-feature-a/SPEC.md"
+	spec2.Path = "specs/001-feature-b/SPEC.md"
 
 	results := ValidateSpecs([]*Spec{spec1, spec2})
 
-	// At least one spec should have a duplicate number error
+	// At least one spec should have a duplicate ref error.
 	foundDuplicateError := false
 	for _, result := range results {
 		for _, e := range result.Errors {
-			if e.Field == "number" && strings.Contains(e.Message, "duplicate") {
+			if e.Field == "fullref" && strings.Contains(e.Message, "duplicate ref") {
 				foundDuplicateError = true
 				break
 			}
 		}
 	}
 	if !foundDuplicateError {
-		t.Error("expected duplicate number error")
+		t.Error("expected duplicate ref error")
 	}
 }
 
-func TestValidateSpecs_AllowDuplicateNumbersAcrossScopes(t *testing.T) {
+func TestValidateSpecs_AllowDuplicateFullRefsAcrossScopes(t *testing.T) {
 	content1 := []byte(`---
-number: 3
+number: 1
 status: draft
 ---
 
@@ -755,7 +755,7 @@ status: draft
 - [ ] Task 1
 `)
 	content2 := []byte(`---
-number: 3
+number: 1
 status: draft
 ---
 
@@ -782,8 +782,8 @@ status: draft
 
 	for _, result := range results {
 		for _, e := range result.Errors {
-			if e.Field == "number" && strings.Contains(e.Message, "duplicate") {
-				t.Errorf("unexpected duplicate number error: %v", e)
+			if e.Field == "fullref" && strings.Contains(e.Message, "duplicate ref") {
+				t.Errorf("unexpected duplicate ref error: %v", e)
 			}
 		}
 	}
@@ -822,12 +822,15 @@ status: draft
 		t.Fatalf("unexpected parse error: %v", err)
 	}
 
+	spec1.Path = "specs/001-feature-a/SPEC.md"
+	spec2.Path = "specs/002-feature-b/SPEC.md"
+
 	results := ValidateSpecs([]*Spec{spec1, spec2})
 
 	for _, result := range results {
 		for _, e := range result.Errors {
-			if e.Field == "number" && strings.Contains(e.Message, "duplicate") {
-				t.Errorf("unexpected duplicate error: %v", e)
+			if e.Field == "fullref" && strings.Contains(e.Message, "duplicate ref") {
+				t.Errorf("unexpected duplicate ref error: %v", e)
 			}
 		}
 	}

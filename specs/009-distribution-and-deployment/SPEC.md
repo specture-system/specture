@@ -69,15 +69,15 @@ Set up automated release infrastructure for the Specture CLI, enabling Linux bui
   - Provides a conventional GitHub Releases download set
 - Considered: Binaries only
   - Simpler, but less polished for distribution and verification
-- Considered: Signatures and provenance in v1
+- Considered: Signatures and provenance in the initial release
   - Useful later, but adds key-management and workflow scope
 
 ### Platform Scope
 
-- Chosen: Linux-only v1
+- Chosen: Linux-only for the initial release
   - Start with `amd64` and `arm64`
   - Keep macOS and Windows as follow-up work
-- Considered: Cross-platform releases in v1
+- Considered: Cross-platform releases in the initial release
   - Broader distribution coverage
   - Significantly increases release workflow scope
 
@@ -92,7 +92,7 @@ Set up automated release infrastructure for the Specture CLI, enabling Linux bui
 
 ### Prerelease Tags
 
-- Chosen: Stable tags only for v1
+- Chosen: Stable tags only for the initial release
   - Keeps the first release pipeline simple
   - Leaves RC and beta flows for later
 - Considered: Supporting prerelease tags now

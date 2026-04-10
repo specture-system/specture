@@ -23,8 +23,9 @@ type specMovePlan struct {
 
 const specsGitignoreContent = "*\n!*/\n!**/SPEC.md\n!README.md\n"
 
-// MigrateSpecsLayout moves flat top-level spec files into numbered spec directories
-// and ensures specs/.gitignore keeps only SPEC.md and README.md files tracked.
+// MigrateSpecsLayout moves flat top-level spec files into numbered spec directories,
+// strips legacy frontmatter numbers from the moved files, and ensures specs/.gitignore
+// keeps only SPEC.md and README.md files tracked.
 func MigrateSpecsLayout(specsDir string, dryRun bool) (bool, error) {
 	entries, err := os.ReadDir(specsDir)
 	if err != nil && !os.IsNotExist(err) {
@@ -80,6 +81,9 @@ func MigrateSpecsLayout(specsDir string, dryRun bool) (bool, error) {
 		}
 		if err := os.Rename(plan.oldPath, plan.newPath); err != nil {
 			return false, fmt.Errorf("failed to move %s to %s: %w", plan.oldPath, plan.newPath, err)
+		}
+		if err := stripLegacyNumberFromFrontmatter(plan.newPath); err != nil {
+			return false, fmt.Errorf("failed to strip legacy number from %s: %w", plan.newPath, err)
 		}
 	}
 
@@ -205,6 +209,65 @@ func rewriteSpecLinks(specsDir string, plans []specMovePlan) error {
 	}
 
 	return nil
+}
+
+func stripLegacyNumberFromFrontmatter(path string) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	updated, changed, err := removeLegacyNumberFromFrontmatter(string(content))
+	if err != nil {
+		return err
+	}
+	if !changed {
+		return nil
+	}
+
+	if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	return nil
+}
+
+func removeLegacyNumberFromFrontmatter(content string) (string, bool, error) {
+	lines := strings.Split(content, "\n")
+	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
+		return content, false, nil
+	}
+
+	var result []string
+	inFrontmatter := false
+	removed := false
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "---" {
+			if inFrontmatter {
+				result = append(result, line)
+				result = append(result, lines[i+1:]...)
+				break
+			}
+			inFrontmatter = true
+			result = append(result, line)
+			continue
+		}
+
+		if inFrontmatter && strings.HasPrefix(trimmed, "number:") {
+			removed = true
+			continue
+		}
+
+		result = append(result, line)
+	}
+
+	if !removed {
+		return content, false, nil
+	}
+
+	return strings.Join(result, "\n"), true, nil
 }
 
 // MigrateSkillsDir moves .skills/specture/ to .agents/skills/specture/ if the

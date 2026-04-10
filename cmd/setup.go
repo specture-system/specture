@@ -18,8 +18,7 @@ var setupCmd = &cobra.Command{
 
 Actions:
   • Create specs/ tree and specs/README.md
-  • Migrate the specs tree to nested SPEC.md files
-  • Strip legacy frontmatter number fields from migrated specs`,
+  • Migrate the specs tree to nested SPEC.md files`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get current working directory
 		cwd, err := os.Getwd()
@@ -46,7 +45,6 @@ Actions:
 		cmd.Println("  • Create specs/README.md with Specture System guidelines")
 		cmd.Println("  • Create specs/.gitignore to keep only SPEC.md and README.md")
 		cmd.Println("  • Migrate existing flat specs into numbered SPEC.md directories")
-		cmd.Println("  • Strip legacy frontmatter number fields from migrated specs")
 		cmd.Println("  • Install Specture skill files into .agents/skills/")
 
 		// Get yes flag
@@ -98,7 +96,7 @@ Actions:
 			return err
 		}
 		if specsMigrated && !dryRun {
-			cmd.Println("Migrated existing flat specs into numbered SPEC.md directories and stripped legacy number fields")
+			cmd.Println("Migrated existing flat specs into numbered SPEC.md directories")
 		}
 
 		cmd.Println("\nInitialized Specture System in this repository")

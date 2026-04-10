@@ -80,9 +80,6 @@ func TestSetupCommand_CompleteWorkflow_DryRun(t *testing.T) {
 	if !strings.Contains(output, "Create specs/.gitignore") {
 		t.Errorf("output should list specs/.gitignore creation, got: %s", output)
 	}
-	if !strings.Contains(output, "Strip legacy frontmatter number fields") {
-		t.Errorf("output should list legacy number stripping, got: %s", output)
-	}
 }
 
 func TestSetupCommand_OutputSummary(t *testing.T) {
@@ -102,9 +99,6 @@ func TestSetupCommand_OutputSummary(t *testing.T) {
 	if !strings.Contains(output, "Create specs/.gitignore") {
 		t.Errorf("output should list specs/.gitignore creation, got: %s", output)
 	}
-	if !strings.Contains(output, "Strip legacy frontmatter number fields") {
-		t.Errorf("output should list legacy number stripping, got: %s", output)
-	}
 }
 
 func TestSetupCommand_DryRunPreviewsAllActions(t *testing.T) {
@@ -118,7 +112,6 @@ func TestSetupCommand_DryRunPreviewsAllActions(t *testing.T) {
 		"Create specs/ tree",
 		"Create specs/README.md",
 		"Create specs/.gitignore",
-		"Strip legacy frontmatter number fields",
 	}
 
 	for _, item := range expectedItems {

@@ -1,0 +1,25 @@
+version: 2
+
+project_name: specture
+
+builds:
+  - id: specture
+    main: ./
+    binary: specture
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: specture
+    format: tar.gz
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: checksums.txt

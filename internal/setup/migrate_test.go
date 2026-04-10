@@ -26,8 +26,15 @@ func TestMigrateSpecsLayout(t *testing.T) {
 	}
 
 	statusPath := filepath.Join(dir, "002-status-command", "SPEC.md")
-	if _, err := os.Stat(statusPath); err != nil {
+	statusContent, err := os.ReadFile(statusPath)
+	if err != nil {
 		t.Fatalf("expected migrated spec at %s: %v", statusPath, err)
+	}
+	if strings.Contains(string(statusContent), "number:") {
+		t.Fatalf("migrated status spec should not keep legacy number field, got:\n%s", string(statusContent))
+	}
+	if !strings.Contains(string(statusContent), "status: completed") {
+		t.Fatalf("migrated status spec should preserve status field, got:\n%s", string(statusContent))
 	}
 	if _, err := os.Stat(filepath.Join(dir, "002-status-command.md")); !os.IsNotExist(err) {
 		t.Fatalf("old status spec should be removed, got: %v", err)

@@ -27,7 +27,6 @@ func TestValidateCommand_AllSpecsValid(t *testing.T) {
 
 	// Create a valid spec
 	validSpec := `---
-number: 0
 status: draft
 author: Test Author
 ---
@@ -135,7 +134,6 @@ func TestValidateCommand_ByNumber(t *testing.T) {
 
 	// Create two specs
 	validSpec0 := `---
-number: 0
 status: draft
 ---
 
@@ -148,7 +146,6 @@ status: draft
 - [ ] Task
 `
 	validSpec1 := `---
-number: 1
 status: draft
 ---
 
@@ -215,7 +212,6 @@ func TestValidateCommand_ByPath(t *testing.T) {
 	}
 
 	validSpec := `---
-number: 0
 status: approved
 ---
 
@@ -359,7 +355,6 @@ func TestValidateCommand_MixedResults(t *testing.T) {
 
 	// Create valid spec
 	validSpec := `---
-number: 0
 status: draft
 ---
 
@@ -427,21 +422,18 @@ func TestValidateCommand_ScopedNumbersAllowed(t *testing.T) {
 	}
 
 	parentSpec := `---
-number: 0
 status: draft
 ---
 
 # Parent
 `
 	childSpec := `---
-number: 1
 status: draft
 ---
 
 # Child
 `
 	topLevelSpec := `---
-number: 1
 status: draft
 ---
 
@@ -527,12 +519,12 @@ func TestFindAllSpecs(t *testing.T) {
 func TestResolveSpecPath(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create a spec file with number in frontmatter
+	// Create a spec file with a numbered directory.
 	specPath := filepath.Join(tmpDir, "000-test", "SPEC.md")
 	if err := os.MkdirAll(filepath.Dir(specPath), 0755); err != nil {
 		t.Fatalf("failed to create spec dir: %v", err)
 	}
-	if err := os.WriteFile(specPath, []byte("---\nnumber: 0\n---\n\n# Test\n"), 0644); err != nil {
+	if err := os.WriteFile(specPath, []byte("---\nstatus: draft\n---\n\n# Test\n"), 0644); err != nil {
 		t.Fatalf("failed to write file: %v", err)
 	}
 
@@ -571,10 +563,10 @@ func TestResolveSpecPath_DottedRef(t *testing.T) {
 	parentPath := filepath.Join(parentDir, "SPEC.md")
 	childPath := filepath.Join(childDir, "SPEC.md")
 
-	if err := os.WriteFile(parentPath, []byte("---\nnumber: 1\n---\n\n# Root\n"), 0o644); err != nil {
+	if err := os.WriteFile(parentPath, []byte("---\nstatus: draft\n---\n\n# Root\n"), 0o644); err != nil {
 		t.Fatalf("failed to write parent spec: %v", err)
 	}
-	if err := os.WriteFile(childPath, []byte("---\nnumber: 2\n---\n\n# Child\n"), 0o644); err != nil {
+	if err := os.WriteFile(childPath, []byte("---\nstatus: draft\n---\n\n# Child\n"), 0o644); err != nil {
 		t.Fatalf("failed to write child spec: %v", err)
 	}
 

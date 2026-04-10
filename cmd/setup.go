@@ -90,24 +90,7 @@ Actions:
 			return err
 		}
 
-		// Migrate existing flat specs to add number to frontmatter
 		specsDir := filepath.Join(cwd, "specs")
-		migrations, err := setup.FindSpecsNeedingMigration(specsDir)
-		if err == nil && len(migrations) > 0 {
-			cmd.Printf("\nMigrating %d spec(s) to add number field:\n", len(migrations))
-			for _, m := range migrations {
-				cmd.Printf("  %s → number: %d\n", filepath.Base(m.Path), m.Number)
-				if !dryRun {
-					if err := setup.AddNumberToFrontmatter(m.Path, m.Number); err != nil {
-						cmd.PrintErrf("  Error migrating %s: %v\n", filepath.Base(m.Path), err)
-					}
-				}
-			}
-			if dryRun {
-				cmd.Println("  [dry-run] No changes made")
-			}
-		}
-
 		specsMigrated, err := setup.MigrateSpecsLayout(specsDir, dryRun)
 		if err != nil {
 			return err

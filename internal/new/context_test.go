@@ -91,7 +91,7 @@ func TestNewContext_ErrorHandling(t *testing.T) {
 			t.Fatalf("failed to create parent spec directory: %v", err)
 		}
 		parentPath := filepath.Join(parentDir, "SPEC.md")
-		parentSpec := "---\nnumber: 0\n---\n\n# Parent Spec\n"
+		parentSpec := "---\nstatus: draft\n---\n\n# Parent Spec\n"
 		if err := os.WriteFile(parentPath, []byte(parentSpec), 0o644); err != nil {
 			t.Fatalf("failed to write parent spec: %v", err)
 		}

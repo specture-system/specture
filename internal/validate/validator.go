@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	filenamePrefixPattern  = regexp.MustCompile(`^(\d{3})-`)
 	markdownSectionPattern = regexp.MustCompile(`^(#{2,6})\s+(.+)$`)
 	numberedSectionPattern = regexp.MustCompile(`^\d+(?:(?:\.\d+)+|[.)]|\s)`)
 	specDirPrefixPattern   = regexp.MustCompile(`^(\d+)`)
@@ -45,6 +44,13 @@ func ValidateSpec(spec *Spec) *ValidationResult {
 		Errors: []ValidationError{},
 	}
 
+	if fullRefFromPath(spec.Path) == "" {
+		result.Errors = append(result.Errors, ValidationError{
+			Field:   "path",
+			Message: "spec path must encode a numbered ref",
+		})
+	}
+
 	// Validate frontmatter exists
 	if spec.Frontmatter == nil {
 		result.Errors = append(result.Errors, ValidationError{
@@ -52,32 +58,6 @@ func ValidateSpec(spec *Spec) *ValidationResult {
 			Message: "missing frontmatter",
 		})
 	} else {
-		// Validate number field
-		if spec.Frontmatter.Number == nil {
-			result.Errors = append(result.Errors, ValidationError{
-				Field:   "number",
-				Message: "missing required field",
-			})
-		} else if *spec.Frontmatter.Number < 0 {
-			result.Errors = append(result.Errors, ValidationError{
-				Field:   "number",
-				Message: fmt.Sprintf("invalid value %d (must be a non-negative integer)", *spec.Frontmatter.Number),
-			})
-		} else {
-			// Check number/filename mismatch
-			filename := filepath.Base(spec.Path)
-			matches := filenamePrefixPattern.FindStringSubmatch(filename)
-			if len(matches) >= 2 {
-				fileNum, err := strconv.Atoi(matches[1])
-				if err == nil && fileNum != *spec.Frontmatter.Number {
-					result.Warnings = append(result.Warnings, ValidationError{
-						Field:   "number",
-						Message: fmt.Sprintf("mismatch: frontmatter number %d does not match filename prefix %03d", *spec.Frontmatter.Number, fileNum),
-					})
-				}
-			}
-		}
-
 		// Validate status field
 		if spec.Frontmatter.Status == "" {
 			result.Errors = append(result.Errors, ValidationError{
@@ -204,17 +184,25 @@ func fullRefFromPath(path string) string {
 
 	var refs []string
 	for _, part := range parts[specsIdx+1 : len(parts)-1] {
-		matches := specDirPrefixPattern.FindStringSubmatch(part)
-		if len(matches) != 2 {
+		number := extractLeadingNumber(part)
+		if number < 0 {
 			return ""
 		}
-
-		num, err := strconv.Atoi(matches[1])
-		if err != nil {
-			return ""
-		}
-		refs = append(refs, strconv.Itoa(num))
+		refs = append(refs, fmt.Sprintf("%d", number))
 	}
 
 	return strings.Join(refs, ".")
+}
+
+func extractLeadingNumber(value string) int {
+	matches := specDirPrefixPattern.FindStringSubmatch(value)
+	if len(matches) != 2 {
+		return -1
+	}
+
+	num, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return -1
+	}
+	return num
 }

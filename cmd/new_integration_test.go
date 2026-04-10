@@ -159,12 +159,12 @@ func TestNewCommand_SpecNumbering_WithExistingSpec(t *testing.T) {
 	// Test that numbering correctly identifies next available number
 	tmpDir := newTestContext(t)
 
-	// Create an existing spec file with number in frontmatter and commit it
+	// Create an existing numbered spec file and commit it.
 	specsDir := filepath.Join(tmpDir, "specs")
 	os.MkdirAll(specsDir, 0755)
 	specFile := filepath.Join(specsDir, "000-existing", "SPEC.md")
 	os.MkdirAll(filepath.Dir(specFile), 0755)
-	os.WriteFile(specFile, []byte("---\nnumber: 0\n---\n\n# Existing\n\n## Task List\n"), 0644)
+	os.WriteFile(specFile, []byte("---\nstatus: draft\n---\n\n# Existing\n\n## Task List\n"), 0644)
 
 	// Commit the file so working tree is clean
 	out := &bytes.Buffer{}
@@ -207,7 +207,7 @@ func TestNewCommand_ChildSpecOutput(t *testing.T) {
 		t.Fatalf("failed to create parent directory: %v", err)
 	}
 	parentPath := filepath.Join(parentDir, "SPEC.md")
-	parentSpec := "---\nnumber: 0\n---\n\n# Parent Spec\n"
+	parentSpec := "---\nstatus: draft\n---\n\n# Parent Spec\n"
 	if err := os.WriteFile(parentPath, []byte(parentSpec), 0o644); err != nil {
 		t.Fatalf("failed to create parent spec: %v", err)
 	}

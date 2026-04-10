@@ -30,7 +30,6 @@ type SpecInfo struct {
 // frontmatter represents the YAML frontmatter of a spec.
 type frontmatter struct {
 	Status string `yaml:"status"`
-	Number *int   `yaml:"number"`
 }
 
 // Parse reads and parses a spec file, returning a fully populated SpecInfo.
@@ -61,22 +60,17 @@ func ParseContent(path string, content []byte) (*SpecInfo, error) {
 
 	// Extract frontmatter
 	var fmStatus string
-	var fmNumber *int
 	fmData := gmfrontmatter.Get(ctx)
 	if fmData != nil {
 		var fm frontmatter
 		if err := fmData.Decode(&fm); err == nil {
 			fmStatus = fm.Status
-			fmNumber = fm.Number
 		}
 	}
 
-	// Resolve spec number exclusively from frontmatter
-	number, err := resolveNumber(fmNumber)
-	if err != nil {
-		return nil, err
-	}
+	number := extractNumberFromSpecPath(path)
 	info.Number = number
+	var err error
 	info.FullRef, err = resolveFullRef(path, number)
 	if err != nil {
 		return nil, err
@@ -132,19 +126,6 @@ func FindCurrent(specs []*SpecInfo) *SpecInfo {
 	return nil
 }
 
-// resolveNumber determines the spec number exclusively from frontmatter.
-// Returns -1 if number is not present in frontmatter.
-// Returns an error if the frontmatter number is negative.
-func resolveNumber(fmNumber *int) (int, error) {
-	if fmNumber == nil {
-		return -1, nil
-	}
-	if *fmNumber < 0 {
-		return 0, fmt.Errorf("invalid spec number %d: must be a non-negative integer", *fmNumber)
-	}
-	return *fmNumber, nil
-}
-
 func resolveFullRef(path string, number int) (string, error) {
 	if number < 0 {
 		return "", nil
@@ -167,12 +148,17 @@ func resolveFullRef(path string, number int) (string, error) {
 	return strconv.Itoa(number), nil
 }
 
-// extractNumberFromFilename extracts the spec number from a filename like "003-foo.md".
-// Returns -1 if the filename doesn't have a numeric prefix.
-// Used only by migration/setup, not by spec parsing.
-func extractNumberFromFilename(filename string) int {
-	re := regexp.MustCompile(`^(\d{3})-`)
-	matches := re.FindStringSubmatch(filename)
+// extractNumberFromSpecPath extracts the local spec number from the path.
+// For nested specs it reads the parent directory name, and for legacy flat
+// specs it falls back to the filename.
+func extractNumberFromSpecPath(path string) int {
+	target := filepath.Base(path)
+	if target == "SPEC.md" {
+		target = filepath.Base(filepath.Dir(path))
+	}
+
+	re := regexp.MustCompile(`^(\d+)`)
+	matches := re.FindStringSubmatch(target)
 	if len(matches) < 2 {
 		return -1
 	}

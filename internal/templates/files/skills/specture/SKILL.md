@@ -7,7 +7,7 @@ description: Follow the Specture System for spec-driven development. Use when cr
 
 Specture is a spec-driven development system. Specs are design documents in the `specs/` tree that live in `SPEC.md` files and may nest to any number of levels. Each spec contains metadata, goals, and design decisions.
 
-Spec numbers are stored in the YAML frontmatter `number` field. The number is a local identifier within its parent scope, and the full dotted reference is derived from the directory tree.
+Spec numbers are derived from the directory tree. The full dotted reference is derived from the directory tree, and frontmatter does not store the number.
 
 ## Design Workflow
 
@@ -99,7 +99,7 @@ specture validate --spec 3
 specture validate -s 42
 ```
 
-Checks: valid frontmatter (number and status), no duplicate numbers, description present. Warns on number/filename mismatch.
+Checks: valid frontmatter (status), no duplicate refs, description present.
 
 Aliases: `validate`, `v`
 

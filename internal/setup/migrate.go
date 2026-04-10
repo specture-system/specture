@@ -14,12 +14,6 @@ import (
 	specpkg "github.com/specture-system/specture/internal/spec"
 )
 
-// MigrationResult describes a spec that needs number added to frontmatter.
-type MigrationResult struct {
-	Path   string
-	Number int
-}
-
 type specMovePlan struct {
 	oldPath string
 	newPath string
@@ -28,46 +22,6 @@ type specMovePlan struct {
 }
 
 const specsGitignoreContent = "*\n!*/\n!**/SPEC.md\n!README.md\n"
-
-// FindSpecsNeedingMigration scans the specs directory for files matching NNN-slug.md
-// that don't already have a number field in frontmatter.
-func FindSpecsNeedingMigration(specsDir string) ([]MigrationResult, error) {
-	entries, err := os.ReadDir(specsDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read specs directory: %w", err)
-	}
-
-	numericPrefix := regexp.MustCompile(`^(\d{3})-.*\.md$`)
-	var results []MigrationResult
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		matches := numericPrefix.FindStringSubmatch(entry.Name())
-		if len(matches) < 2 {
-			continue
-		}
-
-		num, err := strconv.Atoi(matches[1])
-		if err != nil {
-			continue
-		}
-
-		path := filepath.Join(specsDir, entry.Name())
-		hasNumber, err := hasNumberInFrontmatter(path)
-		if err != nil {
-			continue
-		}
-
-		if !hasNumber {
-			results = append(results, MigrationResult{Path: path, Number: num})
-		}
-	}
-
-	return results, nil
-}
 
 // MigrateSpecsLayout moves flat top-level spec files into numbered spec directories
 // and ensures specs/.gitignore keeps only SPEC.md and README.md files tracked.
@@ -92,13 +46,13 @@ func MigrateSpecsLayout(specsDir string, dryRun bool) (bool, error) {
 		}
 
 		oldPath := filepath.Join(specsDir, name)
-		info, err := specpkg.Parse(oldPath)
+		number, err := resolveSpecNumberForMigration(oldPath)
 		if err != nil {
 			return false, fmt.Errorf("failed to parse %s: %w", oldPath, err)
 		}
 
 		slug := specSlugFromFilename(name)
-		newDir := fmt.Sprintf("%03d-%s", info.Number, slug)
+		newDir := fmt.Sprintf("%03d-%s", number, slug)
 		newPath := filepath.Join(specsDir, newDir, "SPEC.md")
 
 		if oldPath == newPath {
@@ -157,75 +111,55 @@ func MigrateSpecsLayout(specsDir string, dryRun bool) (bool, error) {
 	return changed, nil
 }
 
-// AddNumberToFrontmatter adds a `number: N` field to the frontmatter of a spec file.
-func AddNumberToFrontmatter(path string, number int) error {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("failed to read file: %w", err)
-	}
-
-	updated, err := insertNumberInFrontmatter(content, number)
-	if err != nil {
-		return fmt.Errorf("failed to insert number: %w", err)
-	}
-
-	if err := os.WriteFile(path, updated, 0644); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
-	}
-
-	return nil
+func specSlugFromFilename(filename string) string {
+	slug := strings.TrimSuffix(filename, filepath.Ext(filename))
+	re := regexp.MustCompile(`^\d+-`)
+	return re.ReplaceAllString(slug, "")
 }
 
-// hasNumberInFrontmatter checks if the file already has a number field in its frontmatter.
-func hasNumberInFrontmatter(path string) (bool, error) {
+func resolveSpecNumberForMigration(path string) (int, error) {
+	info, err := specpkg.Parse(path)
+	if err != nil {
+		return 0, err
+	}
+	if info.Number >= 0 {
+		return info.Number, nil
+	}
+
+	return legacyFrontmatterNumber(path)
+}
+
+func legacyFrontmatterNumber(path string) (int, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
-		return false, err
+		return 0, fmt.Errorf("failed to read file: %w", err)
 	}
 
 	scanner := bufio.NewScanner(bytes.NewReader(content))
 	inFrontmatter := false
 	for scanner.Scan() {
-		line := scanner.Text()
+		line := strings.TrimSpace(scanner.Text())
 		if line == "---" {
 			if inFrontmatter {
-				break // End of frontmatter
+				break
 			}
 			inFrontmatter = true
 			continue
 		}
 		if inFrontmatter && strings.HasPrefix(line, "number:") {
-			return true, nil
+			value := strings.TrimSpace(strings.TrimPrefix(line, "number:"))
+			number, err := strconv.Atoi(value)
+			if err != nil {
+				return 0, fmt.Errorf("invalid legacy spec number %q", value)
+			}
+			return number, nil
 		}
 	}
-
-	return false, nil
-}
-
-// insertNumberInFrontmatter inserts `number: N` as the first field in the YAML frontmatter.
-func insertNumberInFrontmatter(content []byte, number int) ([]byte, error) {
-	lines := strings.Split(string(content), "\n")
-
-	// Find first --- line
-	for i, line := range lines {
-		if line == "---" {
-			// Insert number after the opening ---
-			numberLine := fmt.Sprintf("number: %d", number)
-			newLines := make([]string, 0, len(lines)+1)
-			newLines = append(newLines, lines[:i+1]...)
-			newLines = append(newLines, numberLine)
-			newLines = append(newLines, lines[i+1:]...)
-			return []byte(strings.Join(newLines, "\n")), nil
-		}
+	if err := scanner.Err(); err != nil {
+		return 0, fmt.Errorf("failed to scan frontmatter: %w", err)
 	}
 
-	return nil, fmt.Errorf("no frontmatter found")
-}
-
-func specSlugFromFilename(filename string) string {
-	slug := strings.TrimSuffix(filename, filepath.Ext(filename))
-	re := regexp.MustCompile(`^\d+-`)
-	return re.ReplaceAllString(slug, "")
+	return 0, fmt.Errorf("spec does not encode a number in path or frontmatter")
 }
 
 func rewriteSpecLinks(specsDir string, plans []specMovePlan) error {

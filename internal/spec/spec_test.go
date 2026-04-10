@@ -456,18 +456,18 @@ func TestFindCurrent_MultipleInProgress_ReturnsLowest(t *testing.T) {
 // ---------- Additional edge case tests ----------
 
 func TestParseContent_ExtractsNumber(t *testing.T) {
-	// Number is read exclusively from frontmatter, not filename
+	// Spec numbers come from the path, not frontmatter.
 	tests := []struct {
 		name       string
 		path       string
 		content    []byte
 		wantNumber int
 	}{
-		{"frontmatter number 0", "000-mvp.md", buildSpec("number: 0\nstatus: draft", "Test", ""), 0},
-		{"frontmatter number 1", "001-feature.md", buildSpec("number: 1\nstatus: draft", "Test", ""), 1},
-		{"frontmatter number 42", "042-answer.md", buildSpec("number: 42\nstatus: draft", "Test", ""), 42},
-		{"no frontmatter number", "100-big.md", []byte("# Test\n"), -1},
-		{"slug-only filename with number", "big-feature.md", buildSpec("number: 100\nstatus: draft", "Test", ""), 100},
+		{"path prefix 000", "000-mvp.md", buildSpec("status: draft", "Test", ""), 0},
+		{"path prefix 001", "001-feature.md", buildSpec("status: draft", "Test", ""), 1},
+		{"path prefix 042", "042-answer.md", buildSpec("status: draft", "Test", ""), 42},
+		{"path prefix 100", "100-big.md", []byte("# Test\n"), 100},
+		{"slug-only filename ignores frontmatter number", "big-feature.md", buildSpec("number: 100\nstatus: draft", "Test", ""), -1},
 		{"no number anywhere", "bad-name.md", []byte("# Test\n"), -1},
 	}
 
@@ -484,83 +484,70 @@ func TestParseContent_ExtractsNumber(t *testing.T) {
 	}
 }
 
-// ---------- Number from frontmatter tests ----------
+func TestParseContent_NumberFromPathWithoutFrontmatter(t *testing.T) {
+	content := buildSpec("status: draft", "Test", "")
+	info, err := ParseContent("002-feature/SPEC.md", content)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info.Number != 2 {
+		t.Fatalf("expected number 2 from path, got %d", info.Number)
+	}
+	if info.FullRef != "2" {
+		t.Fatalf("expected full ref \"2\", got %q", info.FullRef)
+	}
+}
 
-func TestParseContent_NumberFromFrontmatter(t *testing.T) {
+// ---------- Number from path tests ----------
+
+func TestParseContent_NumberFromPath(t *testing.T) {
 	tests := []struct {
 		name        string
 		content     []byte
 		path        string
 		wantNumber  int
 		wantFullRef string
-		wantErr     bool
 	}{
 		{
-			name:        "number present in frontmatter",
+			name:        "number present in frontmatter is ignored",
 			content:     buildSpec("number: 5\nstatus: draft", "Test", ""),
 			path:        "test.md",
-			wantNumber:  5,
-			wantFullRef: "5",
+			wantNumber:  -1,
+			wantFullRef: "",
 		},
 		{
-			name:        "number zero in frontmatter",
+			name:        "path prefix wins over frontmatter number",
+			content:     buildSpec("number: 42\nstatus: draft", "Test", ""),
+			path:        "003-test.md",
+			wantNumber:  3,
+			wantFullRef: "3",
+		},
+		{
+			name:        "number zero in frontmatter is ignored",
 			content:     buildSpec("number: 0\nstatus: draft", "Test", ""),
-			path:        "test.md",
+			path:        "000-test.md",
 			wantNumber:  0,
 			wantFullRef: "0",
 		},
 		{
-			name:        "large number in frontmatter",
-			content:     buildSpec("number: 999\nstatus: draft", "Test", ""),
-			path:        "test.md",
-			wantNumber:  999,
-			wantFullRef: "999",
-		},
-		{
-			name:        "frontmatter number overrides filename number",
-			content:     buildSpec("number: 42\nstatus: draft", "Test", ""),
-			path:        "003-test.md",
-			wantNumber:  42,
-			wantFullRef: "42",
-		},
-		{
-			name:        "missing number defaults to -1 even with numeric prefix filename",
-			content:     buildSpec("status: draft", "Test", ""),
-			path:        "007-test.md",
-			wantNumber:  -1,
-			wantFullRef: "",
-		},
-		{
-			name:        "missing number without numeric prefix defaults to -1",
+			name:        "missing number defaults to -1 without numeric prefix",
 			content:     buildSpec("status: draft", "Test", ""),
 			path:        "test.md",
 			wantNumber:  -1,
 			wantFullRef: "",
 		},
 		{
-			name:    "negative number is invalid",
-			content: buildSpec("number: -1\nstatus: draft", "Test", ""),
-			path:    "test.md",
-			wantErr: true,
-		},
-		{
-			name:        "no frontmatter defaults to -1",
+			name:        "no frontmatter still uses numeric prefix",
 			content:     []byte("# Test\n"),
 			path:        "005-test.md",
-			wantNumber:  -1,
-			wantFullRef: "",
+			wantNumber:  5,
+			wantFullRef: "5",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			info, err := ParseContent(tt.path, tt.content)
-			if tt.wantErr {
-				if err == nil {
-					t.Error("expected error, got nil")
-				}
-				return
-			}
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -575,8 +562,8 @@ func TestParseContent_NumberFromFrontmatter(t *testing.T) {
 }
 
 func TestParseContent_FullRefMatchesNumberString(t *testing.T) {
-	content := buildSpec("number: 12\nstatus: draft", "Test", "")
-	info, err := ParseContent("test.md", content)
+	content := buildSpec("status: draft", "Test", "")
+	info, err := ParseContent("012-test.md", content)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -602,9 +589,9 @@ func TestParseContent_FullRefIncludesAncestorRefs(t *testing.T) {
 	childPath := filepath.Join(childDir, "SPEC.md")
 	grandchildPath := filepath.Join(grandchildDir, "SPEC.md")
 
-	parentContent := buildSpec("number: 1\nstatus: draft", "Root", "")
-	childContent := buildSpec("number: 2\nstatus: draft", "Child", "")
-	grandchildContent := buildSpec("number: 3\nstatus: draft", "Grandchild", "")
+	parentContent := buildSpec("status: draft", "Root", "")
+	childContent := buildSpec("status: draft", "Child", "")
+	grandchildContent := buildSpec("status: draft", "Grandchild", "")
 
 	if err := os.WriteFile(parentPath, parentContent, 0o644); err != nil {
 		t.Fatalf("failed to write parent spec: %v", err)
@@ -623,6 +610,44 @@ func TestParseContent_FullRefIncludesAncestorRefs(t *testing.T) {
 
 	if info.FullRef != "1.2.3" {
 		t.Fatalf("expected full ref \"1.2.3\", got %q", info.FullRef)
+	}
+}
+
+func TestParseContent_FullRefFromPathWithoutFrontmatterNumber(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	parentDir := filepath.Join(tmpDir, "specs", "1-root")
+	childDir := filepath.Join(parentDir, "2-child")
+
+	for _, dir := range []string{parentDir, childDir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatalf("failed to create dir %s: %v", dir, err)
+		}
+	}
+
+	parentPath := filepath.Join(parentDir, "SPEC.md")
+	childPath := filepath.Join(childDir, "SPEC.md")
+
+	parentContent := buildSpec("status: draft", "Root", "")
+	childContent := buildSpec("status: draft", "Child", "")
+
+	if err := os.WriteFile(parentPath, parentContent, 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(childPath, childContent, 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+
+	info, err := Parse(childPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if info.Number != 2 {
+		t.Fatalf("expected child number 2 from path, got %d", info.Number)
+	}
+	if info.FullRef != "1.2" {
+		t.Fatalf("expected full ref \"1.2\", got %q", info.FullRef)
 	}
 }
 

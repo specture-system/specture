@@ -11,20 +11,12 @@ import (
 // the version fields). Parallel execution would cause tests to interfere with
 // each other.
 func TestRootCommand_VersionFlag(t *testing.T) {
-	oldVersion := Version
-	oldCommit := Commit
 	t.Cleanup(func() {
-		Version = oldVersion
-		Commit = oldCommit
-		rootCmd.Version = versionString()
-		rootCmd.SetVersionTemplate("{{.Version}}\n")
+		SetVersion("dev", "unknown")
 		rootCmd.SetArgs(nil)
 	})
 
-	Version = "v0.3.0"
-	Commit = "abc1234"
-	rootCmd.Version = versionString()
-	rootCmd.SetVersionTemplate("{{.Version}}\n")
+	SetVersion("v0.3.0", "abc1234")
 
 	out := &bytes.Buffer{}
 	cmd := rootCmd

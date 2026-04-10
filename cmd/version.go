@@ -2,11 +2,11 @@ package cmd
 
 import "fmt"
 
-var (
-	Version = "dev"
-	Commit  = "unknown"
-)
+func SetVersion(version, commit string) {
+	rootCmd.Version = fmt.Sprintf("%s (%s)", version, commit)
+	rootCmd.SetVersionTemplate("{{.Version}}\n")
+}
 
-func versionString() string {
-	return fmt.Sprintf("%s (%s)", Version, Commit)
+func init() {
+	SetVersion("dev", "unknown")
 }

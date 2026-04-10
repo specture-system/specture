@@ -8,10 +8,6 @@ builds:
     binary: specture
     env:
       - CGO_ENABLED=0
-    ldflags:
-      - -s -w
-      - -X github.com/specture-system/specture/cmd.Version={{ .Tag }}
-      - -X github.com/specture-system/specture/cmd.Commit={{ .ShortCommit }}
     goos:
       - linux
     goarch:

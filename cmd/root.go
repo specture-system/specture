@@ -23,9 +23,6 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Version = versionString()
-	rootCmd.SetVersionTemplate("{{.Version}}\n")
-
 	rootCmd.AddCommand(setupCmd)
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(validateCmd)

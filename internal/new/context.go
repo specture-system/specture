@@ -133,10 +133,7 @@ func NewContext(workDir, title, parentRef string) (*NewCommandContext, error) {
 // If noBranch is true, no git branch is created for the spec.
 func (c *NewCommandContext) CreateSpec(dryRun bool, body string, noBranch bool) error {
 	// Always generate frontmatter
-	frontmatter, err := GenerateFrontmatter(c.Title, c.Author, c.Number)
-	if err != nil {
-		return fmt.Errorf("failed to generate frontmatter: %w", err)
-	}
+	frontmatter := GenerateFrontmatter(c.Author)
 
 	// Render body (either provided or default from template)
 	if body == "" {

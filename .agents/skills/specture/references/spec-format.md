@@ -12,13 +12,12 @@ specs/mvp/backend/SPEC.md
 specs/refactor-database-layer/SPEC.md
 ```
 
-Spec numbers are stored in the YAML frontmatter `number` field (not in the directory name). The number is a local identifier within the spec's parent scope, and the full dotted reference is derived from the directory tree. `specture new` auto-assigns the next available number within the selected scope.
+Spec numbers are derived from the directory tree, not stored in frontmatter. The number is a local identifier within the spec's parent scope, and the full dotted reference is derived from the directory tree. `specture new` auto-assigns the next available number within the selected scope.
 
 ## Complete Example
 
 ```markdown
 ---
-number: 0
 status: draft
 author: Your Name
 creation_date: 2025-12-18
@@ -49,7 +48,6 @@ YAML frontmatter between `---` delimiters at the top of the file.
 
 | Field    | Values                                                         |
 | -------- | -------------------------------------------------------------- |
-| `number` | Non-negative integer (0, 1, 2, ...). Auto-assigned by `specture new`. |
 | `status` | `draft`, `approved`, `in-progress`, `completed`, or `rejected` |
 
 ### Optional Fields

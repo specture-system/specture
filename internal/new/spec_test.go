@@ -53,25 +53,25 @@ func TestFindNextSpecNumber(t *testing.T) {
 		{
 			name: "single_spec_with_number",
 			setupFiles: map[string]string{
-				"000-first/SPEC.md": "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
+				"000-first/SPEC.md": "---\nstatus: draft\n---\n\n# First\n\n## Task List\n",
 			},
 			expected: 1,
 		},
 		{
 			name: "multiple_specs",
 			setupFiles: map[string]string{
-				"000-first/SPEC.md":  "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
-				"001-second/SPEC.md": "---\nnumber: 1\n---\n\n# Second\n\n## Task List\n",
-				"002-third/SPEC.md":  "---\nnumber: 2\n---\n\n# Third\n\n## Task List\n",
+				"000-first/SPEC.md":  "---\nstatus: draft\n---\n\n# First\n\n## Task List\n",
+				"001-second/SPEC.md": "---\nstatus: draft\n---\n\n# Second\n\n## Task List\n",
+				"002-third/SPEC.md":  "---\nstatus: draft\n---\n\n# Third\n\n## Task List\n",
 			},
 			expected: 3,
 		},
 		{
 			name: "non_sequential_numbers",
 			setupFiles: map[string]string{
-				"000-first/SPEC.md": "---\nnumber: 0\n---\n\n# First\n\n## Task List\n",
-				"005-fifth/SPEC.md": "---\nnumber: 5\n---\n\n# Fifth\n\n## Task List\n",
-				"002-third/SPEC.md": "---\nnumber: 2\n---\n\n# Third\n\n## Task List\n",
+				"000-first/SPEC.md": "---\nstatus: draft\n---\n\n# First\n\n## Task List\n",
+				"005-fifth/SPEC.md": "---\nstatus: draft\n---\n\n# Fifth\n\n## Task List\n",
+				"002-third/SPEC.md": "---\nstatus: draft\n---\n\n# Third\n\n## Task List\n",
 			},
 			expected: 6,
 		},
@@ -79,7 +79,7 @@ func TestFindNextSpecNumber(t *testing.T) {
 			name: "ignores_files_without_number",
 			setupFiles: map[string]string{
 				"README.md":        "# Readme\n",
-				"000-spec/SPEC.md": "---\nnumber: 0\n---\n\n# Spec\n\n## Task List\n",
+				"000-spec/SPEC.md": "---\nstatus: draft\n---\n\n# Spec\n\n## Task List\n",
 				"notes.txt":        "some notes",
 			},
 			expected: 1,
@@ -114,7 +114,7 @@ func TestFindNextSpecNumber(t *testing.T) {
 
 func TestRenderSpec(t *testing.T) {
 	t.Run("renders_with_title_and_author", func(t *testing.T) {
-		result, err := RenderSpec("Test Feature", "Test Author", 5)
+		result, err := RenderSpec("Test Feature", "Test Author")
 		if err != nil {
 			t.Fatalf("RenderSpec() error = %v", err)
 		}
@@ -129,13 +129,10 @@ func TestRenderSpec(t *testing.T) {
 		if !strings.Contains(result, "status: draft") {
 			t.Errorf("rendered spec doesn't contain status")
 		}
-		if !strings.Contains(result, "number: 5") {
-			t.Errorf("rendered spec doesn't contain number")
-		}
 	})
 
 	t.Run("includes_creation_date", func(t *testing.T) {
-		result, err := RenderSpec("Test", "Author", 0)
+		result, err := RenderSpec("Test", "Author")
 		if err != nil {
 			t.Fatalf("RenderSpec() error = %v", err)
 		}
@@ -155,16 +152,16 @@ func TestFindNextSpecNumber_ScopedToParent(t *testing.T) {
 	}
 
 	parentPath := filepath.Join(parentDir, "SPEC.md")
-	if err := os.WriteFile(parentPath, []byte("---\nnumber: 0\n---\n\n# Parent\n"), 0o644); err != nil {
+	if err := os.WriteFile(parentPath, []byte("---\nstatus: draft\n---\n\n# Parent\n"), 0o644); err != nil {
 		t.Fatalf("failed to create parent spec: %v", err)
 	}
 
 	files := map[string]string{
-		filepath.Join(parentDir, "000-first", "SPEC.md"):                    "---\nnumber: 0\n---\n\n# First Child\n",
-		filepath.Join(parentDir, "002-third", "SPEC.md"):                    "---\nnumber: 2\n---\n\n# Third Child\n",
-		filepath.Join(parentDir, "001-second", "SPEC.md"):                   "---\nnumber: 1\n---\n\n# Second Child\n",
+		filepath.Join(parentDir, "000-first", "SPEC.md"):                    "---\nstatus: draft\n---\n\n# First Child\n",
+		filepath.Join(parentDir, "002-third", "SPEC.md"):                    "---\nstatus: draft\n---\n\n# Third Child\n",
+		filepath.Join(parentDir, "001-second", "SPEC.md"):                   "---\nstatus: draft\n---\n\n# Second Child\n",
 		filepath.Join(parentDir, "001-second", "notes.txt"):                 "ignore me",
-		filepath.Join(parentDir, "001-second", "000-grandchild", "SPEC.md"): "---\nnumber: 0\n---\n\n# Grandchild\n",
+		filepath.Join(parentDir, "001-second", "000-grandchild", "SPEC.md"): "---\nstatus: draft\n---\n\n# Grandchild\n",
 	}
 	for name, content := range files {
 		if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil {
@@ -186,16 +183,10 @@ func TestFindNextSpecNumber_ScopedToParent(t *testing.T) {
 
 func TestGenerateFrontmatter(t *testing.T) {
 	t.Run("generates_valid_frontmatter", func(t *testing.T) {
-		frontmatter, err := GenerateFrontmatter("Test Spec", "Test Author", 5)
-		if err != nil {
-			t.Fatalf("GenerateFrontmatter() error = %v", err)
-		}
+		frontmatter := GenerateFrontmatter("Test Author")
 
 		if !strings.Contains(frontmatter, "---") {
 			t.Errorf("frontmatter missing YAML delimiters")
-		}
-		if !strings.Contains(frontmatter, "number: 5") {
-			t.Errorf("frontmatter missing number")
 		}
 		if !strings.Contains(frontmatter, "status: draft") {
 			t.Errorf("frontmatter missing status")
@@ -209,12 +200,9 @@ func TestGenerateFrontmatter(t *testing.T) {
 	})
 
 	t.Run("number_zero", func(t *testing.T) {
-		frontmatter, err := GenerateFrontmatter("Test", "Author", 0)
-		if err != nil {
-			t.Fatalf("GenerateFrontmatter() error = %v", err)
-		}
-		if !strings.Contains(frontmatter, "number: 0") {
-			t.Errorf("frontmatter should contain 'number: 0', got:\n%s", frontmatter)
+		frontmatter := GenerateFrontmatter("Author")
+		if strings.Contains(frontmatter, "number:") {
+			t.Errorf("frontmatter should not contain number, got:\n%s", frontmatter)
 		}
 	})
 }

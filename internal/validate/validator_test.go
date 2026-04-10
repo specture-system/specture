@@ -9,7 +9,6 @@ import (
 
 func TestValidateSpec_Valid(t *testing.T) {
 	content := []byte(`---
-number: 0
 status: draft
 author: Test Author
 ---
@@ -158,7 +157,6 @@ func TestValidateSpec_ValidStatuses(t *testing.T) {
 	for _, status := range ValidStatus {
 		t.Run(status, func(t *testing.T) {
 			content := []byte(`---
-number: 0
 status: ` + status + `
 ---
 
@@ -574,124 +572,8 @@ func TestValidationError_Error(t *testing.T) {
 	}
 }
 
-// ---------- Number validation tests ----------
-
-func TestValidateSpec_MissingNumber(t *testing.T) {
-	content := []byte(`---
-status: draft
----
-
-# My Feature
-
-## Task List
-
-- [ ] Task 1
-`)
-
-	spec, err := ParseSpecContent("test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected parse error: %v", err)
-	}
-
-	result := ValidateSpec(spec)
-	if result.IsValid() {
-		t.Error("expected validation to fail for missing number")
-	}
-
-	hasNumberError := false
-	for _, e := range result.Errors {
-		if e.Field == "number" {
-			hasNumberError = true
-			break
-		}
-	}
-	if !hasNumberError {
-		t.Errorf("expected number error, got: %v", result.Errors)
-	}
-}
-
-func TestValidateSpec_ValidNumber(t *testing.T) {
-	tests := []struct {
-		name   string
-		number string
-	}{
-		{"zero", "0"},
-		{"positive", "5"},
-		{"large", "999"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			content := []byte(`---
-number: ` + tt.number + `
-status: draft
----
-
-# My Feature
-
-## Task List
-
-- [ ] Task 1
-`)
-
-			spec, err := ParseSpecContent("test.md", content)
-			if err != nil {
-				t.Fatalf("unexpected parse error: %v", err)
-			}
-
-			result := ValidateSpec(spec)
-			hasNumberError := false
-			for _, e := range result.Errors {
-				if e.Field == "number" {
-					hasNumberError = true
-					break
-				}
-			}
-			if hasNumberError {
-				t.Errorf("expected no number error for %s, got: %v", tt.number, result.Errors)
-			}
-		})
-	}
-}
-
-func TestValidateSpec_NegativeNumber(t *testing.T) {
-	content := []byte(`---
-number: -1
-status: draft
----
-
-# My Feature
-
-## Task List
-
-- [ ] Task 1
-`)
-
-	spec, err := ParseSpecContent("test.md", content)
-	if err != nil {
-		t.Fatalf("unexpected parse error: %v", err)
-	}
-
-	result := ValidateSpec(spec)
-	if result.IsValid() {
-		t.Error("expected validation to fail for negative number")
-	}
-
-	hasNumberError := false
-	for _, e := range result.Errors {
-		if e.Field == "number" {
-			hasNumberError = true
-			break
-		}
-	}
-	if !hasNumberError {
-		t.Errorf("expected number error, got: %v", result.Errors)
-	}
-}
-
 func TestValidateSpecs_DuplicateFullRefs(t *testing.T) {
 	content1 := []byte(`---
-number: 1
 status: draft
 ---
 
@@ -702,7 +584,6 @@ status: draft
 - [ ] Task 1
 `)
 	content2 := []byte(`---
-number: 1
 status: draft
 ---
 
@@ -744,7 +625,6 @@ status: draft
 
 func TestValidateSpecs_AllowDuplicateFullRefsAcrossScopes(t *testing.T) {
 	content1 := []byte(`---
-number: 1
 status: draft
 ---
 
@@ -755,7 +635,6 @@ status: draft
 - [ ] Task 1
 `)
 	content2 := []byte(`---
-number: 1
 status: draft
 ---
 
@@ -791,7 +670,6 @@ status: draft
 
 func TestValidateSpecs_NoDuplicates(t *testing.T) {
 	content1 := []byte(`---
-number: 1
 status: draft
 ---
 
@@ -802,7 +680,6 @@ status: draft
 - [ ] Task 1
 `)
 	content2 := []byte(`---
-number: 2
 status: draft
 ---
 
@@ -832,95 +709,6 @@ status: draft
 			if e.Field == "fullref" && strings.Contains(e.Message, "duplicate ref") {
 				t.Errorf("unexpected duplicate ref error: %v", e)
 			}
-		}
-	}
-}
-
-func TestValidateSpec_NumberFilenameMismatch(t *testing.T) {
-	content := []byte(`---
-number: 5
-status: draft
----
-
-# My Feature
-
-## Task List
-
-- [ ] Task 1
-`)
-
-	// Filename says 003 but frontmatter says 5
-	spec, err := ParseSpecContent("003-my-feature.md", content)
-	if err != nil {
-		t.Fatalf("unexpected parse error: %v", err)
-	}
-
-	result := ValidateSpec(spec)
-
-	hasWarning := false
-	for _, e := range result.Warnings {
-		if e.Field == "number" && strings.Contains(e.Message, "mismatch") {
-			hasWarning = true
-			break
-		}
-	}
-	if !hasWarning {
-		t.Errorf("expected number/filename mismatch warning, got warnings: %v, errors: %v", result.Warnings, result.Errors)
-	}
-}
-
-func TestValidateSpec_NumberFilenameMatch(t *testing.T) {
-	content := []byte(`---
-number: 3
-status: draft
----
-
-# My Feature
-
-## Task List
-
-- [ ] Task 1
-`)
-
-	// Filename and frontmatter agree
-	spec, err := ParseSpecContent("003-my-feature.md", content)
-	if err != nil {
-		t.Fatalf("unexpected parse error: %v", err)
-	}
-
-	result := ValidateSpec(spec)
-
-	for _, e := range result.Warnings {
-		if e.Field == "number" {
-			t.Errorf("unexpected number warning: %v", e)
-		}
-	}
-}
-
-func TestValidateSpec_SlugOnlyFilenameNoMismatchWarning(t *testing.T) {
-	content := []byte(`---
-number: 5
-status: draft
----
-
-# My Feature
-
-## Task List
-
-- [ ] Task 1
-`)
-
-	// Slug-only filename — no mismatch possible
-	spec, err := ParseSpecContent("my-feature.md", content)
-	if err != nil {
-		t.Fatalf("unexpected parse error: %v", err)
-	}
-
-	result := ValidateSpec(spec)
-
-	for _, e := range result.Warnings {
-		if e.Field == "number" {
-			t.Errorf("unexpected number warning for slug-only filename: %v", e)
 		}
 	}
 }

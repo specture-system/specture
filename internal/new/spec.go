@@ -17,7 +17,6 @@ type SpecData struct {
 	Title        string
 	Author       string
 	CreationDate string
-	Number       int
 }
 
 // ToSlug converts a string to a URL-safe slug (kebab-case with special characters removed).
@@ -71,15 +70,14 @@ func FindNextSpecNumber(specsDir, parentPath string) (int, error) {
 }
 
 // GenerateFrontmatter generates the YAML frontmatter for a spec.
-func GenerateFrontmatter(title, author string, number int) (string, error) {
+func GenerateFrontmatter(author string) string {
 	frontmatter := fmt.Sprintf(`---
-number: %d
 status: draft
 author: %s
 creation_date: %s
----`, number, author, time.Now().Format("2006-01-02"))
+---`, author, time.Now().Format("2006-01-02"))
 
-	return frontmatter, nil
+	return frontmatter
 }
 
 // RenderDefaultBody renders the default body template from the spec template.
@@ -127,8 +125,7 @@ func RenderDefaultBody(title string) (string, error) {
 }
 
 // RenderSpec renders a complete spec file from the template (frontmatter + default body).
-// Kept for backward compatibility.
-func RenderSpec(title, author string, number int) (string, error) {
+func RenderSpec(title, author string) (string, error) {
 	tmpl, err := templates.GetSpecTemplate()
 	if err != nil {
 		return "", err
@@ -138,7 +135,6 @@ func RenderSpec(title, author string, number int) (string, error) {
 		Title:        title,
 		Author:       author,
 		CreationDate: time.Now().Format("2006-01-02"),
-		Number:       number,
 	}
 
 	return template.RenderTemplate(tmpl, data)

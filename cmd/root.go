@@ -23,7 +23,8 @@ func Execute() {
 }
 
 func init() {
-	refreshVersion()
+	rootCmd.Version = versionString()
+	rootCmd.SetVersionTemplate("{{.Version}}\n")
 
 	rootCmd.AddCommand(setupCmd)
 	rootCmd.AddCommand(newCmd)

@@ -16,13 +16,15 @@ func TestRootCommand_VersionFlag(t *testing.T) {
 	t.Cleanup(func() {
 		Version = oldVersion
 		Commit = oldCommit
-		refreshVersion()
+		rootCmd.Version = versionString()
+		rootCmd.SetVersionTemplate("{{.Version}}\n")
 		rootCmd.SetArgs(nil)
 	})
 
 	Version = "v0.3.0"
 	Commit = "abc1234"
-	refreshVersion()
+	rootCmd.Version = versionString()
+	rootCmd.SetVersionTemplate("{{.Version}}\n")
 
 	out := &bytes.Buffer{}
 	cmd := rootCmd

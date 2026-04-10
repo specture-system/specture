@@ -10,8 +10,3 @@ var (
 func versionString() string {
 	return fmt.Sprintf("%s (%s)", Version, Commit)
 }
-
-func refreshVersion() {
-	rootCmd.Version = versionString()
-	rootCmd.SetVersionTemplate("{{.Version}}\n")
-}

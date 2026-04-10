@@ -11,14 +11,14 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         pname = "specture";
-        version = "0.2.0";
+        version = "0.2.1";
       in
       {
         packages.default = pkgs.buildGoModule {
           inherit pname version;
           src = self;
           # vendorHash locks Go module dependencies
-          vendorHash = "sha256-iyOBYecijhzCqG2UTvN4gPJjJ4/KSgukDIg3s7gmMSs=";
+          vendorHash = "sha256-FnNfDAK60gj9+KPJsbDgy6ZOUlJu67ywf2WtrNY8sUs=";
           doCheck = false;
           meta = with pkgs.lib; {
             description = "Spec-driven software architecture system";

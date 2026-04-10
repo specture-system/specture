@@ -16,7 +16,7 @@ builds:
 
 archives:
   - id: specture
-    format: tar.gz
+    formats: [tar.gz]
     files:
       - LICENSE
       - README.md

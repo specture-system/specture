@@ -44,6 +44,13 @@ func ValidateSpec(spec *Spec) *ValidationResult {
 		Errors: []ValidationError{},
 	}
 
+	if fullRefFromPath(spec.Path) == "" {
+		result.Errors = append(result.Errors, ValidationError{
+			Field:   "path",
+			Message: "spec path must encode a numbered ref",
+		})
+	}
+
 	// Validate frontmatter exists
 	if spec.Frontmatter == nil {
 		result.Errors = append(result.Errors, ValidationError{

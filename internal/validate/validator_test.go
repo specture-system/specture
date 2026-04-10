@@ -25,7 +25,7 @@ This is a description.
 - [x] Task 2
 `)
 
-	spec, err := ParseSpecContent("test.md", content)
+	spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -48,7 +48,7 @@ Description.
 - [ ] Task 1
 `)
 
-	spec, err := ParseSpecContent("test.md", content)
+	spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -81,7 +81,7 @@ author: Test Author
 - [ ] Task 1
 `)
 
-	spec, err := ParseSpecContent("test.md", content)
+	spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -129,7 +129,7 @@ status: ` + tt.status + `
 - [ ] Task 1
 `)
 
-			spec, err := ParseSpecContent("test.md", content)
+			spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 			if err != nil {
 				t.Fatalf("unexpected parse error: %v", err)
 			}
@@ -169,7 +169,7 @@ status: ` + status + `
 - [ ] Task 1
 `)
 
-			spec, err := ParseSpecContent("test.md", content)
+			spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 			if err != nil {
 				t.Fatalf("unexpected parse error: %v", err)
 			}
@@ -196,7 +196,7 @@ Description.
 - [ ] Task 1
 `)
 
-	spec, err := ParseSpecContent("test.md", content)
+	spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -218,6 +218,40 @@ Description.
 	}
 }
 
+func TestValidateSpec_MalformedPath(t *testing.T) {
+	content := []byte(`---
+status: draft
+---
+
+# My Feature
+
+## Task List
+
+- [ ] Task 1
+`)
+
+	spec, err := ParseSpecContent("specs/foo/SPEC.md", content)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+
+	result := ValidateSpec(spec)
+	if result.IsValid() {
+		t.Fatal("expected validation to fail")
+	}
+
+	found := false
+	for _, e := range result.Errors {
+		if e.Field == "path" && strings.Contains(e.Message, "spec path must encode a numbered ref") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected malformed path error, got: %v", result.Errors)
+	}
+}
+
 func TestValidateSpec_MissingTaskListAllowed(t *testing.T) {
 	content := []byte(`---
 number: 0
@@ -232,7 +266,7 @@ Description without Task List heading.
 - Another item
 `)
 
-	spec, err := ParseSpecContent("test.md", content)
+	spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -260,7 +294,7 @@ status: draft
 - [ ] Properly sectioned task
 `)
 
-	spec, err := ParseSpecContent("test.md", content)
+	spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -291,7 +325,7 @@ status: draft
 - [ ] Another parent task
 `)
 
-	spec, err := ParseSpecContent("test.md", content)
+	spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -323,7 +357,7 @@ Description.
 - [ ] Implement parser change
 `)
 
-	spec, err := ParseSpecContent("test.md", content)
+	spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -364,7 +398,7 @@ Description.
 - [ ] Implement parser change
 `)
 
-	spec, err := ParseSpecContent("test.md", content)
+	spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -394,7 +428,7 @@ See [spec 12](status-command.md) for background.
 - [ ] Implement parser change
 `)
 
-	spec, err := ParseSpecContent("test.md", content)
+	spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -422,7 +456,7 @@ See [spec #12](status-command.md) for background.
 - [ ] Implement parser change
 `)
 
-	spec, err := ParseSpecContent("test.md", content)
+	spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -450,7 +484,7 @@ See [Status command](status-command.md) for background.
 - [ ] Implement parser change
 `)
 
-	spec, err := ParseSpecContent("test.md", content)
+	spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -467,7 +501,7 @@ func TestValidateSpec_MultipleErrors(t *testing.T) {
 	// Missing everything
 	content := []byte(`Just some text without structure.`)
 
-	spec, err := ParseSpecContent("test.md", content)
+	spec, err := ParseSpecContent("specs/001-test/SPEC.md", content)
 	if err != nil {
 		t.Fatalf("unexpected parse error: %v", err)
 	}
@@ -485,10 +519,9 @@ func TestValidateSpec_MultipleErrors(t *testing.T) {
 
 func TestValidateSpecFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	specPath := filepath.Join(tmpDir, "000-test.md")
+	specPath := filepath.Join(tmpDir, "specs", "000-test", "SPEC.md")
 
 	content := []byte(`---
-number: 0
 status: approved
 author: File Author
 ---
@@ -504,6 +537,9 @@ Description here.
 - [ ] A task
 `)
 
+	if err := os.MkdirAll(filepath.Dir(specPath), 0o755); err != nil {
+		t.Fatalf("failed to create test directory: %v", err)
+	}
 	if err := os.WriteFile(specPath, content, 0644); err != nil {
 		t.Fatalf("failed to write test file: %v", err)
 	}

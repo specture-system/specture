@@ -1,11 +1,14 @@
 package setup
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	specpkg "github.com/specture-system/specture/internal/spec"
@@ -43,13 +46,13 @@ func MigrateSpecsLayout(specsDir string, dryRun bool) (bool, error) {
 		}
 
 		oldPath := filepath.Join(specsDir, name)
-		info, err := specpkg.Parse(oldPath)
+		number, err := resolveSpecNumberForMigration(oldPath)
 		if err != nil {
 			return false, fmt.Errorf("failed to parse %s: %w", oldPath, err)
 		}
 
 		slug := specSlugFromFilename(name)
-		newDir := fmt.Sprintf("%03d-%s", info.Number, slug)
+		newDir := fmt.Sprintf("%03d-%s", number, slug)
 		newPath := filepath.Join(specsDir, newDir, "SPEC.md")
 
 		if oldPath == newPath {
@@ -112,6 +115,51 @@ func specSlugFromFilename(filename string) string {
 	slug := strings.TrimSuffix(filename, filepath.Ext(filename))
 	re := regexp.MustCompile(`^\d+-`)
 	return re.ReplaceAllString(slug, "")
+}
+
+func resolveSpecNumberForMigration(path string) (int, error) {
+	info, err := specpkg.Parse(path)
+	if err != nil {
+		return 0, err
+	}
+	if info.Number >= 0 {
+		return info.Number, nil
+	}
+
+	return legacyFrontmatterNumber(path)
+}
+
+func legacyFrontmatterNumber(path string) (int, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return 0, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	scanner := bufio.NewScanner(bytes.NewReader(content))
+	inFrontmatter := false
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "---" {
+			if inFrontmatter {
+				break
+			}
+			inFrontmatter = true
+			continue
+		}
+		if inFrontmatter && strings.HasPrefix(line, "number:") {
+			value := strings.TrimSpace(strings.TrimPrefix(line, "number:"))
+			number, err := strconv.Atoi(value)
+			if err != nil {
+				return 0, fmt.Errorf("invalid legacy spec number %q", value)
+			}
+			return number, nil
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return 0, fmt.Errorf("failed to scan frontmatter: %w", err)
+	}
+
+	return 0, fmt.Errorf("spec does not encode a number in path or frontmatter")
 }
 
 func rewriteSpecLinks(specsDir string, plans []specMovePlan) error {

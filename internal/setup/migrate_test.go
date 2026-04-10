@@ -55,6 +55,30 @@ func TestMigrateSpecsLayout(t *testing.T) {
 	}
 }
 
+func TestMigrateSpecsLayout_UsesLegacyFrontmatterNumber(t *testing.T) {
+	dir := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(dir, "status-command.md"), []byte("---\nnumber: 3\nstatus: approved\n---\n\n# Status Command\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	migrated, err := MigrateSpecsLayout(dir, false)
+	if err != nil {
+		t.Fatalf("MigrateSpecsLayout failed: %v", err)
+	}
+	if !migrated {
+		t.Fatal("expected migration to occur")
+	}
+
+	newPath := filepath.Join(dir, "003-status-command", "SPEC.md")
+	if _, err := os.Stat(newPath); err != nil {
+		t.Fatalf("expected migrated spec at %s: %v", newPath, err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "status-command.md")); !os.IsNotExist(err) {
+		t.Fatalf("old spec should be removed, got: %v", err)
+	}
+}
+
 func TestMigrateSkillsDir_OldExistsNewDoesNot(t *testing.T) {
 	tmpDir := t.TempDir()
 

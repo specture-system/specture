@@ -126,7 +126,7 @@ func firstNumberedSectionHeading(source []byte) (string, bool) {
 	return "", false
 }
 
-// ValidateSpecs validates multiple specs, including cross-spec checks like duplicate numbers.
+// ValidateSpecs validates multiple specs, including cross-spec checks like scoped duplicate numbers.
 // Returns one ValidationResult per spec.
 func ValidateSpecs(specs []*Spec) []*ValidationResult {
 	results := make([]*ValidationResult, len(specs))
@@ -134,20 +134,29 @@ func ValidateSpecs(specs []*Spec) []*ValidationResult {
 		results[i] = ValidateSpec(spec)
 	}
 
-	// Cross-spec: detect duplicate numbers
-	numberToIdx := make(map[int][]int) // number -> indices of specs with that number
+	type scopedNumber struct {
+		scope  string
+		number int
+	}
+
+	// Cross-spec: detect duplicate numbers within the same parent scope.
+	numberToIdx := make(map[scopedNumber][]int)
 	for i, spec := range specs {
 		if spec.Frontmatter != nil && spec.Frontmatter.Number != nil && *spec.Frontmatter.Number >= 0 {
-			n := *spec.Frontmatter.Number
-			numberToIdx[n] = append(numberToIdx[n], i)
+			scope := filepath.Clean(filepath.Dir(filepath.Dir(spec.Path)))
+			key := scopedNumber{
+				scope:  scope,
+				number: *spec.Frontmatter.Number,
+			}
+			numberToIdx[key] = append(numberToIdx[key], i)
 		}
 	}
-	for num, indices := range numberToIdx {
+	for key, indices := range numberToIdx {
 		if len(indices) > 1 {
 			for _, idx := range indices {
 				results[idx].Errors = append(results[idx].Errors, ValidationError{
 					Field:   "number",
-					Message: fmt.Sprintf("duplicate number %d", num),
+					Message: fmt.Sprintf("duplicate number %d", key.number),
 				})
 			}
 		}

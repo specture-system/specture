@@ -419,6 +419,80 @@ No frontmatter.
 	}
 }
 
+func TestValidateCommand_ScopedNumbersAllowed(t *testing.T) {
+	tmpDir := t.TempDir()
+	specsDir := filepath.Join(tmpDir, "specs")
+	if err := os.MkdirAll(specsDir, 0755); err != nil {
+		t.Fatalf("failed to create specs dir: %v", err)
+	}
+
+	parentSpec := `---
+number: 0
+status: draft
+---
+
+# Parent
+`
+	childSpec := `---
+number: 1
+status: draft
+---
+
+# Child
+`
+	topLevelSpec := `---
+number: 1
+status: draft
+---
+
+# Top Level
+`
+
+	parentPath := filepath.Join(specsDir, "000-parent", "SPEC.md")
+	childPath := filepath.Join(specsDir, "000-parent", "001-child", "SPEC.md")
+	topLevelPath := filepath.Join(specsDir, "001-top", "SPEC.md")
+
+	for _, path := range []string{parentPath, childPath, topLevelPath} {
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatalf("failed to create spec dir: %v", err)
+		}
+	}
+	if err := os.WriteFile(parentPath, []byte(parentSpec), 0644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(childPath, []byte(childSpec), 0644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+	if err := os.WriteFile(topLevelPath, []byte(topLevelSpec), 0644); err != nil {
+		t.Fatalf("failed to write top-level spec: %v", err)
+	}
+
+	originalWd, _ := os.Getwd()
+	t.Cleanup(func() { os.Chdir(originalWd) })
+	os.Chdir(tmpDir)
+
+	out := &bytes.Buffer{}
+	cmd := validateCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	invalidCount, err := runValidate(cmd, []string{})
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if invalidCount != 0 {
+		t.Fatalf("expected 0 invalid specs, got: %d", invalidCount)
+	}
+
+	output := out.String()
+	if strings.Contains(output, "duplicate number") {
+		t.Fatalf("expected scoped numbers to be allowed, got output:\n%s", output)
+	}
+	if !strings.Contains(output, "3 of 3 specs valid") {
+		t.Fatalf("expected all specs to validate, got output:\n%s", output)
+	}
+}
+
 func TestFindAllSpecs(t *testing.T) {
 	tmpDir := t.TempDir()
 

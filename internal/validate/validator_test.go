@@ -722,6 +722,9 @@ status: draft
 		t.Fatalf("unexpected parse error: %v", err)
 	}
 
+	spec1.Path = "specs/000-mvp/001-feature-a/SPEC.md"
+	spec2.Path = "specs/000-mvp/002-feature-b/SPEC.md"
+
 	results := ValidateSpecs([]*Spec{spec1, spec2})
 
 	// At least one spec should have a duplicate number error
@@ -736,6 +739,53 @@ status: draft
 	}
 	if !foundDuplicateError {
 		t.Error("expected duplicate number error")
+	}
+}
+
+func TestValidateSpecs_AllowDuplicateNumbersAcrossScopes(t *testing.T) {
+	content1 := []byte(`---
+number: 3
+status: draft
+---
+
+# Feature A
+
+## Task List
+
+- [ ] Task 1
+`)
+	content2 := []byte(`---
+number: 3
+status: draft
+---
+
+# Feature B
+
+## Task List
+
+- [ ] Task 1
+`)
+
+	spec1, err := ParseSpecContent("feature-a.md", content1)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+	spec2, err := ParseSpecContent("feature-b.md", content2)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+
+	spec1.Path = "specs/000-mvp/001-feature-a/SPEC.md"
+	spec2.Path = "specs/001-platform/001-feature-b/SPEC.md"
+
+	results := ValidateSpecs([]*Spec{spec1, spec2})
+
+	for _, result := range results {
+		for _, e := range result.Errors {
+			if e.Field == "number" && strings.Contains(e.Message, "duplicate") {
+				t.Errorf("unexpected duplicate number error: %v", e)
+			}
+		}
 	}
 }
 

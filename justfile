@@ -17,7 +17,7 @@ setup: deps
 
 # Build the CLI binary
 build:
-  go build -o specture .
+  go build -ldflags "-X github.com/specture-system/specture/cmd.Version=dev -X github.com/specture-system/specture/cmd.Commit=$(git rev-parse --short=7 HEAD 2>/dev/null || echo unknown)" -o specture .
 
 # Run the CLI with arguments (usage: just run setup --help)
 [positional-arguments]
@@ -44,7 +44,7 @@ check: format lint test
 
 # Install the CLI locally
 install:
-  go install .
+  go install -ldflags "-X github.com/specture-system/specture/cmd.Version=dev -X github.com/specture-system/specture/cmd.Commit=$(git rev-parse --short=7 HEAD 2>/dev/null || echo unknown)" .
 
 # Clean build artifacts
 clean:

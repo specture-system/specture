@@ -23,6 +23,8 @@ func Execute() {
 }
 
 func init() {
+	refreshVersion()
+
 	rootCmd.AddCommand(setupCmd)
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(validateCmd)

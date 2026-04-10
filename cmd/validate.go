@@ -95,7 +95,7 @@ func runValidate(cmd *cobra.Command, args []string) (invalidCount int, err error
 		specs = append(specs, s)
 	}
 
-	// Validate all specs (includes cross-spec checks like duplicate numbers)
+	// Validate all specs (includes cross-spec checks like duplicate refs)
 	results := validate.ValidateSpecs(specs)
 
 	var validCount int

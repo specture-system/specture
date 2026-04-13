@@ -1,11 +1,19 @@
 package main
 
-import "github.com/specture-system/specture/cmd"
+import (
+	_ "embed"
+	"strings"
+
+	"github.com/specture-system/specture/cmd"
+)
+
+//go:embed VERSION
+var versionFile string
 
 var (
-	version = "dev"
-	commit  = "unknown"
-	date    = "unknown"
+	version = strings.TrimSpace(versionFile)
+	commit  = ""
+	date    = ""
 )
 
 func main() {

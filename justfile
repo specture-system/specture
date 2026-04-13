@@ -17,7 +17,7 @@ setup: deps
 
 # Build the CLI binary
 build:
-  go build -ldflags "-X main.version=dev -X main.commit=$(git rev-parse --short=7 HEAD 2>/dev/null || echo unknown)" -o specture .
+  go build -ldflags "-X main.version=dev -X main.commit=$(git rev-parse --short=7 HEAD 2>/dev/null || true)" -o specture .
 
 # Run the CLI with arguments (usage: just run setup --help)
 [positional-arguments]
@@ -44,7 +44,7 @@ check: format lint test
 
 # Install the CLI locally
 install:
-  go install -ldflags "-X main.version=dev -X main.commit=$(git rev-parse --short=7 HEAD 2>/dev/null || echo unknown)" .
+  go install -ldflags "-X main.version=$(tr -d '\n' < VERSION) -X main.commit=$(git rev-parse --short=7 HEAD 2>/dev/null || true)" .
 
 # Clean build artifacts
 clean:

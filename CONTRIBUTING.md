@@ -41,10 +41,14 @@ To cut a new release:
 
 The `Draft Release` workflow requires a GitHub App installation token. Configure it by:
 
-1. Creating a GitHub App for release automation.
-2. Granting the app `Contents: Read and write` and `Pull requests: Read and write`.
-3. Installing the app on this repository.
-4. Saving the app's client ID as the repository variable `RELEASE_BOT_CLIENT_ID`.
-5. Saving the app's private key as the repository secret `RELEASE_BOT_PRIVATE_KEY`.
+1. Create a GitHub App in the repository owner account or organization.
+2. Set the app name to something like `Specture Release Bot`.
+3. Set the homepage URL to the Specture repository URL.
+4. Disable webhooks unless you need them for other automation.
+5. Grant the app `Contents: Read and write` and `Pull requests: Read and write`.
+6. Generate a private key and download the `.pem` file.
+7. Install the app on this repository.
+8. Save the app's client ID as the repository variable `RELEASE_BOT_CLIENT_ID`.
+9. Save the downloaded private key as the repository secret `RELEASE_BOT_PRIVATE_KEY`.
 
 The workflow mints a short-lived installation token on each run, so there is no long-lived PAT to rotate.

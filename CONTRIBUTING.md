@@ -39,7 +39,9 @@ To cut a new release:
 2. Review and merge the generated pull request.
 3. The `Release` workflow will tag the merged commit and publish the GitHub release.
 
-The `Draft Release` workflow requires a GitHub App installation token. Configure it by:
+### GitHub App
+
+The `Draft Release` workflow requires using a GitHub App which has permission to create pull requests.
 
 1. Register a GitHub App in the repository owner account or organization.
    - [Registering a GitHub App](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app)
@@ -55,4 +57,4 @@ The `Draft Release` workflow requires a GitHub App installation token. Configure
 8. Save the app's client ID as the repository or organization secret `RELEASE_BOT_CLIENT_ID`.
 9. Save the downloaded private key as the repository or organization secret `RELEASE_BOT_PRIVATE_KEY`.
 
-The workflow mints a short-lived installation token on each run, so there is no long-lived PAT to rotate.
+The draft release workflow mints a short-lived installation token on each run, so there is no long-lived PAT to rotate.

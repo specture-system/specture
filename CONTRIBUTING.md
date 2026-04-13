@@ -40,3 +40,12 @@ To cut a new release:
 3. The `Release` workflow will tag the merged commit and publish the GitHub release.
 
 The `Draft Release` workflow requires a `RELEASE_BOT_TOKEN` secret with permission to create pull requests.
+
+To create that token:
+
+1. Create or choose a GitHub account that will own the bot token.
+2. Create a fine-grained personal access token for this repository.
+3. Grant it `Contents: Read and write` and `Pull requests: Read and write`.
+4. Add the token to the repository secrets as `RELEASE_BOT_TOKEN`.
+
+If your organization prefers GitHub Apps, you can use an app installation token with the same repository permissions instead of a PAT.

@@ -35,7 +35,3 @@ func normalizeCommit(commit string) string {
 
 	return commit[:7]
 }
-
-func init() {
-	SetVersion("dev", "")
-}

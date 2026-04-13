@@ -12,8 +12,8 @@ var versionFile string
 
 var (
 	version = strings.TrimSpace(versionFile)
-	commit  = "unknown"
-	date    = "unknown"
+	commit  = ""
+	date    = ""
 )
 
 func main() {

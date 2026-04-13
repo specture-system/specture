@@ -9,7 +9,7 @@ func SetVersion(version, commit string) {
 	version = normalizeVersion(version)
 	commit = normalizeCommit(commit)
 
-	if commit == "" || commit == "unknown" {
+	if commit == "" {
 		rootCmd.Version = version
 	} else {
 		rootCmd.Version = fmt.Sprintf("%s (%s)", version, commit)
@@ -17,6 +17,8 @@ func SetVersion(version, commit string) {
 	rootCmd.SetVersionTemplate("{{.Version}}\n")
 }
 
+// normalizeVersion keeps release output stable by restoring the canonical
+// v-prefixed semver format when build metadata strips it.
 func normalizeVersion(version string) string {
 	if version == "" || version == "dev" || strings.HasPrefix(version, "v") {
 		return version
@@ -25,8 +27,9 @@ func normalizeVersion(version string) string {
 	return "v" + version
 }
 
+// normalizeCommit shortens long git SHAs so --version stays compact.
 func normalizeCommit(commit string) string {
-	if commit == "" || commit == "unknown" || len(commit) <= 7 {
+	if commit == "" || len(commit) <= 7 {
 		return commit
 	}
 
@@ -34,5 +37,5 @@ func normalizeCommit(commit string) string {
 }
 
 func init() {
-	SetVersion("dev", "unknown")
+	SetVersion("dev", "")
 }

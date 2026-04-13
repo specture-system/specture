@@ -12,7 +12,7 @@ import (
 // each other.
 func TestRootCommand_VersionFlag(t *testing.T) {
 	t.Cleanup(func() {
-		SetVersion("dev", "unknown")
+		SetVersion("dev", "")
 		rootCmd.SetArgs(nil)
 	})
 
@@ -35,11 +35,11 @@ func TestRootCommand_VersionFlag(t *testing.T) {
 
 func TestRootCommand_VersionFlagWithoutCommit(t *testing.T) {
 	t.Cleanup(func() {
-		SetVersion("dev", "unknown")
+		SetVersion("dev", "")
 		rootCmd.SetArgs(nil)
 	})
 
-	SetVersion("v0.3.0", "unknown")
+	SetVersion("v0.3.0", "")
 
 	out := &bytes.Buffer{}
 	cmd := rootCmd
@@ -58,7 +58,7 @@ func TestRootCommand_VersionFlagWithoutCommit(t *testing.T) {
 
 func TestRootCommand_VersionFlagNormalizesVersionPrefix(t *testing.T) {
 	t.Cleanup(func() {
-		SetVersion("dev", "unknown")
+		SetVersion("dev", "")
 		rootCmd.SetArgs(nil)
 	})
 
@@ -81,7 +81,7 @@ func TestRootCommand_VersionFlagNormalizesVersionPrefix(t *testing.T) {
 
 func TestRootCommand_VersionFlagTruncatesCommitHash(t *testing.T) {
 	t.Cleanup(func() {
-		SetVersion("dev", "unknown")
+		SetVersion("dev", "")
 		rootCmd.SetArgs(nil)
 	})
 

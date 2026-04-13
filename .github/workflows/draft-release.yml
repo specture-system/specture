@@ -58,6 +58,32 @@ jobs:
           printf '%s\n' "$next_version" > VERSION
           echo "version=$next_version" >> "$GITHUB_OUTPUT"
 
+      - name: Sync README release pin
+        shell: bash
+        env:
+          NEXT_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          version = os.environ["NEXT_VERSION"]
+          path = Path("README.md")
+          text = path.read_text()
+          updated, count = re.subn(
+              r"(rev:\s*)v\d+\.\d+\.\d+",
+              rf"\g<1>{version}",
+              text,
+              count=1,
+          )
+
+          if count != 1:
+              raise SystemExit("expected to update exactly one README release pin")
+
+          path.write_text(updated)
+          PY
+
       - name: Create GitHub App token
         id: app-token
         uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3

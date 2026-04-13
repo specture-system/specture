@@ -15,6 +15,8 @@ See [specs/README.md](/specs/README.md) for a full description of the Specture S
 
 ## Install
 
+Specture is distributed through GitHub Releases and can also be installed directly with `go install`.
+
 ```sh
 go install github.com/specture-system/specture@latest
 ```
@@ -30,7 +32,7 @@ To enable Specture's pre-commit hooks in your project, add this to your `.pre-co
 ```yaml
 repos:
   - repo: https://github.com/specture-system/specture
-    rev: v0.3.1 # Use the latest release tag
+    rev: v0.3.3 # Use the latest release tag
     hooks:
       - id: validate-specs
 ```

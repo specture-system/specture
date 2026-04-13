@@ -23,6 +23,16 @@ go install github.com/specture-system/specture@latest
 
 This project is in its early stages. Documentation and tooling are a work-in-progress.
 
+## Releasing
+
+The current release version lives in `VERSION` at the repo root.
+
+To cut a new release:
+
+1. Run the `Draft Release` workflow and choose a major, minor, or patch bump.
+2. Review and merge the generated pull request.
+3. The `Release` workflow will tag the merged commit and publish the GitHub release.
+
 ## Pre-commit Hooks
 
 To enable Specture's pre-commit hooks in your project, add this to your `.pre-commit-config.yaml`:
@@ -30,7 +40,7 @@ To enable Specture's pre-commit hooks in your project, add this to your `.pre-co
 ```yaml
 repos:
   - repo: https://github.com/specture-system/specture
-    rev: v0.3.0 # Use the latest release tag
+    rev: v0.3.1 # Use the latest release tag
     hooks:
       - id: validate-specs
 ```

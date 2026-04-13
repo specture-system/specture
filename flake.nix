@@ -11,7 +11,7 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         pname = "specture";
-        version = "dev";
+        version = builtins.replaceStrings ["\n"] [""] (builtins.readFile ./VERSION);
         commit = if self ? rev then builtins.substring 0 7 self.rev else "unknown";
       in
       {

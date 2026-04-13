@@ -34,7 +34,7 @@ To enable Specture's pre-commit hooks in your project, add this to your `.pre-co
 ```yaml
 repos:
   - repo: https://github.com/specture-system/specture
-    rev: v0.3.3 # Use the latest release tag
+    rev: v0.3.5 # Use the latest release tag
     hooks:
       - id: validate-specs
 ```

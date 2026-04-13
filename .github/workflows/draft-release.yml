@@ -14,8 +14,7 @@ on:
         default: patch
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   draft-release:
@@ -59,9 +58,17 @@ jobs:
           printf '%s\n' "$next_version" > VERSION
           echo "version=$next_version" >> "$GITHUB_OUTPUT"
 
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+
       - name: Create pull request
         uses: peter-evans/create-pull-request@v6
         with:
+          token: ${{ steps.app-token.outputs.token }}
           branch: release/${{ steps.version.outputs.version }}
           delete-branch: true
           title: "chore: bump version to ${{ steps.version.outputs.version }}"

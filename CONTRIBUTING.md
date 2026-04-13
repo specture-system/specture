@@ -51,8 +51,8 @@ The `Draft Release` workflow requires a GitHub App installation token. Configure
 6. Generate a private key and download the `.pem` file.
    - [Generating a private key for a GitHub App](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app#generating-a-private-key)
 7. Install the app on this repository.
-   - [Installing your own GitHub App](https://docs.github.com/developers/apps/managing-github-apps/installing-github-apps)
-8. Save the app's client ID as the repository variable `RELEASE_BOT_CLIENT_ID`.
-9. Save the downloaded private key as the repository secret `RELEASE_BOT_PRIVATE_KEY`.
+    - [Installing your own GitHub App](https://docs.github.com/developers/apps/managing-github-apps/installing-github-apps)
+8. Save the app's client ID as the repository or organization secret `RELEASE_BOT_CLIENT_ID`.
+9. Save the downloaded private key as the repository or organization secret `RELEASE_BOT_PRIVATE_KEY`.
 
 The workflow mints a short-lived installation token on each run, so there is no long-lived PAT to rotate.

@@ -38,3 +38,5 @@ To cut a new release:
 1. Run the `Draft Release` workflow and choose a major, minor, or patch bump.
 2. Review and merge the generated pull request.
 3. The `Release` workflow will tag the merged commit and publish the GitHub release.
+
+The `Draft Release` workflow requires a `RELEASE_BOT_TOKEN` secret with permission to create pull requests.

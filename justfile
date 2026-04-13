@@ -44,7 +44,7 @@ check: format lint test
 
 # Install the CLI locally
 install:
-  go install -ldflags "-X main.version=dev -X main.commit=$(git rev-parse --short=7 HEAD 2>/dev/null || echo unknown)" .
+  go install -ldflags "-X main.version=$(tr -d '\n' < VERSION) -X main.commit=$(git rev-parse --short=7 HEAD 2>/dev/null || echo unknown)" .
 
 # Clean build artifacts
 clean:

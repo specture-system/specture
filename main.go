@@ -1,9 +1,17 @@
 package main
 
-import "github.com/specture-system/specture/cmd"
+import (
+	_ "embed"
+	"strings"
+
+	"github.com/specture-system/specture/cmd"
+)
+
+//go:embed VERSION
+var versionFile string
 
 var (
-	version = "dev"
+	version = strings.TrimSpace(versionFile)
 	commit  = "unknown"
 	date    = "unknown"
 )

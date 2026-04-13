@@ -28,3 +28,13 @@ This ensures code passes all checks (formatting, linting, tests) before committi
 ## Development
 
 Use `just` to run development tasks. Run `just --list` to see available recipes.
+
+## Releasing
+
+The current release version lives in `VERSION` at the repo root.
+
+To cut a new release:
+
+1. Run the `Draft Release` workflow and choose a major, minor, or patch bump.
+2. Review and merge the generated pull request.
+3. The `Release` workflow will tag the merged commit and publish the GitHub release.

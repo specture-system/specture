@@ -11,7 +11,7 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         pname = "specture";
-        version = "dev";
+        version = builtins.replaceStrings ["\n"] [""] (builtins.readFile ./VERSION);
         commit = if self ? rev then builtins.substring 0 7 self.rev else "unknown";
       in
       {
@@ -20,8 +20,8 @@
           src = self;
           ldflags = [
             "-s -w"
-            "-X github.com/specture-system/specture/cmd.Version=${version}"
-            "-X github.com/specture-system/specture/cmd.Commit=${commit}"
+            "-X main.version=${version}"
+            "-X main.commit=${commit}"
           ];
           # vendorHash locks Go module dependencies
           vendorHash = "sha256-FnNfDAK60gj9+KPJsbDgy6ZOUlJu67ywf2WtrNY8sUs=";

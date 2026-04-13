@@ -1,0 +1,73 @@
+name: Draft Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump to apply
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  draft-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next release version
+        id: version
+        shell: bash
+        run: |
+          current_version="$(tr -d '[:space:]' < VERSION)"
+
+          if [[ ! "$current_version" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "VERSION must contain a semantic version like v0.3.1" >&2
+            exit 1
+          fi
+
+          current_version="${current_version#v}"
+          IFS='.' read -r major minor patch <<<"$current_version"
+
+          case "${{ inputs.bump }}" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
+
+          next_version="v${major}.${minor}.${patch}"
+          printf '%s\n' "$next_version" > VERSION
+          echo "version=$next_version" >> "$GITHUB_OUTPUT"
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: release/${{ steps.version.outputs.version }}
+          delete-branch: true
+          title: "chore: bump version to ${{ steps.version.outputs.version }}"
+          commit-message: "chore: bump version to ${{ steps.version.outputs.version }}"
+          body: |
+            Bump VERSION to prepare the next release.
+
+            Merge this PR to update main and trigger the release workflow.
+          labels: release

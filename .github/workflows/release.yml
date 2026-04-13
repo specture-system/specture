@@ -2,8 +2,10 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
+    paths:
+      - VERSION
 
 permissions:
   contents: write
@@ -21,6 +23,32 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.24"
+
+      - name: Configure Git
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Read release version
+        id: version
+        shell: bash
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Create release tag
+        shell: bash
+        run: |
+          version="${{ steps.version.outputs.version }}"
+
+          if git rev-parse -q --verify "refs/tags/${version}" >/dev/null; then
+            echo "Tag ${version} already exists, skipping creation."
+            exit 0
+          fi
+
+          git tag -a "$version" -m "Release $version"
+          git push origin "$version"
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6

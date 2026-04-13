@@ -32,3 +32,26 @@ func TestRootCommand_VersionFlag(t *testing.T) {
 		t.Fatalf("expected version output %q, got %q", "v0.3.0 (abc1234)", got)
 	}
 }
+
+func TestRootCommand_VersionFlagWithoutCommit(t *testing.T) {
+	t.Cleanup(func() {
+		SetVersion("dev", "unknown")
+		rootCmd.SetArgs(nil)
+	})
+
+	SetVersion("v0.3.0", "unknown")
+
+	out := &bytes.Buffer{}
+	cmd := rootCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+	cmd.SetArgs([]string{"--version"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected version flag to succeed, got: %v", err)
+	}
+
+	if got := strings.TrimSpace(out.String()); got != "v0.3.0" {
+		t.Fatalf("expected version output %q, got %q", "v0.3.0", got)
+	}
+}

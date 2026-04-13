@@ -20,8 +20,8 @@
           src = self;
           ldflags = [
             "-s -w"
-            "-X github.com/specture-system/specture/cmd.Version=${version}"
-            "-X github.com/specture-system/specture/cmd.Commit=${commit}"
+            "-X main.version=${version}"
+            "-X main.commit=${commit}"
           ];
           # vendorHash locks Go module dependencies
           vendorHash = "sha256-FnNfDAK60gj9+KPJsbDgy6ZOUlJu67ywf2WtrNY8sUs=";

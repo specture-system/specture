@@ -15,12 +15,22 @@ See [specs/README.md](/specs/README.md) for a full description of the Specture S
 
 ## Install
 
+### CLI
+
 Specture is distributed through [GitHub Releases](https://github.com/specture-system/specture/releases). To install from a release, open the latest release, download the archive for your platform, extract the `specture` binary, and place it on your `PATH`.
 
 You can also install directly with `go install`.
 
 ```sh
 go install github.com/specture-system/specture@latest
+```
+
+### Skill
+
+Install the skill using `npx skills add`:
+
+```
+npx skills add specture-system/specture/skills/specture
 ```
 
 ## Status

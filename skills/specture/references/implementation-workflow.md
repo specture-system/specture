@@ -1,6 +1,6 @@
 # Implementation Workflow
 
-Use this workflow when implementing an `approved` spec.
+Use this workflow when implementing an `approved` or `in-progress` spec. If a sibling `PLAN.md` exists, treat it as execution context for that spec, not as a separate implementation authority.
 
 ## Starting Implementation
 
@@ -10,13 +10,22 @@ Use this workflow when implementing an `approved` spec.
 
 ## Execution Loop
 
+Follow this loop for every implementation chunk. Do not skip the commit step.
+
 1. Read the spec and any sibling `PLAN.md`.
-2. Analyze only enough code to identify the next small implementation chunk.
-3. Implement the chunk.
-4. Update tests, docs, or `PLAN.md` when needed.
-5. Run the narrowest verification that proves the chunk.
-6. Commit the focused change.
-7. Repeat until the spec goals are complete.
+2. Select exactly one small implementation chunk.
+3. Analyze only enough code to implement that chunk safely.
+4. Implement the chunk.
+5. Update tests, docs, or `PLAN.md` when needed.
+6. Run the narrowest verification that proves the chunk.
+7. Commit the focused change before starting another chunk.
+8. Repeat from step 2 until the spec goals are complete.
+
+If a chunk becomes too large or mixes unrelated concerns, stop and split it before committing.
+
+## Pull Request Plans
+
+When a spec's `PLAN.md` divides work into PRs or chunks, treat each bullet group as a commit boundary unless the plan says otherwise. A working tree should normally contain only the current focused chunk.
 
 ## Completing Implementation
 

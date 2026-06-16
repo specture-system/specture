@@ -11,8 +11,7 @@ var rootCmd = &cobra.Command{
 	Short: "A spec-driven software architecture system",
 	Long: `Specture is a spec-driven software architecture system. It provides a lightweight, document-driven approach to project planning.
 
-Spec numbers are derived from the directory tree. Specs live in directories with SPEC.md files and may nest to any number of levels.
-Use 'specture setup' to migrate the specs tree to nested SPEC.md files.`,
+Spec numbers are derived from the directory tree. Specs live in directories with SPEC.md or PLAN.md files and may nest to any number of levels.`,
 }
 
 func Execute() {
@@ -23,7 +22,6 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.AddCommand(setupCmd)
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(validateCmd)
 	rootCmd.AddCommand(listCmd)

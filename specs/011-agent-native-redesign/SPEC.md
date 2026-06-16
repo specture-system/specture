@@ -4,7 +4,7 @@ author: Addison Emig
 creation_date: 2026-06-16
 ---
 
-# Lightweight Redesign
+# Agent-Native Redesign
 
 Specture is a bit bloated. It has too many features and tries to do too many things.
 

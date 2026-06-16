@@ -47,6 +47,14 @@ The agent skill should:
   - `PLAN.md` is more likely to be written by an LLM based on discussion with a human.
   - Keeping these separate avoids turning specs into stale implementation checklists.
   - This aligns with [Rework Spec Organization](specs/008-spec-hierarchy/SPEC.md), which moved specs away from granular task progress.
+- Chosen: Organize the skill as a small entrypoint with task-specific reference files.
+  - The skill should follow the [Agent Skills specification](https://agentskills.io/specification) so it works with existing skill installers and validators.
+  - `SKILL.md` should stay concise and route agents to focused files under `references/` for planning, implementation, validation, migration, and spec/plan format guidance.
+  - File references from `SKILL.md` should use relative paths from the skill root and stay one level deep to avoid nested reference chains.
+  - Long-form examples, templates, and rarely needed procedures should live outside `SKILL.md` so agents only load the context needed for the current task.
+  - The distributable skill should live at `skills/specture/` in this repository so skill installers can discover it as a standard skill package.
+  - The repo-local `.agents/skills/specture/` copy should be removed so there is only one source of truth for the Specture skill.
+  - This keeps one installable Specture skill for maintenance and distribution while avoiding an oversized default prompt.
 - Considered: Keep growing CLI workflow commands.
   - More automation looks useful initially, but every workflow rule becomes long-term maintenance debt.
   - Agent behavior and conventions are moving quickly enough that hard-coding workflow orchestration into the CLI is the wrong abstraction.

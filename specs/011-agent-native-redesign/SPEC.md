@@ -8,11 +8,18 @@ creation_date: 2026-06-16
 
 Specture is a bit bloated. It has too many features and tries to do too many things.
 
-We should make it a lightweight CLI that integrates well with coding agents through a single robust skill.
+We should:
 
-Remove extra code/features that we don't use often, because they are maintenance debt at this point every time we want to make any changes.
+- Make it a lightweight CLI that integrates well with coding agents through a single robust skill.
+- Remove extra code/features that we don't use often, because they are maintenance debt at this point every time we want to make any changes.
 
-The CLI should focus on querying and validating `SPEC.md` and `PLAN.md` files, with a small helper for creating new specs. The agent skill should carry the workflow knowledge: how to bootstrap the spec tree, migrate older layouts, choose between specs and plans, and use `specture validate` as the verification step after file edits.
+The CLI should:
+
+- Focus on querying and validating `SPEC.md` and `PLAN.md` files, with a small helper for creating new specs
+
+The agent skill should:
+
+- Carry the workflow knowledge: how to bootstrap the spec tree, migrate older layouts, choose between specs and plans, and use `specture validate` as the verification step after file edits.
 
 ## Goals
 
@@ -63,8 +70,8 @@ The CLI should focus on querying and validating `SPEC.md` and `PLAN.md` files, w
 - Chosen: Make `specture new` non-interactive and file-only.
   - `--title` is required.
   - `--parent` optionally selects the parent spec scope.
-  - `--ref` optionally selects the local spec reference instead of auto-allocating the next number.
-  - If `--ref` is omitted, Specture auto-allocates the next number in the selected scope.
+  - `--spec` / `-s` optionally selects the new spec reference instead of auto-allocating the next number.
+  - If `--spec` is omitted, Specture auto-allocates the next number in the selected scope.
   - The command creates only the new `SPEC.md` file from the standard template.
 - Chosen: Remove interactive behavior from `new`.
   - No title prompt.
@@ -78,11 +85,15 @@ The CLI should focus on querying and validating `SPEC.md` and `PLAN.md` files, w
   - No clean-worktree requirement.
   - No branch cleanup logic.
   - Branch policy belongs to the project or agent workflow, not the spec file organizer.
-- Chosen: Support explicit local refs with `--ref`.
+- Chosen: Support explicit refs with `--spec` / `-s`.
   - Projects often have existing issue or ticket numbers that are useful to preserve in spec refs.
-  - `specture new --title "Login Timeout" --ref 123` creates `specs/123-login-timeout/SPEC.md`.
-  - `specture new --title "Backend Contract" --parent 123 --ref 4` creates a child spec with full ref `123.4`.
-  - `--ref` accepts only the local integer for the selected scope; dotted refs are still derived from `--parent` plus the local ref.
+  - Reusing `--spec` keeps the CLI vocabulary consistent with commands that select existing spec references.
+  - For `new`, `--spec` means the spec reference to create, not an existing spec to resolve.
+  - `specture new --title "Login Timeout" --spec 123` creates `specs/123-login-timeout/SPEC.md`.
+  - `specture new --title "Backend Contract" --spec 123.4` creates a child spec with full ref `123.4`.
+  - Dotted `--spec` values include the full parent path and should resolve all parent specs before creating the child.
+  - `--parent` remains useful when auto-allocating the next child ref under an existing parent.
+  - `--spec` and `--parent` are mutually exclusive; if `--spec` is provided, the command should reject `--parent`.
 - Considered: Keep stdin body support for generated specs.
   - Agents can edit the created file directly after generation.
   - Removing body input keeps the command smaller and avoids frontmatter/body merging behavior.

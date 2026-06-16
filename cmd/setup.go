@@ -43,7 +43,7 @@ Actions:
 		cmd.Println("\nSetup will:")
 		cmd.Println("  • Create specs/ tree")
 		cmd.Println("  • Create specs/README.md with Specture System guidelines")
-		cmd.Println("  • Create specs/.gitignore to keep only SPEC.md and README.md")
+		cmd.Println("  • Create specs/.gitignore to keep only SPEC.md, PLAN.md, and README.md")
 		cmd.Println("  • Migrate existing flat specs into numbered SPEC.md directories")
 		cmd.Println("  • Install Specture skill files into .agents/skills/")
 

@@ -129,6 +129,51 @@ func TestNewContext_ErrorHandling(t *testing.T) {
 			t.Errorf("FileName = %q, want SPEC.md", ctx.FileName)
 		}
 	})
+
+	t.Run("creates_child_spec_context_with_plan_parent", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		testhelpers.InitGitRepo(t, tmpDir)
+
+		cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
+		cmd.Dir = tmpDir
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("failed to create initial commit: %v", err)
+		}
+
+		parentDir := filepath.Join(tmpDir, "specs", "0-parent")
+		if err := os.MkdirAll(parentDir, 0o755); err != nil {
+			t.Fatalf("failed to create parent spec directory: %v", err)
+		}
+		parentPath := filepath.Join(parentDir, "PLAN.md")
+		parentSpec := "---\nstatus: draft\n---\n\n# Parent Spec\n"
+		if err := os.WriteFile(parentPath, []byte(parentSpec), 0o644); err != nil {
+			t.Fatalf("failed to write parent spec: %v", err)
+		}
+
+		addCmd := exec.Command("git", "add", "specs/0-parent/PLAN.md")
+		addCmd.Dir = tmpDir
+		if err := addCmd.Run(); err != nil {
+			t.Fatalf("failed to stage parent spec: %v", err)
+		}
+
+		commitCmd := exec.Command("git", "commit", "-m", "Add parent plan")
+		commitCmd.Dir = tmpDir
+		if err := commitCmd.Run(); err != nil {
+			t.Fatalf("failed to commit parent spec: %v", err)
+		}
+
+		ctx, err := NewContext(tmpDir, "Child Spec", "0")
+		if err != nil {
+			t.Fatalf("NewContext() error = %v", err)
+		}
+
+		if ctx.ParentPath != parentPath {
+			t.Errorf("ParentPath = %q, want %q", ctx.ParentPath, parentPath)
+		}
+		if ctx.FilePath != filepath.Join(tmpDir, "specs", "0-parent", "000-child-spec", "SPEC.md") {
+			t.Errorf("FilePath = %q, want child spec path", ctx.FilePath)
+		}
+	})
 }
 
 func TestCleanup(t *testing.T) {

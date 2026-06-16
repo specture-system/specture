@@ -75,12 +75,13 @@ func TestFindAll_MatchesOnlySpecFiles(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create spec files and non-spec files.
-	// FindAll should include nested SPEC.md files only.
+	// FindAll should include nested SPEC.md files and PLAN.md fallback files.
 	files := map[string]bool{
 		"001-first/SPEC.md":    true,
 		"002-second/SPEC.md":   true,
 		"010-tenth/SPEC.md":    true,
 		"my-feature/SPEC.md":   true,
+		"020-fallback/PLAN.md": true,
 		"README.md":            false,
 		"notes.txt":            false,
 		"nested/SPEC.md":       true,
@@ -135,6 +136,32 @@ func TestFindAll_MatchesOnlySpecFiles(t *testing.T) {
 	}
 }
 
+func TestFindAll_PrefersSpecOverPlanInSameDirectory(t *testing.T) {
+	dir := t.TempDir()
+
+	sameDir := filepath.Join(dir, "001-same")
+	if err := os.MkdirAll(sameDir, 0o755); err != nil {
+		t.Fatalf("failed to create directory: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(sameDir, "PLAN.md"), []byte("---\nnumber: 1\n---\n\n# Plan\n"), 0o644); err != nil {
+		t.Fatalf("failed to write PLAN.md: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(sameDir, "SPEC.md"), []byte("---\nnumber: 1\n---\n\n# Spec\n"), 0o644); err != nil {
+		t.Fatalf("failed to write SPEC.md: %v", err)
+	}
+
+	paths, err := FindAll(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(paths) != 1 {
+		t.Fatalf("expected 1 spec file, got %d: %v", len(paths), paths)
+	}
+	if filepath.Base(paths[0]) != "SPEC.md" {
+		t.Fatalf("expected SPEC.md to win over PLAN.md, got %q", paths[0])
+	}
+}
+
 func TestFindAll_NonexistentDirectory(t *testing.T) {
 	_, err := FindAll("/nonexistent/directory/path")
 	if err == nil {
@@ -155,6 +182,13 @@ func TestResolvePath(t *testing.T) {
 	}
 	if err := os.WriteFile(specPath, []byte("---\nnumber: 7\n---\n\n# Feature\n"), 0644); err != nil {
 		t.Fatalf("failed to create spec file: %v", err)
+	}
+	planPath := filepath.Join(dir, "007-plan", "PLAN.md")
+	if err := os.MkdirAll(filepath.Dir(planPath), 0o755); err != nil {
+		t.Fatalf("failed to create plan directory: %v", err)
+	}
+	if err := os.WriteFile(planPath, []byte("---\nnumber: 7\n---\n\n# Planned Feature\n"), 0644); err != nil {
+		t.Fatalf("failed to create plan file: %v", err)
 	}
 	flatPath := filepath.Join(dir, "007-feature.md")
 	if err := os.WriteFile(flatPath, []byte("---\nnumber: 7\n---\n\n# Legacy Feature\n"), 0644); err != nil {
@@ -186,6 +220,11 @@ func TestResolvePath(t *testing.T) {
 			name:     "full path",
 			arg:      specPath,
 			wantPath: specPath,
+		},
+		{
+			name:     "plan path",
+			arg:      planPath,
+			wantPath: planPath,
 		},
 		{
 			name:      "flat path rejected",
@@ -254,6 +293,42 @@ func TestResolvePath_DottedRef(t *testing.T) {
 	}
 }
 
+func TestResolvePath_PlanFallback(t *testing.T) {
+	dir := t.TempDir()
+
+	parentDir := filepath.Join(dir, "1-root")
+	childDir := filepath.Join(parentDir, "2-child")
+	if err := os.MkdirAll(childDir, 0o755); err != nil {
+		t.Fatalf("failed to create nested directories: %v", err)
+	}
+
+	parentPath := filepath.Join(parentDir, "PLAN.md")
+	childPath := filepath.Join(childDir, "PLAN.md")
+
+	if err := os.WriteFile(parentPath, []byte("---\nnumber: 1\n---\n\n# Root\n"), 0o644); err != nil {
+		t.Fatalf("failed to create parent spec: %v", err)
+	}
+	if err := os.WriteFile(childPath, []byte("---\nnumber: 2\n---\n\n# Child\n"), 0o644); err != nil {
+		t.Fatalf("failed to create child spec: %v", err)
+	}
+
+	result, err := ResolvePath(dir, "1.2")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != childPath {
+		t.Fatalf("expected child path %q, got %q", childPath, result)
+	}
+
+	info, err := Parse(childPath)
+	if err != nil {
+		t.Fatalf("unexpected parse error for plan-backed spec: %v", err)
+	}
+	if info.FullRef != "1.2" {
+		t.Fatalf("expected full ref %q, got %q", "1.2", info.FullRef)
+	}
+}
+
 func TestFindSpecsInScope(t *testing.T) {
 	dir := t.TempDir()
 
@@ -313,6 +388,39 @@ func TestFindSpecsInScope(t *testing.T) {
 	}
 	if childSpecs[0].Path != childPath {
 		t.Fatalf("expected child path %q, got %q", childPath, childSpecs[0].Path)
+	}
+}
+
+func TestFindSpecsInScope_PlanParent(t *testing.T) {
+	dir := t.TempDir()
+
+	parentDir := filepath.Join(dir, "0-parent")
+	childDir := filepath.Join(parentDir, "000-child")
+	if err := os.MkdirAll(childDir, 0o755); err != nil {
+		t.Fatalf("failed to create directories: %v", err)
+	}
+
+	parentPath := filepath.Join(parentDir, "PLAN.md")
+	childPath := filepath.Join(childDir, "PLAN.md")
+	if err := os.WriteFile(parentPath, []byte("---\nnumber: 0\n---\n\n# Parent\n"), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(childPath, []byte("---\nnumber: 0\n---\n\n# Child\n"), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+
+	specs, err := FindSpecsInScope(dir, parentPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(specs) != 1 {
+		t.Fatalf("expected 1 child spec, got %d", len(specs))
+	}
+	if specs[0].Path != childPath {
+		t.Fatalf("expected child path %q, got %q", childPath, specs[0].Path)
+	}
+	if specs[0].FullRef != "0.0" {
+		t.Fatalf("expected child full ref %q, got %q", "0.0", specs[0].FullRef)
 	}
 }
 

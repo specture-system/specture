@@ -13,6 +13,9 @@ func TestMigrateSpecsLayout(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "002-status-command.md"), []byte("---\nnumber: 2\nstatus: completed\n---\n\n# Status Command\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(dir, "003-plan-command.md"), []byte("---\nnumber: 3\nstatus: approved\n---\n\n# Plan Command\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(filepath.Join(dir, "004-list-command.md"), []byte("---\nnumber: 4\nstatus: draft\n---\n\n# List Command\n\nSee [status](/specs/002-status-command.md).\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -39,6 +42,10 @@ func TestMigrateSpecsLayout(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "002-status-command.md")); !os.IsNotExist(err) {
 		t.Fatalf("old status spec should be removed, got: %v", err)
 	}
+	planPath := filepath.Join(dir, "003-plan-command", "SPEC.md")
+	if _, err := os.Stat(planPath); err != nil {
+		t.Fatalf("expected migrated plan spec at %s: %v", planPath, err)
+	}
 
 	listPath := filepath.Join(dir, "004-list-command", "SPEC.md")
 	content, err := os.ReadFile(listPath)
@@ -59,6 +66,9 @@ func TestMigrateSpecsLayout(t *testing.T) {
 	}
 	if string(gitignore) != specsGitignoreContent {
 		t.Fatalf("unexpected .gitignore content:\n%s", string(gitignore))
+	}
+	if !strings.Contains(specsGitignoreContent, "!**/PLAN.md") {
+		t.Fatalf("expected .gitignore content to allow PLAN.md fallback, got:\n%s", specsGitignoreContent)
 	}
 }
 

@@ -32,8 +32,8 @@ func Plan(specsDir string, specRef string, newSlug string) (*RenameResult, error
 	if err != nil {
 		return nil, err
 	}
-	if filepath.Base(oldPath) != "SPEC.md" {
-		return nil, fmt.Errorf("spec %s must resolve to a SPEC.md spec", specRef)
+	if !specpkg.IsSpecFilePath(oldPath) {
+		return nil, fmt.Errorf("spec %s must resolve to a SPEC.md or PLAN.md spec", specRef)
 	}
 
 	if newSlug == "" {
@@ -49,7 +49,7 @@ func Plan(specsDir string, specRef string, newSlug string) (*RenameResult, error
 
 	newDirName := fmt.Sprintf("%03d-%s", info.Number, newSlug)
 	newDir := filepath.Join(parentDir, newDirName)
-	newPath := filepath.Join(newDir, "SPEC.md")
+	newPath := filepath.Join(newDir, filepath.Base(oldPath))
 
 	// Don't rename if already the same.
 	if oldPath == newPath {

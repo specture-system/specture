@@ -70,8 +70,8 @@ func NewContext(workDir, title, parentRef string) (*NewCommandContext, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve parent spec %q: %w", parentRef, err)
 		}
-		if filepath.Base(parentPath) != "SPEC.md" {
-			return nil, fmt.Errorf("parent spec %q must be a SPEC.md spec", parentRef)
+		if !specpkg.IsSpecFilePath(parentPath) {
+			return nil, fmt.Errorf("parent spec %q must be a SPEC.md or PLAN.md spec", parentRef)
 		}
 
 		parentInfo, err = specpkg.Parse(parentPath)

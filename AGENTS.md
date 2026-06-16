@@ -22,7 +22,3 @@
 
 - Running raw `go` commands for build, test, or generation when a `just` recipe should be used.
 - Putting reusable helpers in `cmd/` files instead of moving them into `internal/`.
-
-## Specture System
-
-This project uses the [Specture System](https://github.com/specture-system/specture) for managing specs. See the `.agents/skills/specture/` skill for the full workflow, or run `specture help` for CLI usage.

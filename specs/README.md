@@ -8,6 +8,6 @@ When writing specs:
 - Use repo-root-relative markdown links for any cross-spec mentions (for example, `[Status command](specs/002-status-command/SPEC.md)`).
 - Keep specs focused on goals, rationale, and design decisions.
 
-For full documentation on the spec system, workflow, and file format, see the [Specture System](https://github.com/specture-system/specture) repository. Run `specture help` for CLI usage.
+For full documentation on the spec system, workflow, and file format, see the [Specture System](https://github.com/specture-system/specture) repository. In this repo, `skills/specture/` is the installable skill and workflow source of truth. Run `specture help` for CLI usage.
 
 This project uses pull requests for collaboration on specs.

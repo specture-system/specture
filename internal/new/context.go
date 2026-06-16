@@ -2,206 +2,212 @@ package new
 
 import (
 	"fmt"
-	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/specture-system/specture/internal/fs"
 	gitpkg "github.com/specture-system/specture/internal/git"
 	specpkg "github.com/specture-system/specture/internal/spec"
 )
 
-// NewCommandContext holds information needed to create a new spec.
-type NewCommandContext struct {
-	WorkDir        string
-	SpecsDir       string
-	ParentRef      string
-	ParentPath     string
-	Title          string
-	Author         string
-	Number         int
-	BranchName     string
-	FileName       string
-	RelativePath   string
-	FilePath       string
-	OriginalBranch string
+const (
+	specFileName = "SPEC.md"
+	planFileName = "PLAN.md"
+)
+
+// Options holds user choices for new file creation.
+type Options struct {
+	Title     string
+	ParentRef string
+	SpecRef   string
+	Plan      bool
 }
 
-// NewContext creates a new NewCommandContext for spec creation.
-// It validates that the current directory is a git repository and returns an error if not.
-func NewContext(workDir, title, parentRef string) (*NewCommandContext, error) {
-	// Validate git repository
-	if err := gitpkg.IsGitRepository(workDir); err != nil {
-		return nil, err
+// NewCommandContext holds information needed to create a new spec or plan file.
+type NewCommandContext struct {
+	WorkDir      string
+	SpecsDir     string
+	ParentRef    string
+	ParentPath   string
+	Title        string
+	Author       string
+	Number       int
+	FullRef      string
+	Kind         string
+	FileName     string
+	RelativePath string
+	FilePath     string
+}
+
+// NewContext creates a new NewCommandContext for spec or plan creation.
+func NewContext(workDir string, opts Options) (*NewCommandContext, error) {
+	title := strings.TrimSpace(opts.Title)
+	if title == "" {
+		return nil, fmt.Errorf("title cannot be empty")
+	}
+	if strings.TrimSpace(opts.ParentRef) != "" && strings.TrimSpace(opts.SpecRef) != "" {
+		return nil, fmt.Errorf("--spec cannot be combined with --parent")
 	}
 
-	// Check for uncommitted changes
-	hasDirty, err := gitpkg.HasUncommittedChanges(workDir)
-	if err != nil {
-		return nil, err
-	}
-	if hasDirty {
-		return nil, fmt.Errorf("repository has uncommitted changes; please commit or stash them first")
-	}
-
-	// Get author from git config
-	author, err := gitpkg.GetAuthor(workDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get git author: %w", err)
-	}
-
-	// Find specs directory
 	specsDir := filepath.Join(workDir, "specs")
-
-	// Ensure specs directory exists
-	if err := fs.EnsureDir(specsDir); err != nil {
-		return nil, fmt.Errorf("failed to ensure specs directory exists: %w", err)
+	fileName := specFileName
+	kind := "spec"
+	if opts.Plan {
+		fileName = planFileName
+		kind = "plan"
 	}
 
-	parentRef = strings.TrimSpace(parentRef)
-
-	var parentPath string
-	var parentInfo *specpkg.SpecInfo
-	if parentRef != "" {
-		var err error
-		parentPath, err = specpkg.ResolvePath(specsDir, parentRef)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve parent spec %q: %w", parentRef, err)
-		}
-		if !specpkg.IsSpecFilePath(parentPath) {
-			return nil, fmt.Errorf("parent spec %q must be a SPEC.md or PLAN.md spec", parentRef)
-		}
-
-		parentInfo, err = specpkg.Parse(parentPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse parent spec: %w", err)
-		}
-	}
-
-	// Find next spec number in the selected scope.
-	number, err := FindNextSpecNumber(specsDir, parentPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find next spec number: %w", err)
-	}
-
-	// Get current branch
-	currentBranch, err := gitpkg.GetCurrentBranch(workDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current branch: %w", err)
-	}
-
-	// Convert title to slug
+	author := getAuthor(workDir)
 	slug := ToSlug(title)
+	if slug == "" {
+		return nil, fmt.Errorf("title must contain at least one letter or number")
+	}
 
-	// Create branch name with date suffix
-	date := time.Now().Format("2006-01-02")
-	var branchName, fileName, relativePath, filePath string
+	parentRef := strings.TrimSpace(opts.ParentRef)
+	specRef := strings.TrimSpace(opts.SpecRef)
+	parentPath, parentFullRef, existingDir, number, fullRef, err := resolveTarget(specsDir, parentRef, specRef)
+	if err != nil {
+		return nil, err
+	}
+
 	dirName := fmt.Sprintf("%03d-%s", number, slug)
-	if parentPath == "" {
-		branchName = fmt.Sprintf("spec/%s-%s", dirName, date)
-		fileName = "SPEC.md"
-		relativePath = filepath.Join(dirName, fileName)
-		filePath = filepath.Join(specsDir, relativePath)
-	} else {
-		fullRef := parentInfo.FullRef + "." + strconv.Itoa(number)
-		branchName = fmt.Sprintf("spec/%s-%s-%s", strings.ReplaceAll(fullRef, ".", "-"), slug, date)
-		fileName = "SPEC.md"
-		relativePath = filepath.Join(dirName, fileName)
-		filePath = filepath.Join(filepath.Dir(parentPath), relativePath)
+	baseDir := specsDir
+	if parentPath != "" {
+		baseDir = filepath.Dir(parentPath)
+	}
+	if existingDir != "" {
+		baseDir = filepath.Dir(existingDir)
+		dirName = filepath.Base(existingDir)
+	}
+
+	filePath := filepath.Join(baseDir, dirName, fileName)
+	relativePath, err := filepath.Rel(specsDir, filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute spec path: %w", err)
+	}
+
+	if fullRef == "" {
+		fullRef = strconv.Itoa(number)
+		if parentFullRef != "" {
+			fullRef = parentFullRef + "." + fullRef
+		}
 	}
 
 	return &NewCommandContext{
-		WorkDir:        workDir,
-		SpecsDir:       specsDir,
-		ParentRef:      parentRef,
-		ParentPath:     parentPath,
-		Title:          title,
-		Author:         author,
-		Number:         number,
-		BranchName:     branchName,
-		FileName:       fileName,
-		RelativePath:   relativePath,
-		FilePath:       filePath,
-		OriginalBranch: currentBranch,
+		WorkDir:      workDir,
+		SpecsDir:     specsDir,
+		ParentRef:    parentRef,
+		ParentPath:   parentPath,
+		Title:        title,
+		Author:       author,
+		Number:       number,
+		FullRef:      fullRef,
+		Kind:         kind,
+		FileName:     fileName,
+		RelativePath: relativePath,
+		FilePath:     filePath,
 	}, nil
 }
 
-// CreateSpec creates the spec file. If body is provided, it's combined with generated frontmatter.
-// If body is empty, the template's default content is used (frontmatter + placeholder).
-// If noBranch is true, no git branch is created for the spec.
-func (c *NewCommandContext) CreateSpec(dryRun bool, body string, noBranch bool) error {
-	// Always generate frontmatter
-	frontmatter := GenerateFrontmatter(c.Author)
-
-	// Render body (either provided or default from template)
-	if body == "" {
-		var err error
-		body, err = RenderDefaultBody(c.Title)
-		if err != nil {
-			return fmt.Errorf("failed to render body: %w", err)
-		}
+// CreateFile creates the target SPEC.md or PLAN.md file.
+func (c *NewCommandContext) CreateFile() error {
+	content, err := RenderFile(c.Title, c.Author, c.FileName)
+	if err != nil {
+		return fmt.Errorf("failed to render %s: %w", c.FileName, err)
 	}
-
-	// Join frontmatter and body
-	content := JoinSpecContent(frontmatter, body)
-
-	if dryRun {
-		fmt.Printf("Would create file: %s\n", c.FilePath)
-		if !noBranch {
-			fmt.Printf("Would create branch: %s\n", c.BranchName)
-		}
-		return nil
-	}
-
-	// Create the spec file using SafeWriteFile to prevent overwrites
 	if err := fs.SafeWriteFile(c.FilePath, content); err != nil {
-		return fmt.Errorf("failed to write spec file: %w", err)
+		return fmt.Errorf("failed to write %s: %w", c.FileName, err)
 	}
-
-	// Create branch unless --no-branch is set
-	if !noBranch {
-		if err := gitpkg.CreateBranch(c.WorkDir, c.BranchName); err != nil {
-			// Clean up the created file if branch creation fails.
-			if cleanupErr := os.Remove(c.FilePath); cleanupErr != nil && !os.IsNotExist(cleanupErr) {
-				return fmt.Errorf("branch creation failed: %w (cleanup error: %v)", err, cleanupErr)
-			}
-			return err
-		}
-	}
-
 	return nil
 }
 
-// Cleanup removes the spec file and deletes the branch, reverting to the original branch.
-// This is called if the editor exits with a non-zero code (user cancellation).
-// It handles both branch-based and non-branch specs.
-func (c *NewCommandContext) Cleanup() error {
-	// Remove the spec file. Nested-spec directories are left in place; repo
-	// ignore rules keep stray scaffolding out of the working tree.
-	if err := os.Remove(c.FilePath); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove spec file: %w", err)
+func resolveTarget(specsDir, parentRef, specRef string) (parentPath, parentFullRef, existingDir string, number int, fullRef string, err error) {
+	if specRef != "" {
+		return resolveExplicitTarget(specsDir, specRef)
 	}
 
-	// Check if branch exists before trying to delete it
-	// (it won't exist if --no-branch was used)
-	branchExists, err := gitpkg.BranchExists(c.WorkDir, c.BranchName)
+	if parentRef != "" {
+		parentPath, err = specpkg.ResolvePath(specsDir, parentRef)
+		if err != nil {
+			return "", "", "", 0, "", fmt.Errorf("failed to resolve parent spec %q: %w", parentRef, err)
+		}
+		parentInfo, err := specpkg.Parse(parentPath)
+		if err != nil {
+			return "", "", "", 0, "", fmt.Errorf("failed to parse parent spec: %w", err)
+		}
+		parentFullRef = parentInfo.FullRef
+	}
+
+	number, err = FindNextSpecNumber(specsDir, parentPath)
 	if err != nil {
-		return fmt.Errorf("failed to inspect cleanup branch %q: %w", c.BranchName, err)
+		return "", "", "", 0, "", fmt.Errorf("failed to find next spec number: %w", err)
+	}
+	return parentPath, parentFullRef, "", number, "", nil
+}
+
+func resolveExplicitTarget(specsDir, specRef string) (parentPath, parentFullRef, existingDir string, number int, fullRef string, err error) {
+	parts := strings.Split(specRef, ".")
+	for _, part := range parts {
+		if part == "" {
+			return "", "", "", 0, "", fmt.Errorf("invalid spec reference: %s", specRef)
+		}
+		n, err := strconv.Atoi(part)
+		if err != nil || n < 0 {
+			return "", "", "", 0, "", fmt.Errorf("invalid spec reference: %s", specRef)
+		}
 	}
 
-	if branchExists {
-		// Checkout back to original branch
-		if err := gitpkg.CheckoutBranch(c.WorkDir, c.OriginalBranch); err != nil {
-			return fmt.Errorf("failed to checkout original branch: %w", err)
+	last, _ := strconv.Atoi(parts[len(parts)-1])
+	normalized := normalizeRefParts(parts)
+	if existingPath, err := specpkg.ResolvePath(specsDir, normalized); err == nil {
+		existingInfo, err := specpkg.Parse(existingPath)
+		if err != nil {
+			return "", "", "", 0, "", fmt.Errorf("failed to parse existing spec: %w", err)
 		}
-
-		// Delete the spec branch
-		if err := gitpkg.DeleteBranch(c.WorkDir, c.BranchName); err != nil {
-			return fmt.Errorf("failed to delete branch: %w", err)
-		}
+		return "", "", filepath.Dir(existingPath), existingInfo.Number, existingInfo.FullRef, nil
 	}
 
-	return nil
+	if len(parts) == 1 {
+		return "", "", "", last, normalized, nil
+	}
+
+	parentRef := strings.Join(normalizedRefParts(parts[:len(parts)-1]), ".")
+	parentPath, err = specpkg.ResolvePath(specsDir, parentRef)
+	if err != nil {
+		return "", "", "", 0, "", fmt.Errorf("failed to resolve parent spec %q: %w", parentRef, err)
+	}
+	parentInfo, err := specpkg.Parse(parentPath)
+	if err != nil {
+		return "", "", "", 0, "", fmt.Errorf("failed to parse parent spec: %w", err)
+	}
+	return parentPath, parentInfo.FullRef, "", last, normalized, nil
+}
+
+func normalizeRefParts(parts []string) string {
+	return strings.Join(normalizedRefParts(parts), ".")
+}
+
+func normalizedRefParts(parts []string) []string {
+	normalized := make([]string, 0, len(parts))
+	for _, part := range parts {
+		n, _ := strconv.Atoi(part)
+		normalized = append(normalized, strconv.Itoa(n))
+	}
+	return normalized
+}
+
+func getAuthor(workDir string) string {
+	author, err := gitpkg.GetAuthor(workDir)
+	if err == nil && strings.TrimSpace(author) != "" {
+		return author
+	}
+
+	cmd := exec.Command("git", "config", "--global", "user.name")
+	if output, err := cmd.Output(); err == nil && strings.TrimSpace(string(output)) != "" {
+		return strings.TrimSpace(string(output))
+	}
+
+	return "Unknown"
 }

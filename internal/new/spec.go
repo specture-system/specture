@@ -140,6 +140,34 @@ func RenderSpec(title, author string) (string, error) {
 	return template.RenderTemplate(tmpl, data)
 }
 
+// RenderFile renders the standard new-file template.
+func RenderFile(title, author, fileName string) (string, error) {
+	if fileName == planFileName {
+		return RenderPlan(title, author), nil
+	}
+	return RenderSpec(title, author)
+}
+
+// RenderPlan renders a complete plan file from the standard plan template.
+func RenderPlan(title, author string) string {
+	return fmt.Sprintf(`---
+status: draft
+author: %s
+creation_date: %s
+---
+
+# %s
+
+Use this plan as an execution handoff for coding agents. Keep it tactical and update it as implementation details change.
+
+## Tasks
+
+- [ ] Define the next implementation slice.
+- [ ] Implement the slice.
+- [ ] Run the relevant validation.
+`, author, time.Now().Format("2006-01-02"), title)
+}
+
 // JoinSpecContent joins frontmatter and body into a complete spec.
 func JoinSpecContent(frontmatter, body string) string {
 	return frontmatter + "\n\n" + body

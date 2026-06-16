@@ -2,348 +2,182 @@ package new
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
-	"regexp"
-	"strings"
 	"testing"
-	"time"
-
-	"github.com/specture-system/specture/internal/testhelpers"
 )
 
-func TestNewContext_ErrorHandling(t *testing.T) {
-	t.Run("fails_for_non_git_repo", func(t *testing.T) {
-		tmpDir := t.TempDir()
+func TestNewContext(t *testing.T) {
+	t.Run("creates top level spec without git preconditions", func(t *testing.T) {
+		workDir := t.TempDir()
 
-		_, err := NewContext(tmpDir, "Test Spec", "")
-		if err == nil {
-			t.Errorf("NewContext() expected error for non-git repo")
-		}
-	})
-
-	t.Run("fails_for_dirty_working_tree", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		testhelpers.InitGitRepo(t, tmpDir)
-
-		// Create uncommitted changes
-		dirtyFile := filepath.Join(tmpDir, "dirty.txt")
-		if err := os.WriteFile(dirtyFile, []byte("changes"), 0644); err != nil {
-			t.Fatalf("failed to create dirty file: %v", err)
-		}
-
-		_, err := NewContext(tmpDir, "Test Spec", "")
-		if err == nil {
-			t.Errorf("NewContext() expected error for dirty working tree")
-		}
-	})
-
-	t.Run("succeeds_with_valid_repo", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		testhelpers.InitGitRepo(t, tmpDir)
-
-		// Create initial commit so there's a branch to check out
-		cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
-		cmd.Dir = tmpDir
-		if err := cmd.Run(); err != nil {
-			t.Fatalf("failed to create initial commit: %v", err)
-		}
-
-		ctx, err := NewContext(tmpDir, "My First Spec", "")
+		ctx, err := NewContext(workDir, Options{Title: "My First Spec"})
 		if err != nil {
 			t.Fatalf("NewContext() error = %v", err)
 		}
 
 		if ctx.Number != 0 {
-			t.Errorf("NewContext() spec number = %d, want 0", ctx.Number)
+			t.Fatalf("Number = %d, want 0", ctx.Number)
+		}
+		if ctx.FullRef != "0" {
+			t.Fatalf("FullRef = %q, want 0", ctx.FullRef)
 		}
 		if ctx.FileName != "SPEC.md" {
-			t.Errorf("NewContext() filename = %q, want %q", ctx.FileName, "SPEC.md")
+			t.Fatalf("FileName = %q, want SPEC.md", ctx.FileName)
 		}
-		if ctx.RelativePath != filepath.Join("000-my-first-spec", "SPEC.md") {
-			t.Errorf("NewContext() relative path = %q, want %q", ctx.RelativePath, filepath.Join("000-my-first-spec", "SPEC.md"))
-		}
-		if ctx.FilePath != filepath.Join(tmpDir, "specs", "000-my-first-spec", "SPEC.md") {
-			t.Errorf("NewContext() file path = %q, want nested SPEC.md path", ctx.FilePath)
-		}
-
-		// Branch name should include date suffix (YYYY-MM-DD)
-		today := time.Now().Format("2006-01-02")
-		expectedBranchPattern := "spec/000-my-first-spec-" + regexp.QuoteMeta(today)
-		if !regexp.MustCompile(expectedBranchPattern).MatchString(ctx.BranchName) {
-			t.Errorf("NewContext() branch = %q, want pattern %q", ctx.BranchName, expectedBranchPattern)
+		wantPath := filepath.Join(workDir, "specs", "000-my-first-spec", "SPEC.md")
+		if ctx.FilePath != wantPath {
+			t.Fatalf("FilePath = %q, want %q", ctx.FilePath, wantPath)
 		}
 	})
 
-	t.Run("creates_child_spec_context_with_parent", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		testhelpers.InitGitRepo(t, tmpDir)
+	t.Run("creates plan file", func(t *testing.T) {
+		workDir := t.TempDir()
 
-		// Create initial commit so there's a branch to check out.
-		cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
-		cmd.Dir = tmpDir
-		if err := cmd.Run(); err != nil {
-			t.Fatalf("failed to create initial commit: %v", err)
-		}
-
-		parentDir := filepath.Join(tmpDir, "specs", "0-parent")
-		if err := os.MkdirAll(parentDir, 0o755); err != nil {
-			t.Fatalf("failed to create parent spec directory: %v", err)
-		}
-		parentPath := filepath.Join(parentDir, "SPEC.md")
-		parentSpec := "---\nstatus: draft\n---\n\n# Parent Spec\n"
-		if err := os.WriteFile(parentPath, []byte(parentSpec), 0o644); err != nil {
-			t.Fatalf("failed to write parent spec: %v", err)
-		}
-
-		addCmd := exec.Command("git", "add", "specs/0-parent/SPEC.md")
-		addCmd.Dir = tmpDir
-		if err := addCmd.Run(); err != nil {
-			t.Fatalf("failed to stage parent spec: %v", err)
-		}
-
-		commitCmd := exec.Command("git", "commit", "-m", "Add parent spec")
-		commitCmd.Dir = tmpDir
-		if err := commitCmd.Run(); err != nil {
-			t.Fatalf("failed to commit parent spec: %v", err)
-		}
-
-		ctx, err := NewContext(tmpDir, "Child Spec", "0")
+		ctx, err := NewContext(workDir, Options{Title: "Execution Plan", Plan: true})
 		if err != nil {
 			t.Fatalf("NewContext() error = %v", err)
 		}
 
-		if ctx.ParentRef != "0" {
-			t.Errorf("ParentRef = %q, want %q", ctx.ParentRef, "0")
+		if ctx.Kind != "plan" {
+			t.Fatalf("Kind = %q, want plan", ctx.Kind)
 		}
-		if ctx.Number != 0 {
-			t.Errorf("child spec number = %d, want 0", ctx.Number)
+		if ctx.FileName != "PLAN.md" {
+			t.Fatalf("FileName = %q, want PLAN.md", ctx.FileName)
 		}
-		if ctx.FilePath != filepath.Join(tmpDir, "specs", "0-parent", "000-child-spec", "SPEC.md") {
-			t.Errorf("FilePath = %q, want child spec path", ctx.FilePath)
-		}
-		if ctx.RelativePath != filepath.Join("000-child-spec", "SPEC.md") {
-			t.Errorf("RelativePath = %q, want %q", ctx.RelativePath, filepath.Join("000-child-spec", "SPEC.md"))
-		}
-		if ctx.FileName != "SPEC.md" {
-			t.Errorf("FileName = %q, want SPEC.md", ctx.FileName)
+		wantPath := filepath.Join(workDir, "specs", "000-execution-plan", "PLAN.md")
+		if ctx.FilePath != wantPath {
+			t.Fatalf("FilePath = %q, want %q", ctx.FilePath, wantPath)
 		}
 	})
 
-	t.Run("creates_child_spec_context_with_plan_parent", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		testhelpers.InitGitRepo(t, tmpDir)
+	t.Run("allocates next child under parent", func(t *testing.T) {
+		workDir := t.TempDir()
+		parentDir := filepath.Join(workDir, "specs", "011-parent")
+		writeFile(t, filepath.Join(parentDir, "SPEC.md"), "---\nstatus: draft\n---\n\n# Parent\n")
+		writeFile(t, filepath.Join(parentDir, "000-existing", "SPEC.md"), "---\nstatus: draft\n---\n\n# Existing\n")
 
-		cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
-		cmd.Dir = tmpDir
-		if err := cmd.Run(); err != nil {
-			t.Fatalf("failed to create initial commit: %v", err)
-		}
-
-		parentDir := filepath.Join(tmpDir, "specs", "0-parent")
-		if err := os.MkdirAll(parentDir, 0o755); err != nil {
-			t.Fatalf("failed to create parent spec directory: %v", err)
-		}
-		parentPath := filepath.Join(parentDir, "PLAN.md")
-		parentSpec := "---\nstatus: draft\n---\n\n# Parent Spec\n"
-		if err := os.WriteFile(parentPath, []byte(parentSpec), 0o644); err != nil {
-			t.Fatalf("failed to write parent spec: %v", err)
-		}
-
-		addCmd := exec.Command("git", "add", "specs/0-parent/PLAN.md")
-		addCmd.Dir = tmpDir
-		if err := addCmd.Run(); err != nil {
-			t.Fatalf("failed to stage parent spec: %v", err)
-		}
-
-		commitCmd := exec.Command("git", "commit", "-m", "Add parent plan")
-		commitCmd.Dir = tmpDir
-		if err := commitCmd.Run(); err != nil {
-			t.Fatalf("failed to commit parent spec: %v", err)
-		}
-
-		ctx, err := NewContext(tmpDir, "Child Spec", "0")
+		ctx, err := NewContext(workDir, Options{Title: "Child Spec", ParentRef: "11"})
 		if err != nil {
 			t.Fatalf("NewContext() error = %v", err)
 		}
 
-		if ctx.ParentPath != parentPath {
-			t.Errorf("ParentPath = %q, want %q", ctx.ParentPath, parentPath)
+		if ctx.FullRef != "11.1" {
+			t.Fatalf("FullRef = %q, want 11.1", ctx.FullRef)
 		}
-		if ctx.FilePath != filepath.Join(tmpDir, "specs", "0-parent", "000-child-spec", "SPEC.md") {
-			t.Errorf("FilePath = %q, want child spec path", ctx.FilePath)
+		wantPath := filepath.Join(parentDir, "001-child-spec", "SPEC.md")
+		if ctx.FilePath != wantPath {
+			t.Fatalf("FilePath = %q, want %q", ctx.FilePath, wantPath)
+		}
+	})
+
+	t.Run("uses explicit top level ref", func(t *testing.T) {
+		workDir := t.TempDir()
+
+		ctx, err := NewContext(workDir, Options{Title: "Issue Spec", SpecRef: "123"})
+		if err != nil {
+			t.Fatalf("NewContext() error = %v", err)
+		}
+
+		if ctx.FullRef != "123" {
+			t.Fatalf("FullRef = %q, want 123", ctx.FullRef)
+		}
+		wantPath := filepath.Join(workDir, "specs", "123-issue-spec", "SPEC.md")
+		if ctx.FilePath != wantPath {
+			t.Fatalf("FilePath = %q, want %q", ctx.FilePath, wantPath)
+		}
+	})
+
+	t.Run("uses explicit child ref", func(t *testing.T) {
+		workDir := t.TempDir()
+		parentDir := filepath.Join(workDir, "specs", "123-parent")
+		writeFile(t, filepath.Join(parentDir, "SPEC.md"), "---\nstatus: draft\n---\n\n# Parent\n")
+
+		ctx, err := NewContext(workDir, Options{Title: "Child Spec", SpecRef: "123.4"})
+		if err != nil {
+			t.Fatalf("NewContext() error = %v", err)
+		}
+
+		if ctx.FullRef != "123.4" {
+			t.Fatalf("FullRef = %q, want 123.4", ctx.FullRef)
+		}
+		wantPath := filepath.Join(parentDir, "004-child-spec", "SPEC.md")
+		if ctx.FilePath != wantPath {
+			t.Fatalf("FilePath = %q, want %q", ctx.FilePath, wantPath)
+		}
+	})
+
+	t.Run("explicit ref can target sibling plan in existing spec directory", func(t *testing.T) {
+		workDir := t.TempDir()
+		existingDir := filepath.Join(workDir, "specs", "123-existing")
+		writeFile(t, filepath.Join(existingDir, "SPEC.md"), "---\nstatus: draft\n---\n\n# Existing\n")
+
+		ctx, err := NewContext(workDir, Options{Title: "Execution Plan", SpecRef: "123", Plan: true})
+		if err != nil {
+			t.Fatalf("NewContext() error = %v", err)
+		}
+
+		if ctx.FullRef != "123" {
+			t.Fatalf("FullRef = %q, want 123", ctx.FullRef)
+		}
+		wantPath := filepath.Join(existingDir, "PLAN.md")
+		if ctx.FilePath != wantPath {
+			t.Fatalf("FilePath = %q, want %q", ctx.FilePath, wantPath)
+		}
+	})
+
+	t.Run("explicit ref can target sibling spec in existing plan directory", func(t *testing.T) {
+		workDir := t.TempDir()
+		existingDir := filepath.Join(workDir, "specs", "123-existing")
+		writeFile(t, filepath.Join(existingDir, "PLAN.md"), "---\nstatus: draft\n---\n\n# Existing\n")
+
+		ctx, err := NewContext(workDir, Options{Title: "Durable Spec", SpecRef: "123"})
+		if err != nil {
+			t.Fatalf("NewContext() error = %v", err)
+		}
+
+		wantPath := filepath.Join(existingDir, "SPEC.md")
+		if ctx.FilePath != wantPath {
+			t.Fatalf("FilePath = %q, want %q", ctx.FilePath, wantPath)
+		}
+	})
+
+	t.Run("rejects spec and parent together", func(t *testing.T) {
+		_, err := NewContext(t.TempDir(), Options{Title: "Bad", ParentRef: "1", SpecRef: "2"})
+		if err == nil {
+			t.Fatal("expected error")
 		}
 	})
 }
 
-func TestCleanup(t *testing.T) {
-	t.Run("removes_spec_file_and_deletes_branch", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		testhelpers.InitGitRepo(t, tmpDir)
+func TestCreateFile(t *testing.T) {
+	workDir := t.TempDir()
+	ctx, err := NewContext(workDir, Options{Title: "Created Spec"})
+	if err != nil {
+		t.Fatalf("NewContext() error = %v", err)
+	}
+	if err := ctx.CreateFile(); err != nil {
+		t.Fatalf("CreateFile() error = %v", err)
+	}
 
-		// Create initial commit
-		cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
-		cmd.Dir = tmpDir
-		if err := cmd.Run(); err != nil {
-			t.Fatalf("failed to create initial commit: %v", err)
-		}
+	content, err := os.ReadFile(ctx.FilePath)
+	if err != nil {
+		t.Fatalf("created file missing: %v", err)
+	}
+	if string(content) == "" {
+		t.Fatal("created file is empty")
+	}
 
-		// Create context and spec
-		ctx, err := NewContext(tmpDir, "Test Spec", "")
-		if err != nil {
-			t.Fatalf("NewContext() error = %v", err)
-		}
+	if err := ctx.CreateFile(); err == nil {
+		t.Fatal("expected duplicate file creation to fail")
+	}
+}
 
-		// Manually create the file and branch
-		if err := os.MkdirAll(filepath.Dir(ctx.FilePath), 0o755); err != nil {
-			t.Fatalf("failed to create spec directory: %v", err)
-		}
-		if err := os.WriteFile(ctx.FilePath, []byte("test"), 0644); err != nil {
-			t.Fatalf("failed to create spec file: %v", err)
-		}
-
-		createBranchCmd := exec.Command("git", "checkout", "-b", ctx.BranchName)
-		createBranchCmd.Dir = tmpDir
-		if err := createBranchCmd.Run(); err != nil {
-			t.Fatalf("failed to create branch: %v", err)
-		}
-
-		// Verify file and branch exist
-		if _, err := os.Stat(ctx.FilePath); err != nil {
-			t.Errorf("spec file should exist before cleanup")
-		}
-
-		// Run cleanup
-		if err := ctx.Cleanup(); err != nil {
-			t.Fatalf("Cleanup() error = %v", err)
-		}
-
-		// Verify file is gone
-		if _, err := os.Stat(ctx.FilePath); err == nil {
-			t.Errorf("spec file should be removed after cleanup")
-		}
-
-		// Verify we're back on the original branch
-		currentBranchCmd := exec.Command("git", "branch", "--show-current")
-		currentBranchCmd.Dir = tmpDir
-		output, err := currentBranchCmd.Output()
-		if err != nil {
-			t.Fatalf("failed to get current branch: %v", err)
-		}
-
-		currentBranch := strings.TrimSpace(string(output))
-		if currentBranch != ctx.OriginalBranch {
-			t.Errorf("should be on original branch %q, got %q", ctx.OriginalBranch, currentBranch)
-		}
-
-		// Verify spec branch is deleted
-		checkBranchCmd := exec.Command("git", "rev-parse", "--verify", ctx.BranchName)
-		checkBranchCmd.Dir = tmpDir
-		if err := checkBranchCmd.Run(); err == nil {
-			t.Errorf("spec branch should be deleted after cleanup")
-		}
-	})
-
-	t.Run("handles_missing_file", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		testhelpers.InitGitRepo(t, tmpDir)
-
-		// Create initial commit
-		cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
-		cmd.Dir = tmpDir
-		if err := cmd.Run(); err != nil {
-			t.Fatalf("failed to create initial commit: %v", err)
-		}
-
-		// Create context
-		ctx, err := NewContext(tmpDir, "Test Spec", "")
-		if err != nil {
-			t.Fatalf("NewContext() error = %v", err)
-		}
-
-		// Create branch but not file
-		createBranchCmd := exec.Command("git", "checkout", "-b", ctx.BranchName)
-		createBranchCmd.Dir = tmpDir
-		if err := createBranchCmd.Run(); err != nil {
-			t.Fatalf("failed to create branch: %v", err)
-		}
-
-		// Cleanup should succeed even without the file
-		if err := ctx.Cleanup(); err != nil {
-			t.Fatalf("Cleanup() should succeed when file doesn't exist, got error: %v", err)
-		}
-
-		// Verify branch is deleted
-		checkBranchCmd := exec.Command("git", "rev-parse", "--verify", ctx.BranchName)
-		checkBranchCmd.Dir = tmpDir
-		if err := checkBranchCmd.Run(); err == nil {
-			t.Errorf("spec branch should be deleted after cleanup")
-		}
-	})
-
-	t.Run("returns_to_original_branch_when_on_different_branch", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		testhelpers.InitGitRepo(t, tmpDir)
-
-		// Create initial commit
-		cmd := exec.Command("git", "commit", "--allow-empty", "-m", "initial commit")
-		cmd.Dir = tmpDir
-		if err := cmd.Run(); err != nil {
-			t.Fatalf("failed to create initial commit: %v", err)
-		}
-
-		// Create and checkout a different branch
-		otherBranchCmd := exec.Command("git", "checkout", "-b", "feature-branch")
-		otherBranchCmd.Dir = tmpDir
-		if err := otherBranchCmd.Run(); err != nil {
-			t.Fatalf("failed to create other branch: %v", err)
-		}
-
-		// Create context while on feature-branch
-		ctx, err := NewContext(tmpDir, "Test Spec", "")
-		if err != nil {
-			t.Fatalf("NewContext() error = %v", err)
-		}
-
-		// Verify we're tracking the feature-branch as original
-		if ctx.OriginalBranch != "feature-branch" {
-			t.Errorf("OriginalBranch should be 'feature-branch', got %q", ctx.OriginalBranch)
-		}
-
-		// Create spec file and branch
-		if err := os.MkdirAll(filepath.Dir(ctx.FilePath), 0o755); err != nil {
-			t.Fatalf("failed to create spec directory: %v", err)
-		}
-		if err := os.WriteFile(ctx.FilePath, []byte("test"), 0644); err != nil {
-			t.Fatalf("failed to create spec file: %v", err)
-		}
-
-		createBranchCmd := exec.Command("git", "checkout", "-b", ctx.BranchName)
-		createBranchCmd.Dir = tmpDir
-		if err := createBranchCmd.Run(); err != nil {
-			t.Fatalf("failed to create branch: %v", err)
-		}
-
-		// Verify we're on spec branch
-		currentBranchCmd := exec.Command("git", "branch", "--show-current")
-		currentBranchCmd.Dir = tmpDir
-		output, _ := currentBranchCmd.Output()
-		if strings.TrimSpace(string(output)) != ctx.BranchName {
-			t.Errorf("should be on spec branch before cleanup")
-		}
-
-		// Cleanup
-		if err := ctx.Cleanup(); err != nil {
-			t.Fatalf("Cleanup() error = %v", err)
-		}
-
-		// Verify we're back on feature-branch
-		currentBranchCmd = exec.Command("git", "branch", "--show-current")
-		currentBranchCmd.Dir = tmpDir
-		output, _ = currentBranchCmd.Output()
-		currentBranch := strings.TrimSpace(string(output))
-		if currentBranch != "feature-branch" {
-			t.Errorf("should be back on feature-branch after cleanup, got %q", currentBranch)
-		}
-	})
+func writeFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("failed to create directory for %s: %v", path, err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("failed to write %s: %v", path, err)
+	}
 }

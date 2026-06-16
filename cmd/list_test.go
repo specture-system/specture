@@ -244,6 +244,58 @@ status: draft
 	}
 }
 
+func TestListCommand_TextOutput_StandalonePlan(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-plan/PLAN.md": `---
+status: approved
+---
+
+# Standalone Plan
+`,
+	})
+
+	output, err := execList(t, tmpDir, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(output, "Standalone Plan") {
+		t.Fatalf("expected standalone plan in output, got:\n%s", output)
+	}
+	if !strings.Contains(output, filepath.Join("specs", "001-plan", "PLAN.md")) {
+		t.Fatalf("expected PLAN.md path in output, got:\n%s", output)
+	}
+}
+
+func TestListCommand_TextOutput_PrefersSpecOverSiblingPlan(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-feature/SPEC.md": `---
+status: approved
+---
+
+# Durable Spec
+`,
+		"001-feature/PLAN.md": `---
+status: draft
+---
+
+# Execution Plan
+`,
+	})
+
+	output, err := execList(t, tmpDir, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(output, "Durable Spec") {
+		t.Fatalf("expected sibling SPEC.md in output, got:\n%s", output)
+	}
+	if strings.Contains(output, "Execution Plan") || strings.Contains(output, "PLAN.md") {
+		t.Fatalf("did not expect sibling PLAN.md in output, got:\n%s", output)
+	}
+}
+
 func TestListCommand_TextOutput_ParentScope(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{
 		"001-setup/SPEC.md": listCompletedSpec,

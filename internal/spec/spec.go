@@ -18,6 +18,11 @@ import (
 	gmfrontmatter "go.abhg.dev/goldmark/frontmatter"
 )
 
+const (
+	specFilename = "SPEC.md"
+	planFilename = "PLAN.md"
+)
+
 // SpecInfo represents a parsed spec file with all extracted metadata.
 type SpecInfo struct {
 	Path    string
@@ -131,8 +136,11 @@ func resolveFullRef(path string, number int) (string, error) {
 		return "", nil
 	}
 
-	parentSpecPath := filepath.Join(filepath.Dir(filepath.Dir(path)), "SPEC.md")
-	if _, err := os.Stat(parentSpecPath); err == nil {
+	parentSpecPath, err := findParentSpecPath(path)
+	if err != nil {
+		return "", err
+	}
+	if parentSpecPath != "" {
 		parentInfo, err := Parse(parentSpecPath)
 		if err != nil {
 			return "", err
@@ -141,8 +149,6 @@ func resolveFullRef(path string, number int) (string, error) {
 			return parentInfo.FullRef + "." + strconv.Itoa(number), nil
 		}
 		return strconv.Itoa(number), nil
-	} else if !os.IsNotExist(err) {
-		return "", fmt.Errorf("failed to inspect parent spec: %w", err)
 	}
 
 	return strconv.Itoa(number), nil
@@ -153,7 +159,7 @@ func resolveFullRef(path string, number int) (string, error) {
 // specs it falls back to the filename.
 func extractNumberFromSpecPath(path string) int {
 	target := filepath.Base(path)
-	if target == "SPEC.md" {
+	if IsSpecFilePath(path) {
 		target = filepath.Base(filepath.Dir(path))
 	}
 
@@ -200,7 +206,7 @@ func inferStatus(fmStatus string) string {
 	return "draft"
 }
 
-// FindAll finds all nested SPEC.md files in the given specs directory.
+// FindAll finds all nested spec files in the given specs directory.
 func FindAll(specsDir string) ([]string, error) {
 	if _, err := os.Stat(specsDir); os.IsNotExist(err) {
 		return nil, fmt.Errorf("specs directory not found: %s", specsDir)
@@ -215,9 +221,9 @@ func FindAll(specsDir string) ([]string, error) {
 	return paths, nil
 }
 
-// ResolvePath resolves a spec reference or SPEC.md path to a file path.
+// ResolvePath resolves a spec reference or spec file path to a file path.
 // Accepts:
-//   - Full path to a SPEC.md file
+//   - Full path to a SPEC.md or PLAN.md file
 //   - Top-level references with or without leading zeros: 0, 00, 000
 //   - Hierarchical references: 1.4.3
 //
@@ -226,8 +232,8 @@ func FindAll(specsDir string) ([]string, error) {
 func ResolvePath(specsDir, arg string) (string, error) {
 	// If it's already a path that exists, use it
 	if _, err := os.Stat(arg); err == nil {
-		if filepath.Base(arg) != "SPEC.md" {
-			return "", fmt.Errorf("spec paths must point to a SPEC.md file: %s", arg)
+		if !IsSpecFilePath(arg) {
+			return "", fmt.Errorf("spec paths must point to a SPEC.md or PLAN.md file: %s", arg)
 		}
 		return arg, nil
 	}
@@ -259,8 +265,8 @@ func ResolvePath(specsDir, arg string) (string, error) {
 // With no parent path, it returns top-level specs under specsDir.
 // With a parent path, it returns only immediate child specs of that parent.
 func FindSpecsInScope(specsDir, parentPath string) ([]*SpecInfo, error) {
-	if parentPath != "" && filepath.Base(parentPath) != "SPEC.md" {
-		return nil, fmt.Errorf("parent spec must be a SPEC.md file: %s", parentPath)
+	if parentPath != "" && !IsSpecFilePath(parentPath) {
+		return nil, fmt.Errorf("parent spec must be a SPEC.md or PLAN.md file: %s", parentPath)
 	}
 
 	paths, err := FindAll(specsDir)
@@ -304,14 +310,14 @@ func FindSpecsInScope(specsDir, parentPath string) ([]*SpecInfo, error) {
 
 // IsTopLevelSpecPath reports whether a spec path belongs directly under specsDir.
 func IsTopLevelSpecPath(specPath, specsDir string) bool {
-	return filepath.Base(specPath) == "SPEC.md" &&
+	return IsSpecFilePath(specPath) &&
 		filepath.Dir(filepath.Dir(specPath)) == specsDir
 }
 
 // IsImmediateChildSpecPath reports whether specPath is a direct child of parentPath.
 // This is the path shape used for nested specs created under a parent spec directory.
 func IsImmediateChildSpecPath(specPath, parentPath string) bool {
-	return filepath.Base(specPath) == "SPEC.md" &&
+	return IsSpecFilePath(specPath) &&
 		filepath.Dir(filepath.Dir(specPath)) == filepath.Dir(parentPath)
 }
 
@@ -331,14 +337,60 @@ func collectSpecPaths(dir string, paths *[]string) error {
 			continue
 		}
 
-		if filepath.Base(path) != "SPEC.md" {
+		if filepath.Base(path) == specFilename {
+			*paths = append(*paths, path)
 			continue
 		}
-
-		*paths = append(*paths, path)
+		if filepath.Base(path) == planFilename {
+			// Only use PLAN.md when a SPEC.md file is not present in the same directory.
+			hasSpec := false
+			for _, sibling := range entries {
+				if sibling.IsDir() {
+					continue
+				}
+				if sibling.Name() == specFilename {
+					hasSpec = true
+					break
+				}
+			}
+			if !hasSpec {
+				*paths = append(*paths, path)
+			}
+		}
 	}
 
 	return nil
+}
+
+// IsSpecFilePath reports whether path points to a supported spec file name.
+func IsSpecFilePath(path string) bool {
+	base := filepath.Base(path)
+	return base == specFilename || base == planFilename
+}
+
+// findParentSpecPath returns the nearest supported spec file in the parent directory.
+// If no parent spec exists, it returns an empty path.
+func findParentSpecPath(path string) (string, error) {
+	parentDir := filepath.Dir(filepath.Dir(path))
+	if parentDir == "." || parentDir == string(filepath.Separator) {
+		return "", nil
+	}
+
+	specPath := filepath.Join(parentDir, specFilename)
+	if _, err := os.Stat(specPath); err == nil {
+		return specPath, nil
+	} else if err != nil && !os.IsNotExist(err) {
+		return "", fmt.Errorf("failed to inspect parent spec: %w", err)
+	}
+
+	planPath := filepath.Join(parentDir, planFilename)
+	if _, err := os.Stat(planPath); err == nil {
+		return planPath, nil
+	} else if err != nil && !os.IsNotExist(err) {
+		return "", fmt.Errorf("failed to inspect parent spec: %w", err)
+	}
+
+	return "", nil
 }
 
 // normalizeSpecRef canonicalizes a user-provided reference so lookup can match

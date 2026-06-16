@@ -21,11 +21,11 @@ type specMovePlan struct {
 	linkNew string
 }
 
-const specsGitignoreContent = "*\n!*/\n!**/SPEC.md\n!README.md\n"
+const specsGitignoreContent = "*\n!*/\n!**/SPEC.md\n!**/PLAN.md\n!README.md\n"
 
 // MigrateSpecsLayout moves flat top-level spec files into numbered spec directories,
 // strips legacy frontmatter numbers from the moved files, and ensures specs/.gitignore
-// keeps only SPEC.md and README.md files tracked.
+// keeps SPEC.md, PLAN.md, and README.md files tracked.
 func MigrateSpecsLayout(specsDir string, dryRun bool) (bool, error) {
 	entries, err := os.ReadDir(specsDir)
 	if err != nil && !os.IsNotExist(err) {

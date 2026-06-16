@@ -82,6 +82,24 @@ func TestPlan_CustomSlug(t *testing.T) {
 	}
 }
 
+func TestPlan_PlanFileRename(t *testing.T) {
+	dir := setupSpecsDir(t, map[string]string{
+		"003-old-name/PLAN.md": "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",
+	})
+
+	result, err := Plan(dir, "3", "status-command")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if filepath.Base(result.OldPath) != "PLAN.md" {
+		t.Fatalf("expected old path to be PLAN.md, got %s", filepath.Base(result.OldPath))
+	}
+	if filepath.Base(result.NewPath) != "PLAN.md" {
+		t.Fatalf("expected new path to preserve PLAN.md, got %s", filepath.Base(result.NewPath))
+	}
+}
+
 func TestPlan_FindsLinkReferences(t *testing.T) {
 	dir := setupSpecsDir(t, map[string]string{
 		"003-old-name/SPEC.md":     "---\nnumber: 3\n---\n\n# Status Command\n\n## Task List\n",

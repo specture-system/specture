@@ -7,7 +7,6 @@ Use this workflow when implementing an `approved` spec.
 1. Read the relevant `SPEC.md`.
 2. Update its frontmatter `status` to `in-progress`.
 3. Create or select an implementation branch using the project's branch naming conventions.
-4. Commit the status change separately when the project expects a clean implementation history.
 
 ## Execution Loop
 

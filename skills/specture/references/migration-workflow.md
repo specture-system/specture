@@ -19,7 +19,3 @@ For old files such as `specs/003-status-command.md`:
 3. Remove legacy `number` frontmatter; refs are derived from directory names.
 4. Update markdown links to repo-root-relative `SPEC.md` paths, such as `specs/003-status-command/SPEC.md`.
 5. Run `specture validate`.
-
-## Migrate Skill Layouts
-
-The installable Specture skill lives at `skills/specture/` in this repository. Prefer that package as the source of truth instead of maintaining repo-local copies under `.agents/skills/specture/`.

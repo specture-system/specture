@@ -125,6 +125,91 @@ Description without frontmatter.
 	}
 }
 
+func TestValidateCommand_InvalidStandalonePlan(t *testing.T) {
+	tmpDir := t.TempDir()
+	specsDir := filepath.Join(tmpDir, "specs")
+	if err := os.MkdirAll(specsDir, 0755); err != nil {
+		t.Fatalf("failed to create specs dir: %v", err)
+	}
+
+	planPath := filepath.Join(specsDir, "000-plan", "PLAN.md")
+	if err := os.MkdirAll(filepath.Dir(planPath), 0755); err != nil {
+		t.Fatalf("failed to create plan dir: %v", err)
+	}
+	if err := os.WriteFile(planPath, []byte("---\nstatus: nope\n---\n\n# Plan\n"), 0644); err != nil {
+		t.Fatalf("failed to write plan: %v", err)
+	}
+
+	originalWd, _ := os.Getwd()
+	t.Cleanup(func() { os.Chdir(originalWd) })
+	os.Chdir(tmpDir)
+
+	out := &bytes.Buffer{}
+	cmd := validateCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	invalidCount, err := runValidate(cmd, []string{})
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if invalidCount != 1 {
+		t.Fatalf("expected 1 invalid spec, got: %d", invalidCount)
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "✗ PLAN.md") {
+		t.Fatalf("expected PLAN.md validation failure, got:\n%s", output)
+	}
+	if !strings.Contains(output, "invalid value") {
+		t.Fatalf("expected invalid status error, got:\n%s", output)
+	}
+}
+
+func TestValidateCommand_PrefersSpecOverInvalidSiblingPlan(t *testing.T) {
+	tmpDir := t.TempDir()
+	specsDir := filepath.Join(tmpDir, "specs")
+	if err := os.MkdirAll(specsDir, 0755); err != nil {
+		t.Fatalf("failed to create specs dir: %v", err)
+	}
+
+	specDir := filepath.Join(specsDir, "000-feature")
+	if err := os.MkdirAll(specDir, 0755); err != nil {
+		t.Fatalf("failed to create spec dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(specDir, "SPEC.md"), []byte("---\nstatus: approved\n---\n\n# Spec\n"), 0644); err != nil {
+		t.Fatalf("failed to write spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(specDir, "PLAN.md"), []byte("---\nstatus: nope\n---\n\n# Plan\n"), 0644); err != nil {
+		t.Fatalf("failed to write plan: %v", err)
+	}
+
+	originalWd, _ := os.Getwd()
+	t.Cleanup(func() { os.Chdir(originalWd) })
+	os.Chdir(tmpDir)
+
+	out := &bytes.Buffer{}
+	cmd := validateCmd
+	cmd.SetOut(out)
+	cmd.SetErr(out)
+
+	invalidCount, err := runValidate(cmd, []string{})
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if invalidCount != 0 {
+		t.Fatalf("expected sibling PLAN.md to be ignored, got %d invalid specs", invalidCount)
+	}
+
+	output := out.String()
+	if strings.Contains(output, "PLAN.md") || strings.Contains(output, "invalid value") {
+		t.Fatalf("did not expect sibling PLAN.md validation output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "1 of 1 specs valid") {
+		t.Fatalf("expected only SPEC.md to validate, got:\n%s", output)
+	}
+}
+
 func TestValidateCommand_ByNumber(t *testing.T) {
 	tmpDir := t.TempDir()
 	specsDir := filepath.Join(tmpDir, "specs")

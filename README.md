@@ -30,7 +30,7 @@ go install github.com/specture-system/specture@latest
 Install the skill using `npx skills add`:
 
 ```
-npx skills add specture-system/specture/skills/specture
+npx skills add https://github.com/specture-system/specture --skill specture
 ```
 
 ## Status

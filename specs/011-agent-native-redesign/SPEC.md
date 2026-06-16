@@ -15,7 +15,8 @@ We should:
 
 The CLI should:
 
-- Focus on querying and validating `SPEC.md` and `PLAN.md` files, with a small helper for creating new specs
+- Focus on querying and validating `SPEC.md` and `PLAN.md` files
+- Include a small helper for deterministically creating new specs
 
 The agent skill should:
 
@@ -71,8 +72,18 @@ The agent skill should:
   - `--title` is required.
   - `--parent` optionally selects the parent spec scope.
   - `--spec` / `-s` optionally selects the new spec reference instead of auto-allocating the next number.
+  - `--plan` creates `PLAN.md` instead of the default `SPEC.md`.
   - If `--spec` is omitted, Specture auto-allocates the next number in the selected scope.
-  - The command creates only the new `SPEC.md` file from the standard template.
+  - The command creates only one file from the matching standard template.
+- Chosen: Default `new` to `SPEC.md`, with explicit opt-in for `PLAN.md`.
+  - `specture new --title "Feature"` creates `SPEC.md`.
+  - `specture new --title "Feature" --plan` creates `PLAN.md`.
+  - `PLAN.md` creation should use the same directory numbering, `--spec` reference, and parent-scope rules as `SPEC.md` creation.
+  - A directory may contain both `SPEC.md` and `PLAN.md`.
+  - Creating `PLAN.md` in an existing spec directory is valid when the user wants to add an execution handoff to a durable spec.
+  - Creating `SPEC.md` in an existing plan directory is valid when the user wants to add a durable design record next to an existing plan.
+  - The command should still fail if the target file already exists.
+  - `PLAN.md` only needs spec frontmatter when it stands alone without `SPEC.md`; if both files exist, only `SPEC.md` is queried and validated.
 - Chosen: Remove interactive behavior from `new`.
   - No title prompt.
   - No confirmation prompt.

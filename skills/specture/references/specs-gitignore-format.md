@@ -7,6 +7,7 @@ Recommended content:
 ```gitignore
 *
 !*/
+!.gitignore
 !**/SPEC.md
 !**/PLAN.md
 !README.md
@@ -15,6 +16,7 @@ Recommended content:
 ## Why
 
 - `*` ignores arbitrary scratch files under `specs/` by default.
+- `!.gitignore` prevents the file from ignoring itself.
 - `!*/` allows Git to traverse nested spec directories.
 - `!**/SPEC.md` tracks durable design records.
 - `!**/PLAN.md` tracks agent execution handoffs.

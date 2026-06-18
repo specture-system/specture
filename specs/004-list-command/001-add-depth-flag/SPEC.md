@@ -6,15 +6,10 @@ creation_date: 2026-06-18
 
 # Add Depth Flag
 
-Describe the proposed change clearly. Include:
-
-- What is being proposed
-- Why it's needed
-- What problem it solves
-- High-level approach
-
-Keep the spec focused on design rather than step-by-step implementation progress.
+Add a `-d`/`--depth` flag to the list command that controls how deep into the spec hierarchy to recurse. Default value is 1, which preserves the current behavior (top-level specs only, or immediate children when `--parent` is set).
 
 ## Design Decisions
 
-Optional section to document the design process. For each major decision, include the options considered along with the pros and cons of each.
+- **`-d`/`--depth` defaults to 1.** This matches the current behavior where `list` shows only specs at the current level without recursing into children.
+- **`--depth all` means unlimited.** Most readable option for viewing all specs.
+- **`--depth 0` is accepted as an alias for `all`.** Zero would otherwise mean "show nothing", so it maps to unlimited as a convenience.

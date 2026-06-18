@@ -6,15 +6,12 @@ creation_date: 2026-06-18
 
 # Hide Completed Specs By Default
 
-Describe the proposed change clearly. Include:
+Filter out completed specs from `list` output by default, since they're noise for daily work. Users can see completed specs by passing `--status completed`.
 
-- What is being proposed
-- Why it's needed
-- What problem it solves
-- High-level approach
-
-Keep the spec focused on design rather than step-by-step implementation progress.
+Only applies when no `--status` flag is given — if the user explicitly filters by status, respect it literally.
 
 ## Design Decisions
 
-Optional section to document the design process. For each major decision, include the options considered along with the pros and cons of each.
+- **Reuse `--status completed` to opt in.** No new flag needed — the existing `--status` filter already lets users view completed specs explicitly.
+- **`--status all` shows all statuses.** Useful as a blanket override to see everything, including completed specs.
+- **Only applies in the default (no `--status`) case.** When `--status` is passed, the filter is used as-is without hiding completed.

@@ -12,6 +12,6 @@ Add a `-d`/`--depth` flag to the list command that controls how deep into the sp
 
 - **`-d`/`--depth` defaults to 1.** This matches the current behavior where `list` shows only specs at the current level without recursing into children.
   - Exception: if `--parent` is passed, `--depth` defaults to `all`. `--parent` will already filter the output significantly so we can use `--depth all` by default without overwhelming the user.
-
+- **depth is calculated relative to `--parent`** This allows a clean interaction between the two flags.
 - **`--depth all` means unlimited.** Most readable option for viewing all specs.
 - **`--depth 0` is accepted as an alias for `all`.** Zero would otherwise mean "show nothing", so it maps to unlimited as a convenience.

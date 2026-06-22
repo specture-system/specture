@@ -265,6 +265,13 @@ func ResolvePath(specsDir, arg string) (string, error) {
 // With no parent path, it returns top-level specs under specsDir.
 // With a parent path, it returns only immediate child specs of that parent.
 func FindSpecsInScope(specsDir, parentPath string) ([]*SpecInfo, error) {
+	return FindSpecsInScopeDepth(specsDir, parentPath, 1)
+}
+
+// FindSpecsInScopeDepth returns parsed specs within the given depth of the scope root.
+// depth 1 returns immediate children only (same as FindSpecsInScope).
+// depth <= 0 is treated as unlimited.
+func FindSpecsInScopeDepth(specsDir, parentPath string, depth int) ([]*SpecInfo, error) {
 	if parentPath != "" && !IsSpecFilePath(parentPath) {
 		return nil, fmt.Errorf("parent spec must be a SPEC.md or PLAN.md file: %s", parentPath)
 	}
@@ -274,19 +281,18 @@ func FindSpecsInScope(specsDir, parentPath string) ([]*SpecInfo, error) {
 		return nil, err
 	}
 
+	// Filter paths by scope membership and depth. d < 1 means the spec is
+	// either the scope root itself or not a descendant at all.
 	var scopedPaths []string
-	if parentPath == "" {
-		for _, path := range paths {
-			if IsTopLevelSpecPath(path, specsDir) {
-				scopedPaths = append(scopedPaths, path)
-			}
+	for _, path := range paths {
+		d := specDepth(path, specsDir, parentPath)
+		if d < 1 {
+			continue
 		}
-	} else {
-		for _, path := range paths {
-			if IsImmediateChildSpecPath(path, parentPath) {
-				scopedPaths = append(scopedPaths, path)
-			}
+		if depth > 0 && d > depth {
+			continue
 		}
+		scopedPaths = append(scopedPaths, path)
 	}
 
 	var specs []*SpecInfo
@@ -298,14 +304,68 @@ func FindSpecsInScope(specsDir, parentPath string) ([]*SpecInfo, error) {
 		specs = append(specs, info)
 	}
 
+	// Sort by FullRef, not Number. For nested specs, the local Number field
+	// (from the directory prefix like "001-") doesn't reflect hierarchical
+	// position — "4.1" has Number=1 but FullRef="4.1" and should sort
+	// between "4" and "5", not next to the top-level "1".
 	sort.Slice(specs, func(i, j int) bool {
-		if specs[i].Number == specs[j].Number {
-			return specs[i].FullRef < specs[j].FullRef
-		}
-		return specs[i].Number < specs[j].Number
+		return compareFullRefs(specs[i].FullRef, specs[j].FullRef)
 	})
 
 	return specs, nil
+}
+
+// compareFullRefs compares two dotted numeric refs segment-by-segment.
+// Needed because FullRef is a string like "4.1" or "10", and naive string
+// comparison would place "10" before "4". Each segment is compared as an
+// integer, so "4.1" < "4.2", "4" < "4.1", "10" > "4".
+func compareFullRefs(a, b string) bool {
+	aParts := strings.Split(a, ".")
+	bParts := strings.Split(b, ".")
+	for i := 0; i < len(aParts) && i < len(bParts); i++ {
+		aNum, _ := strconv.Atoi(aParts[i])
+		bNum, _ := strconv.Atoi(bParts[i])
+		if aNum != bNum {
+			return aNum < bNum
+		}
+	}
+	return len(aParts) < len(bParts)
+}
+
+// specDepth computes how many directory levels a spec is from the scope root.
+// Uses filepath.Rel to count directory separators between root and the spec's
+// parent directory. rel == "." means root == specDir (the scope root itself,
+// depth 0). rel starting with ".." means the spec is outside the scope tree.
+// Returns -1 for non-descendants.
+func specDepth(specPath, specsDir, parentPath string) int {
+	if !IsSpecFilePath(specPath) {
+		return -1
+	}
+
+	specDir := filepath.Dir(specPath)
+
+	var rootDir string
+	if parentPath != "" {
+		rootDir = filepath.Dir(parentPath)
+	} else {
+		rootDir = specsDir
+	}
+
+	rel, err := filepath.Rel(rootDir, specDir)
+	if err != nil {
+		return -1
+	}
+
+	if rel == "." {
+		return 0
+	}
+
+	parts := strings.Split(rel, string(filepath.Separator))
+	if parts[0] == ".." {
+		return -1
+	}
+
+	return len(parts)
 }
 
 // IsTopLevelSpecPath reports whether a spec path belongs directly under specsDir.

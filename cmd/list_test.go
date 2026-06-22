@@ -115,7 +115,7 @@ func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 		"003-status/SPEC.md": listInProgressSpec,
 	})
 
-	output, err := execList(t, tmpDir, nil)
+	output, err := execList(t, tmpDir, map[string]string{"status": "all"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -170,7 +170,7 @@ func TestListCommand_TextOutput_SortedByNumber(t *testing.T) {
 		"002-second/SPEC.md": listDraftSpec,
 	})
 
-	output, err := execList(t, tmpDir, nil)
+	output, err := execList(t, tmpDir, map[string]string{"status": "all"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -236,7 +236,7 @@ status: draft
 		t.Fatalf("failed to write nested spec: %v", err)
 	}
 
-	output, err := execList(t, tmpDir, nil)
+	output, err := execList(t, tmpDir, map[string]string{"status": "all"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -405,8 +405,8 @@ status: draft
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !strings.Contains(output, "Setup Command") {
-		t.Errorf("expected top-level spec in output, got:\n%s", output)
+	if strings.Contains(output, "Setup Command") {
+		t.Errorf("did not expect completed spec in default output, got:\n%s", output)
 	}
 	if !strings.Contains(output, "Root") {
 		t.Errorf("expected top-level nested-dir spec in output, got:\n%s", output)
@@ -447,7 +447,7 @@ status: draft
 		t.Fatalf("failed to write child spec: %v", err)
 	}
 
-	output, err := execList(t, tmpDir, map[string]string{"depth": "2"})
+	output, err := execList(t, tmpDir, map[string]string{"status": "all", "depth": "2"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -487,7 +487,7 @@ func TestListCommand_DepthAll_Unlimited(t *testing.T) {
 		}
 	}
 
-	output, err := execList(t, tmpDir, map[string]string{"depth": "all"})
+	output, err := execList(t, tmpDir, map[string]string{"status": "all", "depth": "all"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -661,7 +661,7 @@ func TestListCommand_DepthJSON(t *testing.T) {
 		t.Fatalf("failed to write child spec: %v", err)
 	}
 
-	output, err := execList(t, tmpDir, map[string]string{"depth": "all", "format": "json"})
+	output, err := execList(t, tmpDir, map[string]string{"status": "all", "depth": "all", "format": "json"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -722,7 +722,7 @@ func TestListCommand_JSONOutput_AllSpecs(t *testing.T) {
 		"003-status/SPEC.md": listInProgressSpec,
 	})
 
-	output, err := execList(t, tmpDir, map[string]string{"format": "json"})
+	output, err := execList(t, tmpDir, map[string]string{"status": "all", "format": "json"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -872,5 +872,111 @@ func TestListCommand_FilterJSON(t *testing.T) {
 	}
 	if result[0]["status"] != "in-progress" {
 		t.Errorf("expected status 'in-progress', got %v", result[0]["status"])
+	}
+}
+
+// ---- Default hide completed tests ----
+
+func TestListCommand_DefaultHidesCompleted_Text(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup/SPEC.md":  listCompletedSpec,
+		"002-draft/SPEC.md":  listDraftSpec,
+		"003-status/SPEC.md": listInProgressSpec,
+	})
+
+	output, err := execList(t, tmpDir, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	// 1 header + 2 data rows (completed hidden)
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 lines (header + 2 rows, completed hidden), got %d:\n%s", len(lines), output)
+	}
+
+	if strings.Contains(output, "completed") {
+		t.Errorf("default output should not contain completed specs, got:\n%s", output)
+	}
+
+	if !strings.Contains(lines[1], "draft") {
+		t.Errorf("expected draft spec in first data row, got: %s", lines[1])
+	}
+	if !strings.Contains(lines[2], "in-progress") {
+		t.Errorf("expected in-progress spec in second data row, got: %s", lines[2])
+	}
+}
+
+func TestListCommand_DefaultHidesCompleted_JSON(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup/SPEC.md":  listCompletedSpec,
+		"002-draft/SPEC.md":  listDraftSpec,
+		"003-status/SPEC.md": listInProgressSpec,
+	})
+
+	output, err := execList(t, tmpDir, map[string]string{"format": "json"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var result []map[string]any
+	if err := json.Unmarshal([]byte(output), &result); err != nil {
+		t.Fatalf("failed to parse JSON: %v\noutput: %s", err, output)
+	}
+
+	if len(result) != 2 {
+		t.Fatalf("expected 2 specs in default JSON (completed hidden), got %d", len(result))
+	}
+
+	// Verify neither result is completed
+	for _, spec := range result {
+		if spec["status"] == "completed" {
+			t.Errorf("default JSON output should not contain completed specs, got: %v", spec)
+		}
+	}
+}
+
+func TestListCommand_FilterStatusAll_Text(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup/SPEC.md":  listCompletedSpec,
+		"002-draft/SPEC.md":  listDraftSpec,
+		"003-status/SPEC.md": listInProgressSpec,
+	})
+
+	output, err := execList(t, tmpDir, map[string]string{"status": "all"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	// 1 header + 3 data rows (all statuses)
+	if len(lines) != 4 {
+		t.Fatalf("expected 4 lines (header + 3 rows, --status all), got %d:\n%s", len(lines), output)
+	}
+
+	if !strings.Contains(output, "completed") {
+		t.Errorf("--status all should include completed specs, got:\n%s", output)
+	}
+}
+
+func TestListCommand_FilterStatusAll_JSON(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup/SPEC.md":  listCompletedSpec,
+		"002-draft/SPEC.md":  listDraftSpec,
+		"003-status/SPEC.md": listInProgressSpec,
+	})
+
+	output, err := execList(t, tmpDir, map[string]string{"status": "all", "format": "json"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var result []map[string]any
+	if err := json.Unmarshal([]byte(output), &result); err != nil {
+		t.Fatalf("failed to parse JSON: %v\noutput: %s", err, output)
+	}
+
+	if len(result) != 3 {
+		t.Fatalf("expected 3 specs in --status all JSON, got %d", len(result))
 	}
 }

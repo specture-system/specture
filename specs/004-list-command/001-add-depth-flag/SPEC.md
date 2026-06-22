@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 author: Addison Emig
 creation_date: 2026-06-18
 ---

@@ -424,6 +424,168 @@ func TestFindSpecsInScope_PlanParent(t *testing.T) {
 	}
 }
 
+// ---------- FindSpecsInScopeDepth tests ----------
+
+func TestFindSpecsInScopeDepth_TopLevel(t *testing.T) {
+	dir := t.TempDir()
+
+	topLevel := map[string]string{
+		"001-first/SPEC.md":  "---\nnumber: 1\n---\n\n# First\n",
+		"002-second/SPEC.md": "---\nnumber: 2\n---\n\n# Second\n",
+	}
+	for name, content := range topLevel {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("failed to create directory for %s: %v", name, err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatalf("failed to create spec %s: %v", name, err)
+		}
+	}
+
+	parentDir := filepath.Join(dir, "0-parent")
+	childDir := filepath.Join(parentDir, "000-child")
+	grandchildDir := filepath.Join(childDir, "000-grandchild")
+	for _, d := range []string{parentDir, childDir, grandchildDir} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatalf("failed to create dir %s: %v", d, err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(parentDir, "SPEC.md"), []byte("---\nnumber: 0\n---\n\n# Parent\n"), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(childDir, "SPEC.md"), []byte("---\nnumber: 0\n---\n\n# Child\n"), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(grandchildDir, "SPEC.md"), []byte("---\nnumber: 0\n---\n\n# Grandchild\n"), 0o644); err != nil {
+		t.Fatalf("failed to write grandchild spec: %v", err)
+	}
+
+	tests := []struct {
+		name  string
+		depth int
+		count int
+		refs  []string
+	}{
+		{
+			name:  "depth 1 (default): top-level only",
+			depth: 1,
+			count: 3,
+			refs:  []string{"0", "1", "2"},
+		},
+		{
+			name:  "depth 2: top-level + children",
+			depth: 2,
+			count: 4,
+			refs:  []string{"0", "0.0", "1", "2"},
+		},
+		{
+			name:  "depth 3: top-level + children + grandchildren",
+			depth: 3,
+			count: 5,
+			refs:  []string{"0", "0.0", "0.0.0", "1", "2"},
+		},
+		{
+			name:  "depth 0: unlimited",
+			depth: 0,
+			count: 5,
+			refs:  []string{"0", "0.0", "0.0.0", "1", "2"},
+		},
+		{
+			name:  "depth -1: unlimited",
+			depth: -1,
+			count: 5,
+			refs:  []string{"0", "0.0", "0.0.0", "1", "2"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			specs, err := FindSpecsInScopeDepth(dir, "", tt.depth)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(specs) != tt.count {
+				t.Fatalf("expected %d specs, got %d", tt.count, len(specs))
+			}
+			for i, ref := range tt.refs {
+				if specs[i].FullRef != ref {
+					t.Errorf("spec %d: expected ref %q, got %q", i, ref, specs[i].FullRef)
+				}
+			}
+		})
+	}
+}
+
+func TestFindSpecsInScopeDepth_ParentRelative(t *testing.T) {
+	dir := t.TempDir()
+
+	parentDir := filepath.Join(dir, "0-parent")
+	childDir := filepath.Join(parentDir, "000-child")
+	grandchildDir := filepath.Join(childDir, "000-grandchild")
+	for _, d := range []string{parentDir, childDir, grandchildDir} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatalf("failed to create dir %s: %v", d, err)
+		}
+	}
+	parentPath := filepath.Join(parentDir, "SPEC.md")
+	childPath := filepath.Join(childDir, "SPEC.md")
+	grandchildPath := filepath.Join(grandchildDir, "SPEC.md")
+
+	if err := os.WriteFile(parentPath, []byte("---\nnumber: 0\n---\n\n# Parent\n"), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(childPath, []byte("---\nnumber: 0\n---\n\n# Child\n"), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+	if err := os.WriteFile(grandchildPath, []byte("---\nnumber: 0\n---\n\n# Grandchild\n"), 0o644); err != nil {
+		t.Fatalf("failed to write grandchild spec: %v", err)
+	}
+
+	tests := []struct {
+		name  string
+		depth int
+		count int
+		refs  []string
+	}{
+		{
+			name:  "depth 1 (default): immediate children only",
+			depth: 1,
+			count: 1,
+			refs:  []string{"0.0"},
+		},
+		{
+			name:  "depth 2: children + grandchildren",
+			depth: 2,
+			count: 2,
+			refs:  []string{"0.0", "0.0.0"},
+		},
+		{
+			name:  "depth 0: unlimited",
+			depth: 0,
+			count: 2,
+			refs:  []string{"0.0", "0.0.0"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			specs, err := FindSpecsInScopeDepth(dir, parentPath, tt.depth)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(specs) != tt.count {
+				t.Fatalf("expected %d specs, got %d", tt.count, len(specs))
+			}
+			for i, ref := range tt.refs {
+				if specs[i].FullRef != ref {
+					t.Errorf("spec %d: expected ref %q, got %q", i, ref, specs[i].FullRef)
+				}
+			}
+		})
+	}
+}
+
 // ---------- ParseAll tests ----------
 
 func TestParseAll_SortedByNumber(t *testing.T) {

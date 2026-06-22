@@ -41,6 +41,14 @@ func execList(t *testing.T, tmpDir string, flags map[string]string) (string, err
 		listCmd.Flags().Set("status", "")
 		listCmd.Flags().Set("format", "text")
 		listCmd.Flags().Set("parent", "")
+		// Reset the package variable directly instead of calling Set() so
+		// that the pflag Changed flag isn't marked true. parseDepth relies
+		// on Changed("depth") to detect whether the test explicitly set
+		// --depth, and a leaked Changed from cleanup would corrupt that.
+		listDepthFlag = "1"
+		if f := listCmd.Flags().Lookup("depth"); f != nil {
+			f.Changed = false
+		}
 	})
 	os.Chdir(tmpDir)
 
@@ -341,7 +349,7 @@ status: draft
 		t.Fatalf("failed to write grandchild spec: %v", err)
 	}
 
-	output, err := execList(t, tmpDir, map[string]string{"parent": "0"})
+	output, err := execList(t, tmpDir, map[string]string{"parent": "0", "depth": "1"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -355,6 +363,327 @@ status: draft
 	}
 	if strings.Contains(output, "Grandchild") {
 		t.Fatalf("did not expect grandchild in parent-scoped output, got:\n%s", output)
+	}
+}
+
+// ---- Depth tests ----
+
+func TestListCommand_DepthDefault_TopLevelOnly(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup/SPEC.md": listCompletedSpec,
+	})
+
+	parentDir := filepath.Join(tmpDir, "specs", "1-root")
+	childDir := filepath.Join(parentDir, "2-child")
+	if err := os.MkdirAll(childDir, 0o755); err != nil {
+		t.Fatalf("failed to create nested dir: %v", err)
+	}
+	parentSpec := `---
+number: 1
+status: approved
+---
+
+# Root
+`
+	childSpec := `---
+number: 2
+status: draft
+---
+
+# Child
+`
+	if err := os.WriteFile(filepath.Join(parentDir, "SPEC.md"), []byte(parentSpec), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(childDir, "SPEC.md"), []byte(childSpec), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+
+	// Default depth=1 should show only top-level specs
+	output, err := execList(t, tmpDir, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(output, "Setup Command") {
+		t.Errorf("expected top-level spec in output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "Root") {
+		t.Errorf("expected top-level nested-dir spec in output, got:\n%s", output)
+	}
+	if strings.Contains(output, "  Child") {
+		t.Errorf("did not expect nested spec at default depth, got:\n%s", output)
+	}
+}
+
+func TestListCommand_Depth2_IncludesNested(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup/SPEC.md": listCompletedSpec,
+	})
+
+	parentDir := filepath.Join(tmpDir, "specs", "1-root")
+	childDir := filepath.Join(parentDir, "2-child")
+	if err := os.MkdirAll(childDir, 0o755); err != nil {
+		t.Fatalf("failed to create nested dir: %v", err)
+	}
+	parentSpec := `---
+number: 1
+status: approved
+---
+
+# Root
+`
+	childSpec := `---
+number: 2
+status: draft
+---
+
+# Child
+`
+	if err := os.WriteFile(filepath.Join(parentDir, "SPEC.md"), []byte(parentSpec), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(childDir, "SPEC.md"), []byte(childSpec), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+
+	output, err := execList(t, tmpDir, map[string]string{"depth": "2"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(output, "Setup Command") {
+		t.Errorf("expected top-level spec in output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "Root") {
+		t.Errorf("expected parent spec in output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "Child") {
+		t.Errorf("expected nested child spec in output, got:\n%s", output)
+	}
+}
+
+func TestListCommand_DepthAll_Unlimited(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup/SPEC.md": listCompletedSpec,
+	})
+
+	parentDir := filepath.Join(tmpDir, "specs", "1-root")
+	childDir := filepath.Join(parentDir, "2-child")
+	grandchildDir := filepath.Join(childDir, "3-grandchild")
+	for _, d := range []string{parentDir, childDir, grandchildDir} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatalf("failed to create dir %s: %v", d, err)
+		}
+	}
+	specs := map[string]string{
+		filepath.Join(parentDir, "SPEC.md"):     "---\nnumber: 1\n---\n\n# Root\n",
+		filepath.Join(childDir, "SPEC.md"):      "---\nnumber: 2\n---\n\n# Child\n",
+		filepath.Join(grandchildDir, "SPEC.md"): "---\nnumber: 3\n---\n\n# Grandchild\n",
+	}
+	for path, content := range specs {
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatalf("failed to write spec %s: %v", path, err)
+		}
+	}
+
+	output, err := execList(t, tmpDir, map[string]string{"depth": "all"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(output, "Setup Command") {
+		t.Errorf("expected top-level spec in output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "Root") {
+		t.Errorf("expected Root in output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "Child") {
+		t.Errorf("expected Child in output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "Grandchild") {
+		t.Errorf("expected Grandchild in output, got:\n%s", output)
+	}
+}
+
+func TestListCommand_DepthWithParent_DefaultsToAll(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup/SPEC.md": listCompletedSpec,
+	})
+
+	parentDir := filepath.Join(tmpDir, "specs", "0-parent")
+	childDir := filepath.Join(parentDir, "000-child")
+	grandchildDir := filepath.Join(childDir, "000-grandchild")
+	for _, d := range []string{parentDir, childDir, grandchildDir} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatalf("failed to create dir %s: %v", d, err)
+		}
+	}
+	parentSpec := `---
+number: 0
+status: approved
+---
+
+# Parent
+`
+	childSpec := `---
+number: 0
+status: draft
+---
+
+# Child
+`
+	grandchildSpec := `---
+number: 0
+status: draft
+---
+
+# Grandchild
+`
+	if err := os.WriteFile(filepath.Join(parentDir, "SPEC.md"), []byte(parentSpec), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(childDir, "SPEC.md"), []byte(childSpec), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(grandchildDir, "SPEC.md"), []byte(grandchildSpec), 0o644); err != nil {
+		t.Fatalf("failed to write grandchild spec: %v", err)
+	}
+
+	// --parent without --depth defaults to all, showing both child and grandchild
+	output, err := execList(t, tmpDir, map[string]string{"parent": "0"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(output, "Child") {
+		t.Errorf("expected Child in output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "Grandchild") {
+		t.Errorf("expected Grandchild in output, got:\n%s", output)
+	}
+}
+
+func TestListCommand_DepthWithParent_ExplicitDepth(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup/SPEC.md": listCompletedSpec,
+	})
+
+	parentDir := filepath.Join(tmpDir, "specs", "0-parent")
+	childDir := filepath.Join(parentDir, "000-child")
+	grandchildDir := filepath.Join(childDir, "000-grandchild")
+	for _, d := range []string{parentDir, childDir, grandchildDir} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatalf("failed to create dir %s: %v", d, err)
+		}
+	}
+	parentSpec := `---
+number: 0
+status: approved
+---
+
+# Parent
+`
+	childSpec := `---
+number: 0
+status: draft
+---
+
+# Child
+`
+	grandchildSpec := `---
+number: 0
+status: draft
+---
+
+# Grandchild
+`
+	if err := os.WriteFile(filepath.Join(parentDir, "SPEC.md"), []byte(parentSpec), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(childDir, "SPEC.md"), []byte(childSpec), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(grandchildDir, "SPEC.md"), []byte(grandchildSpec), 0o644); err != nil {
+		t.Fatalf("failed to write grandchild spec: %v", err)
+	}
+
+	// --parent with --depth=1 shows only immediate children
+	output, err := execList(t, tmpDir, map[string]string{"parent": "0", "depth": "1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(output, "Child") {
+		t.Errorf("expected Child in output, got:\n%s", output)
+	}
+	if strings.Contains(output, "Grandchild") {
+		t.Errorf("did not expect Grandchild at depth 1, got:\n%s", output)
+	}
+}
+
+func TestListCommand_DepthInvalid(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup/SPEC.md": listCompletedSpec,
+	})
+
+	_, err := execList(t, tmpDir, map[string]string{"depth": "abc"})
+	if err == nil {
+		t.Fatal("expected error for invalid depth")
+	}
+	if !strings.Contains(err.Error(), "invalid depth") {
+		t.Errorf("expected 'invalid depth' in error, got: %v", err)
+	}
+
+	_, err = execList(t, tmpDir, map[string]string{"depth": "-1"})
+	if err == nil {
+		t.Fatal("expected error for negative depth")
+	}
+	if !strings.Contains(err.Error(), "invalid depth") {
+		t.Errorf("expected 'invalid depth' in error, got: %v", err)
+	}
+}
+
+func TestListCommand_DepthJSON(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-setup/SPEC.md": listCompletedSpec,
+	})
+
+	parentDir := filepath.Join(tmpDir, "specs", "1-root")
+	childDir := filepath.Join(parentDir, "2-child")
+	if err := os.MkdirAll(childDir, 0o755); err != nil {
+		t.Fatalf("failed to create nested dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(parentDir, "SPEC.md"), []byte("---\nnumber: 1\n---\n\n# Root\n"), 0o644); err != nil {
+		t.Fatalf("failed to write parent spec: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(childDir, "SPEC.md"), []byte("---\nnumber: 2\n---\n\n# Child\n"), 0o644); err != nil {
+		t.Fatalf("failed to write child spec: %v", err)
+	}
+
+	output, err := execList(t, tmpDir, map[string]string{"depth": "all", "format": "json"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var result []map[string]any
+	if err := json.Unmarshal([]byte(output), &result); err != nil {
+		t.Fatalf("failed to parse JSON: %v\noutput: %s", err, output)
+	}
+
+	if len(result) != 3 {
+		t.Fatalf("expected 3 specs, got %d", len(result))
+	}
+
+	refs := make([]string, len(result))
+	for i, r := range result {
+		refs[i] = r["ref"].(string)
+	}
+	expectedRefs := []string{"1", "1", "1.2"}
+	for i, ref := range expectedRefs {
+		if refs[i] != ref {
+			t.Errorf("spec %d: expected ref %q, got %q", i, ref, refs[i])
+		}
 	}
 }
 

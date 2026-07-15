@@ -3,6 +3,7 @@ package spec
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -386,8 +387,9 @@ func TestFindSpecsInScope(t *testing.T) {
 	if len(childSpecs) != 1 {
 		t.Fatalf("expected 1 child spec, got %d", len(childSpecs))
 	}
-	if childSpecs[0].Path != childPath {
-		t.Fatalf("expected child path %q, got %q", childPath, childSpecs[0].Path)
+	expectedChildRel, _ := filepath.Rel(filepath.Dir(dir), childPath)
+	if childSpecs[0].Path != expectedChildRel {
+		t.Fatalf("expected child path %q, got %q", expectedChildRel, childSpecs[0].Path)
 	}
 }
 
@@ -416,8 +418,9 @@ func TestFindSpecsInScope_PlanParent(t *testing.T) {
 	if len(specs) != 1 {
 		t.Fatalf("expected 1 child spec, got %d", len(specs))
 	}
-	if specs[0].Path != childPath {
-		t.Fatalf("expected child path %q, got %q", childPath, specs[0].Path)
+	expectedChildRel, _ := filepath.Rel(filepath.Dir(dir), childPath)
+	if specs[0].Path != expectedChildRel {
+		t.Fatalf("expected child path %q, got %q", expectedChildRel, specs[0].Path)
 	}
 	if specs[0].FullRef != "0.0" {
 		t.Fatalf("expected child full ref %q, got %q", "0.0", specs[0].FullRef)
@@ -628,6 +631,77 @@ func TestParseAll_NonexistentDir(t *testing.T) {
 	_, err := ParseAll("/nonexistent/directory/path")
 	if err == nil {
 		t.Error("expected error for nonexistent directory")
+	}
+}
+
+// ---------- Path normalization tests ----------
+
+func TestParseAll_RelativePaths(t *testing.T) {
+	dir := t.TempDir()
+
+	specs := map[string]string{
+		"001-first/SPEC.md":  "---\nnumber: 1\n---\n\n# First\n",
+		"002-second/SPEC.md": "---\nnumber: 2\n---\n\n# Second\n",
+	}
+	for name, content := range specs {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("failed to create directory for %s: %v", name, err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatalf("failed to create %s: %v", name, err)
+		}
+	}
+
+	result, err := ParseAll(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 2 {
+		t.Fatalf("expected 2 specs, got %d", len(result))
+	}
+
+	// Paths should be relative to the parent of specsDir (repo root), not absolute.
+	for _, s := range result {
+		if filepath.IsAbs(s.Path) {
+			t.Errorf("expected relative path, got absolute: %s", s.Path)
+		}
+		if !strings.HasPrefix(s.Path, filepath.Base(dir)+string(filepath.Separator)) {
+			t.Errorf("expected path to start with %q, got %q", filepath.Base(dir)+string(filepath.Separator), s.Path)
+		}
+	}
+}
+
+func TestFindSpecsInScopeDepth_RelativePaths(t *testing.T) {
+	dir := t.TempDir()
+
+	topLevel := map[string]string{
+		"001-first/SPEC.md": "---\nnumber: 1\n---\n\n# First\n",
+	}
+	for name, content := range topLevel {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("failed to create directory for %s: %v", name, err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatalf("failed to create %s: %v", name, err)
+		}
+	}
+
+	specs, err := FindSpecsInScopeDepth(dir, "", 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(specs) != 1 {
+		t.Fatalf("expected 1 spec, got %d", len(specs))
+	}
+
+	if filepath.IsAbs(specs[0].Path) {
+		t.Errorf("expected relative path, got absolute: %s", specs[0].Path)
+	}
+	// The relative path should start with the base name of the specs directory.
+	if !strings.HasPrefix(specs[0].Path, filepath.Base(dir)+string(filepath.Separator)) {
+		t.Errorf("expected path to start with %q, got %q", filepath.Base(dir)+string(filepath.Separator), specs[0].Path)
 	}
 }
 

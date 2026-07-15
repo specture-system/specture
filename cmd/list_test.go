@@ -157,8 +157,10 @@ func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 		if !strings.Contains(row, exp.name) {
 			t.Errorf("row %d: expected name %s, got: %s", i, exp.name, row)
 		}
-		if !strings.HasSuffix(strings.TrimRight(row, " "), exp.path) {
-			t.Errorf("row %d: expected path suffix %s, got: %s", i, exp.path, row)
+		// Path is the last column; verify it matches exactly (not just as a suffix).
+		trimmed := strings.TrimRight(row, " ")
+		if !strings.HasSuffix(trimmed, exp.path) || strings.Contains(row, tmpDir) {
+			t.Errorf("row %d: expected relative path %s, got: %s", i, exp.path, row)
 		}
 	}
 }
@@ -272,8 +274,8 @@ status: approved
 	if !strings.Contains(output, "Standalone Plan") {
 		t.Fatalf("expected standalone plan in output, got:\n%s", output)
 	}
-	if !strings.Contains(output, filepath.Join("specs", "001-plan", "PLAN.md")) {
-		t.Fatalf("expected PLAN.md path in output, got:\n%s", output)
+	if !strings.Contains(output, filepath.Join("specs", "001-plan", "PLAN.md")) || strings.Contains(output, tmpDir) {
+		t.Fatalf("expected relative PLAN.md path in output, got:\n%s", output)
 	}
 }
 
@@ -748,8 +750,8 @@ func TestListCommand_JSONOutput_AllSpecs(t *testing.T) {
 	if result[0]["status"] != "completed" {
 		t.Errorf("expected status 'completed', got %v", result[0]["status"])
 	}
-	if path, ok := result[0]["path"].(string); !ok || !strings.HasSuffix(path, filepath.Join("specs", "001-setup", "SPEC.md")) {
-		t.Errorf("expected first spec path to end with %q, got %v", filepath.Join("specs", "001-setup", "SPEC.md"), result[0]["path"])
+	if path, ok := result[0]["path"].(string); !ok || path != filepath.Join("specs", "001-setup", "SPEC.md") {
+		t.Errorf("expected first spec path %q, got %v", filepath.Join("specs", "001-setup", "SPEC.md"), result[0]["path"])
 	}
 
 	// Check second spec (002)
@@ -765,8 +767,8 @@ func TestListCommand_JSONOutput_AllSpecs(t *testing.T) {
 	if spec3["ref"] != "3" {
 		t.Errorf("expected ref '3', got %v", spec3["ref"])
 	}
-	if path, ok := spec3["path"].(string); !ok || !strings.HasSuffix(path, filepath.Join("specs", "003-status", "SPEC.md")) {
-		t.Errorf("expected path to end with %q, got %v", filepath.Join("specs", "003-status", "SPEC.md"), spec3["path"])
+	if path, ok := spec3["path"].(string); !ok || path != filepath.Join("specs", "003-status", "SPEC.md") {
+		t.Errorf("expected path %q, got %v", filepath.Join("specs", "003-status", "SPEC.md"), spec3["path"])
 	}
 }
 

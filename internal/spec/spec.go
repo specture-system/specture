@@ -103,6 +103,7 @@ func ParseAll(specsDir string) ([]*SpecInfo, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse %s: %w", p, err)
 		}
+		info.Path = relSpecPath(specsDir, info.Path)
 		specs = append(specs, info)
 	}
 
@@ -301,6 +302,7 @@ func FindSpecsInScopeDepth(specsDir, parentPath string, depth int) ([]*SpecInfo,
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse %s: %w", path, err)
 		}
+		info.Path = relSpecPath(specsDir, info.Path)
 		specs = append(specs, info)
 	}
 
@@ -426,6 +428,18 @@ func collectSpecPaths(dir string, paths *[]string) error {
 func IsSpecFilePath(path string) bool {
 	base := filepath.Base(path)
 	return base == specFilename || base == planFilename
+}
+
+// relSpecPath converts an absolute spec file path to a repo-root-relative
+// path (e.g., "specs/004-list-command/SPEC.md"). repoRoot is derived as the
+// parent of specsDir. If the conversion fails the original path is returned.
+func relSpecPath(specsDir, absPath string) string {
+	repoRoot := filepath.Dir(specsDir)
+	rel, err := filepath.Rel(repoRoot, absPath)
+	if err != nil {
+		return absPath
+	}
+	return rel
 }
 
 // findParentSpecPath returns the nearest supported spec file in the parent directory.

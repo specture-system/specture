@@ -42,10 +42,10 @@ func execList(t *testing.T, tmpDir string, flags map[string]string) (string, err
 		listCmd.Flags().Set("format", "text")
 		listCmd.Flags().Set("parent", "")
 		// Reset the package variable directly instead of calling Set() so
-		// that the pflag Changed flag isn't marked true. parseDepth relies
-		// on Changed("depth") to detect whether the test explicitly set
-		// --depth, and a leaked Changed from cleanup would corrupt that.
-		listDepthFlag = "1"
+		// that the pflag Changed flag isn't marked true. A leaked Changed
+		// from cleanup would corrupt subsequent tests that check whether
+		// --depth was explicitly set.
+		listDepthFlag = "all"
 		if f := listCmd.Flags().Lookup("depth"); f != nil {
 			f.Changed = false
 		}
@@ -236,7 +236,9 @@ status: draft
 		t.Fatalf("failed to write nested spec: %v", err)
 	}
 
-	output, err := execList(t, tmpDir, map[string]string{"status": "all"})
+	// Use --depth 1 to test that nested specs are excluded at shallow depth.
+	// The default is now "all", which would include nested specs.
+	output, err := execList(t, tmpDir, map[string]string{"status": "all", "depth": "1"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -368,7 +370,7 @@ status: draft
 
 // ---- Depth tests ----
 
-func TestListCommand_DepthDefault_TopLevelOnly(t *testing.T) {
+func TestListCommand_DepthDefault_ShowsAll(t *testing.T) {
 	tmpDir := setupListTest(t, map[string]string{
 		"001-setup/SPEC.md": listCompletedSpec,
 	})
@@ -399,7 +401,7 @@ status: draft
 		t.Fatalf("failed to write child spec: %v", err)
 	}
 
-	// Default depth=1 should show only top-level specs
+	// Default depth=all should show the entire spec tree
 	output, err := execList(t, tmpDir, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -411,8 +413,8 @@ status: draft
 	if !strings.Contains(output, "Root") {
 		t.Errorf("expected top-level nested-dir spec in output, got:\n%s", output)
 	}
-	if strings.Contains(output, "  Child") {
-		t.Errorf("did not expect nested spec at default depth, got:\n%s", output)
+	if !strings.Contains(output, "Child") {
+		t.Errorf("expected nested child spec at default depth (all), got:\n%s", output)
 	}
 }
 
@@ -550,7 +552,7 @@ status: draft
 		t.Fatalf("failed to write grandchild spec: %v", err)
 	}
 
-	// --parent without --depth defaults to all, showing both child and grandchild
+	// --parent without --depth uses the default (all), showing the full subtree
 	output, err := execList(t, tmpDir, map[string]string{"parent": "0"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

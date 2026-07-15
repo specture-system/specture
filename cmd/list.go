@@ -23,23 +23,23 @@ var listCmd = &cobra.Command{
 	Short:   "List specs (hides completed by default)",
 	Long: `List specs with optional filtering, parent scoping, and depth control.
 
-By default, shows a compact table with Ref, Name, Status, and Path for top-level specs.
+By default, shows a compact table with Ref, Name, Status, and Path for the full spec tree.
 Completed specs are hidden by default since they're noise for daily work.
 
 Use --status to filter by one or more statuses. Use --status all to show every
 status.
 
 Use --parent to scope to the children of a specific parent spec.
-Use --depth to control how deep to recurse into the spec hierarchy.
+Use --depth to control how deep to recurse into the spec hierarchy (default: all).
 Use --format json for machine-readable output with ref, name, status, and path.
 
 Examples:
-  specture list                          # List top-level specs (hides completed)
+  specture list                          # List all specs recursively (hides completed)
   specture list --status all             # List all specs including completed
   specture list --parent 1.4             # List specs under spec 1.4 (unlimited depth)
   specture list --parent 1.4 --depth 1   # List immediate children of spec 1.4
+  specture list --depth 1                # List top-level specs only
   specture list --depth 2                # List top-level and immediate children
-  specture list --depth all              # List all specs recursively
   specture list --status in-progress     # Filter by status
   specture list --status draft,approved  # Multiple statuses
   specture list -f json                  # JSON output`,
@@ -52,7 +52,7 @@ func init() {
 	listCmd.Flags().StringVarP(&listStatusFilter, "status", "s", "", `Filter by status (comma-separated for multiple); use "all" for all statuses`)
 	listCmd.Flags().StringVarP(&listFormatFlag, "format", "f", "text", "Output format: text or json")
 	listCmd.Flags().StringVarP(&listParentFlag, "parent", "p", "", "Parent spec reference to list children for")
-	listCmd.Flags().StringVarP(&listDepthFlag, "depth", "d", "1", "Recursion depth (1 = immediate scope, 0 or all = unlimited)")
+	listCmd.Flags().StringVarP(&listDepthFlag, "depth", "d", "all", "Recursion depth (1 = immediate scope, 0 or all = unlimited)")
 }
 
 func runList(cmd *cobra.Command, args []string) error {
@@ -77,7 +77,7 @@ func runList(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	depth, err := parseDepth(cmd, parentPath != "")
+	depth, err := parseDepth()
 	if err != nil {
 		return err
 	}
@@ -105,19 +105,9 @@ func runList(cmd *cobra.Command, args []string) error {
 }
 
 // parseDepth converts the --depth flag string to an int.
-// When --parent is set and --depth was not explicitly given, defaults to all.
 // "all" and "0" mean unlimited.
-func parseDepth(cmd *cobra.Command, hasParent bool) (int, error) {
+func parseDepth() (int, error) {
 	raw := listDepthFlag
-
-	// When --parent narrows the output significantly, --depth defaults to
-	// "all" so users see the full subtree without an extra flag. Without
-	// --parent, --depth defaults to 1 (top-level only).  Changed() detects
-	// whether the user supplied --depth; if not and --parent is set, we
-	// switch the effective default.
-	if hasParent && !cmd.Flags().Changed("depth") {
-		raw = "all"
-	}
 
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "all", "0":

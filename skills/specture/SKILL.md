@@ -47,8 +47,8 @@ specture new --title "Feature name"
 specture new --title "Child feature" --parent 11
 ```
 
-- `specture list -p/--parent` scopes output to a parent spec's children. Without an explicit depth, parent-scoped listing shows the full subtree.
-- `specture list -d/--depth` controls recursion depth. Use `-d 1` for immediate children, or `-d all` / `-d 0` for unlimited depth.
+- `specture list -p/--parent` scopes output to a parent spec's children.
+- `specture list -d/--depth` controls recursion depth. The default is `all` (full tree). Use `-d 1` for immediate children only, or `-d 0` / `-d all` for unlimited depth.
 - `specture new --parent` creates the next child spec under a parent. It does not have a short `-p` flag.
 
 When you need to discover Specture behavior or available flags, run `specture help` or command-specific `--help` first. Do not fall back to raw shell directory listing such as `ls specs/` until the CLI cannot answer the question.

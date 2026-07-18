@@ -6,7 +6,7 @@ Use this workflow when the user asks to split an existing spec into parent and c
 
 1. Read the complete source `SPEC.md` and treat its existing goals, requirements, alternatives, and decisions as established design context.
 2. Discuss the proposed child specs and their boundaries with the user. Do not infer boundaries from the source spec, and do not create children until the user explicitly confirms the split.
-3. Create each child with `specture new --title "Child feature" --parent <source-ref>`.
+3. Create each child with `specture new --title "Child feature" --parent <source-ref>`. Leave the child at the default `draft` status and do not copy `approved_by` or `approval_date` from the source. Each child is a new approval unit, even when its content came from an approved or later-stage source spec.
 4. Populate each child with the relevant established content from the source spec. Preserve its meaning; do not invent, expand, or redesign it.
 5. Convert the source into a parent spec using the parent structure in [spec-format.md](spec-format.md):
    - simple description

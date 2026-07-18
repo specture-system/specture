@@ -26,6 +26,16 @@ status: draft
 Valid statuses are `draft`, `approved`, `in-progress`, `completed`, and `rejected`.
 
 Optional fields include `author`, `assignee`, `creation_date`, `approved_by`, and `approval_date`.
+Use `assignee` for the complete name of the person who owns the spec:
+
+```yaml
+---
+status: approved
+assignee: Alice Example
+---
+```
+
+Each spec has at most one assignee. Leave the field out when the spec is unassigned. Preserve an existing assignment unless the user explicitly changes ownership.
 
 ## Body
 

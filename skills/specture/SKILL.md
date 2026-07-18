@@ -23,6 +23,7 @@ Use the CLI for deterministic file creation, querying, and validation. Use this 
 ## Core Rules
 
 - Use `specture list` to find specs; do not manually scan the specs tree when the CLI can answer the question.
+- Use `specture list --assignee "Name"` to find specs assigned to a person. Pass comma-separated complete names to query several assignees; matching is case-insensitive.
 - Read the relevant `SPEC.md` before implementation work.
 - Before implementing any spec, read `references/implementation-workflow.md`; do not treat a `PLAN.md` alone as sufficient workflow guidance.
 - During implementation, commit each focused, verified chunk before starting the next chunk.
@@ -45,6 +46,8 @@ specture list -p 1.4
 specture list -p 1.4 -d 1
 specture list -d all
 specture list --status draft,approved
+specture list --assignee "Alice Example"
+specture list --assignee "Alice Example,Bob Builder"
 specture list -f json
 specture validate
 specture validate --spec 11
@@ -54,6 +57,8 @@ specture new --title "Child feature" --parent 11
 
 - `specture list -p/--parent` scopes output to a parent spec's children.
 - `specture list -d/--depth` controls recursion depth. The default is `all` (full tree). Use `-d 1` for immediate children only, or `-d 0` / `-d all` for unlimited depth.
+- `specture list --assignee` matches complete assignee names case-insensitively after trimming whitespace; it does not perform partial-name matching. Combine it with `--status all` when completed assignments must be included.
+- Text output shows `ASSIGNEE` only when at least one displayed spec is assigned. JSON output always includes an `assignee` string, using `""` for unassigned specs.
 - `specture new --parent` creates the next child spec under a parent. It does not have a short `-p` flag.
 
 When you need to discover Specture behavior or available flags, run `specture help` or command-specific `--help` first. Do not fall back to raw shell directory listing such as `ls specs/` until the CLI cannot answer the question.

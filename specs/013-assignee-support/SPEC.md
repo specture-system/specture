@@ -1,5 +1,10 @@
 ---
 status: completed
+author: Addison Emig
+creation_date: 2026-07-18
+approved_by: Addison Emig
+approval_date: 2026-07-18
+assignee: Addison Emig
 ---
 
 # Assignee Support
@@ -14,15 +19,30 @@ Some projects already use an `assignee` frontmatter field to record who owns a s
 
 ## Design Decisions
 
-1. Add `--assignee` to `specture list` and its existing `ls` alias. It accepts one or more comma-separated names. Match when a spec's assignee case-insensitively equals any complete trimmed filter value. Do exact matches, not partial-name matches. This uses the existing `--status` comma-separated convention, but unlike the current status implementation assignee matching is explicitly case-insensitive.
-2. Add an `ASSIGNEE` column to text list output only when at least one spec in the final displayed result set has an assignee. Specs excluded by status, parent, depth, or assignee filters must not affect column presence.
-3. Always include an `assignee` string in every `specture list --format json` entry, using `""` for an unassigned spec.
-4. Do not add filtering for unassigned specs (no reserved value and no separate flag).
+### Assignee matching
 
-## Implementation Expectations Based on Current Architecture
+- Chosen: Let `--assignee` accept one or more comma-separated names and match a spec when its assignee case-insensitively equals any complete trimmed value.
+  - This mirrors the existing `--status` filter, tolerates capitalization and surrounding whitespace, and supports querying several assignees without partial-name false matches.
+- Considered: Match partial assignee names.
+  - Partial matching could return unintended assignees.
+- Considered: Accept only one assignee per invocation.
+  - A single-value filter would be less useful and inconsistent with `--status`.
 
-- Extend the list-facing spec frontmatter parser/model in `internal/spec` to expose assignee.
-- Integrate filtering into `cmd/list.go` after scope/depth/status selection and before either renderer.
-- Update CLI long help/examples and supported optional-frontmatter documentation (`skills/specture/references/spec-format.md`). Do not add a blank assignee to the new-spec template unless the design or existing conventions clearly require it.
-- Add focused parser and list tests covering exact case-insensitive matching, comma-separated/trimmed filters, no partial matches, conditional text column after all filters, and stable JSON output for assigned and unassigned specs. Preserve all existing output when no displayed spec has an assignee, except for the intentionally expanded JSON schema.
-- Use `just` recipes, never raw `go` commands. Run `just run validate --spec 13` after spec edits and the narrowest relevant test recipe(s), then broader validation if warranted.
+### Text list output
+
+- Chosen: Add an `ASSIGNEE` column to `specture list` and its `ls` alias only when at least one spec in the final displayed result set includes an assignee.
+  - This makes ownership visible while avoiding an empty column when assignees are not in use. Specs excluded by status, parent, depth, or assignee filters do not affect whether the column appears.
+- Considered: Always include the `ASSIGNEE` column.
+  - An always-present column would add noise to projects that do not use assignees.
+
+### JSON output
+
+- Chosen: Always include an `assignee` string in each entry from `specture list --format json`, using an empty string for an unassigned spec.
+  - A consistent field gives agents and other consumers a stable schema.
+- Considered: Omit `assignee` from entries for unassigned specs.
+  - A conditional field would require consumers to handle two output shapes.
+
+### Unassigned filtering
+
+- Chosen: Do not add a reserved assignee value or a separate flag for filtering unassigned specs.
+  - Filtering specifically for unassigned specs is outside this spec's scope.

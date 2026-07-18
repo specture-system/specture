@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-go_version="1.24.0"
-just_version="1.40.0"
+go_release="go1.26.5"
+just_version="1.56.0"
 
 case "$(uname -m)" in
   x86_64)
@@ -22,10 +22,10 @@ esac
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
-if ! command -v go >/dev/null || [[ "$(go version)" != *"go${go_version}"* ]]; then
-  echo "Installing Go ${go_version}..."
+if ! command -v go >/dev/null || [[ "$(go version | awk '{print $3}')" != "$go_release" ]]; then
+  echo "Installing ${go_release}..."
   curl --fail --location --silent --show-error \
-    "https://go.dev/dl/go${go_version}.linux-${go_arch}.tar.gz" \
+    "https://go.dev/dl/${go_release}.linux-${go_arch}.tar.gz" \
     --output "$tmp_dir/go.tar.gz"
   sudo rm -rf /usr/local/go
   sudo tar -C /usr/local -xzf "$tmp_dir/go.tar.gz"
@@ -33,7 +33,7 @@ if ! command -v go >/dev/null || [[ "$(go version)" != *"go${go_version}"* ]]; t
   sudo ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
 fi
 
-if ! command -v just >/dev/null; then
+if ! command -v just >/dev/null || [[ "$(just --version | awk '{print $2}')" != "$just_version" ]]; then
   echo "Installing just ${just_version}..."
   curl --fail --location --silent --show-error \
     "https://github.com/casey/just/releases/download/${just_version}/just-${just_version}-${just_arch}-unknown-linux-musl.tar.gz" \

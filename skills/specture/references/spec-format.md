@@ -25,7 +25,7 @@ status: draft
 
 Valid statuses are `draft`, `approved`, `in-progress`, `completed`, and `rejected`.
 
-Optional fields include `author`, `creation_date`, `approved_by`, and `approval_date`.
+Optional fields include `author`, `assignee`, `creation_date`, `approved_by`, and `approval_date`.
 
 ## Body
 

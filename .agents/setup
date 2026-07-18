@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+go_version="1.24.0"
+just_version="1.40.0"
+
+case "$(uname -m)" in
+  x86_64)
+    go_arch="amd64"
+    just_arch="x86_64"
+    ;;
+  aarch64|arm64)
+    go_arch="arm64"
+    just_arch="aarch64"
+    ;;
+  *)
+    echo "unsupported architecture: $(uname -m)" >&2
+    exit 1
+    ;;
+esac
+
+tmp_dir="$(mktemp -d)"
+trap 'rm -rf "$tmp_dir"' EXIT
+
+if ! command -v go >/dev/null || [[ "$(go version)" != *"go${go_version}"* ]]; then
+  echo "Installing Go ${go_version}..."
+  curl --fail --location --silent --show-error \
+    "https://go.dev/dl/go${go_version}.linux-${go_arch}.tar.gz" \
+    --output "$tmp_dir/go.tar.gz"
+  sudo rm -rf /usr/local/go
+  sudo tar -C /usr/local -xzf "$tmp_dir/go.tar.gz"
+  sudo ln -sf /usr/local/go/bin/go /usr/local/bin/go
+  sudo ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
+fi
+
+if ! command -v just >/dev/null; then
+  echo "Installing just ${just_version}..."
+  curl --fail --location --silent --show-error \
+    "https://github.com/casey/just/releases/download/${just_version}/just-${just_version}-${just_arch}-unknown-linux-musl.tar.gz" \
+    --output "$tmp_dir/just.tar.gz"
+  tar -C "$tmp_dir" -xzf "$tmp_dir/just.tar.gz" just
+  sudo install -m 0755 "$tmp_dir/just" /usr/local/bin/just
+fi
+
+echo "Downloading Go dependencies..."
+just deps

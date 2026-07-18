@@ -294,6 +294,22 @@ func TestResolvePath_DottedRef(t *testing.T) {
 	}
 }
 
+func TestResolveRef_RejectsFilePath(t *testing.T) {
+	dir := t.TempDir()
+	specPath := filepath.Join(dir, "001-feature", "SPEC.md")
+	if err := os.MkdirAll(filepath.Dir(specPath), 0o755); err != nil {
+		t.Fatalf("failed to create spec directory: %v", err)
+	}
+	if err := os.WriteFile(specPath, []byte("# Feature\n"), 0o644); err != nil {
+		t.Fatalf("failed to create spec file: %v", err)
+	}
+
+	_, err := ResolveRef(dir, specPath)
+	if err == nil || !strings.Contains(err.Error(), "invalid spec reference") {
+		t.Fatalf("expected path to be rejected as an invalid reference, got %v", err)
+	}
+}
+
 func TestResolvePath_PlanFallback(t *testing.T) {
 	dir := t.TempDir()
 

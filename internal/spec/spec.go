@@ -223,13 +223,6 @@ func FindAll(specsDir string) ([]string, error) {
 }
 
 // ResolvePath resolves a spec reference or spec file path to a file path.
-// Accepts:
-//   - Full path to a SPEC.md or PLAN.md file
-//   - Top-level references with or without leading zeros: 0, 00, 000
-//   - Hierarchical references: 1.4.3
-//
-// Lookups are performed against the parsed full reference derived from the
-// directory tree.
 func ResolvePath(specsDir, arg string) (string, error) {
 	// If it's already a path that exists, use it
 	if _, err := os.Stat(arg); err == nil {
@@ -239,7 +232,13 @@ func ResolvePath(specsDir, arg string) (string, error) {
 		return arg, nil
 	}
 
-	fullRef, err := normalizeSpecRef(arg)
+	return ResolveRef(specsDir, arg)
+}
+
+// ResolveRef resolves a top-level or hierarchical spec reference to its spec file.
+// References may contain padded numeric segments, such as 001.002.
+func ResolveRef(specsDir, ref string) (string, error) {
+	fullRef, err := normalizeSpecRef(ref)
 	if err != nil {
 		return "", err
 	}
@@ -259,7 +258,7 @@ func ResolvePath(specsDir, arg string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("spec not found: %s", arg)
+	return "", fmt.Errorf("spec not found: %s", ref)
 }
 
 // FindSpecsInScope returns parsed specs that belong directly under the requested scope.

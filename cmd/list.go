@@ -13,6 +13,7 @@ import (
 )
 
 var listStatusFilter string
+var listAssigneeFilter string
 var listFormatFlag string
 var listParentFlag string
 var listDepthFlag string
@@ -27,11 +28,13 @@ By default, shows a compact table with Ref, Name, Status, and Path for the full 
 Completed specs are hidden by default since they're noise for daily work.
 
 Use --status to filter by one or more statuses. Use --status all to show every
-status.
+status. Use --assignee to filter by one or more assignee names; matching is
+case-insensitive and requires the complete name.
 
 Use --parent to scope to the children of a specific parent spec.
 Use --depth to control how deep to recurse into the spec hierarchy (default: all).
-Use --format json for machine-readable output with ref, name, status, and path.
+Use --format json for machine-readable output with ref, name, status, assignee,
+and path.
 
 Examples:
   specture list                          # List all specs recursively (hides completed)
@@ -42,6 +45,8 @@ Examples:
   specture list --depth 2                # List top-level and immediate children
   specture list --status in-progress     # Filter by status
   specture list --status draft,approved  # Multiple statuses
+  specture list --assignee Alice         # Filter by assignee
+  specture list --assignee Alice,Bob     # Multiple assignees
   specture list -f json                  # JSON output`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runList(cmd, args)
@@ -50,6 +55,7 @@ Examples:
 
 func init() {
 	listCmd.Flags().StringVarP(&listStatusFilter, "status", "s", "", `Filter by status (comma-separated for multiple); use "all" for all statuses`)
+	listCmd.Flags().StringVar(&listAssigneeFilter, "assignee", "", "Filter by assignee (comma-separated for multiple, case-insensitive)")
 	listCmd.Flags().StringVarP(&listFormatFlag, "format", "f", "text", "Output format: text or json")
 	listCmd.Flags().StringVarP(&listParentFlag, "parent", "p", "", "Parent spec reference to list children for")
 	listCmd.Flags().StringVarP(&listDepthFlag, "depth", "d", "all", "Recursion depth (1 = immediate scope, 0 or all = unlimited)")
@@ -98,6 +104,11 @@ func runList(cmd *cobra.Command, args []string) error {
 		specs = filterByStatus(specs, "draft,approved,in-progress")
 	}
 
+	assigneeFilter, _ := cmd.Flags().GetString("assignee")
+	if assigneeFilter != "" {
+		specs = filterByAssignee(specs, assigneeFilter)
+	}
+
 	if format == "json" {
 		return formatListJSON(cmd, specs)
 	}
@@ -140,6 +151,27 @@ func filterByStatus(specs []*specpkg.SpecInfo, filter string) []*specpkg.SpecInf
 	return filtered
 }
 
+// filterByAssignee filters specs by one or more comma-separated assignee names.
+func filterByAssignee(specs []*specpkg.SpecInfo, filter string) []*specpkg.SpecInfo {
+	assignees := make([]string, 0)
+	for _, name := range strings.Split(filter, ",") {
+		if trimmed := strings.TrimSpace(name); trimmed != "" {
+			assignees = append(assignees, trimmed)
+		}
+	}
+
+	var filtered []*specpkg.SpecInfo
+	for _, spec := range specs {
+		for _, assignee := range assignees {
+			if strings.EqualFold(spec.Assignee, assignee) {
+				filtered = append(filtered, spec)
+				break
+			}
+		}
+	}
+	return filtered
+}
+
 // formatListText outputs specs as a human-readable table with aligned columns.
 func formatListText(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 	if len(specs) == 0 {
@@ -152,6 +184,8 @@ func formatListText(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 	statusWidth := len("STATUS")
 	nameWidth := len("NAME")
 	pathWidth := len("PATH")
+	assigneeWidth := len("ASSIGNEE")
+	showAssignee := false
 	for _, spec := range specs {
 		if len(spec.FullRef) > refWidth {
 			refWidth = len(spec.FullRef)
@@ -165,12 +199,25 @@ func formatListText(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 		if len(spec.Path) > pathWidth {
 			pathWidth = len(spec.Path)
 		}
+		if spec.Assignee != "" {
+			showAssignee = true
+			if len(spec.Assignee) > assigneeWidth {
+				assigneeWidth = len(spec.Assignee)
+			}
+		}
+	}
+
+	if showAssignee {
+		rowFmt := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%-%ds  %%-%ds\n", refWidth, nameWidth, statusWidth, assigneeWidth, pathWidth)
+		cmd.Printf(rowFmt, "REF", "NAME", "STATUS", "ASSIGNEE", "PATH")
+		for _, spec := range specs {
+			cmd.Printf(rowFmt, spec.FullRef, spec.Name, spec.Status, spec.Assignee, spec.Path)
+		}
+		return nil
 	}
 
 	rowFmt := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%-%ds\n", refWidth, nameWidth, statusWidth, pathWidth)
-	headerFmt := fmt.Sprintf("%%-%ds  %%-%ds  %%-%ds  %%-%ds\n", refWidth, nameWidth, statusWidth, pathWidth)
-
-	cmd.Printf(headerFmt, "REF", "NAME", "STATUS", "PATH")
+	cmd.Printf(rowFmt, "REF", "NAME", "STATUS", "PATH")
 
 	for _, spec := range specs {
 		cmd.Printf(rowFmt, spec.FullRef, spec.Name, spec.Status, spec.Path)
@@ -181,10 +228,11 @@ func formatListText(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 
 // listJSONOutput represents a single spec in the JSON array output.
 type listJSONOutput struct {
-	Ref    string `json:"ref"`
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	Path   string `json:"path"`
+	Ref      string `json:"ref"`
+	Name     string `json:"name"`
+	Status   string `json:"status"`
+	Assignee string `json:"assignee"`
+	Path     string `json:"path"`
 }
 
 // formatListJSON outputs specs as a JSON array with full metadata.
@@ -193,10 +241,11 @@ func formatListJSON(cmd *cobra.Command, specs []*specpkg.SpecInfo) error {
 
 	for _, spec := range specs {
 		output = append(output, listJSONOutput{
-			Ref:    spec.FullRef,
-			Name:   spec.Name,
-			Status: spec.Status,
-			Path:   spec.Path,
+			Ref:      spec.FullRef,
+			Name:     spec.Name,
+			Status:   spec.Status,
+			Assignee: spec.Assignee,
+			Path:     spec.Path,
 		})
 	}
 

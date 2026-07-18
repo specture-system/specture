@@ -39,6 +39,7 @@ func execList(t *testing.T, tmpDir string, flags map[string]string) (string, err
 	t.Cleanup(func() {
 		os.Chdir(originalWd)
 		listCmd.Flags().Set("status", "")
+		listCmd.Flags().Set("assignee", "")
 		listCmd.Flags().Set("format", "text")
 		listCmd.Flags().Set("parent", "")
 		// Reset the package variable directly instead of calling Set() so
@@ -106,6 +107,16 @@ status: approved
 Ready to go.
 `
 
+const listAssignedSpec = `---
+status: approved
+assignee: Alice Example
+---
+
+# Assigned Feature
+
+Owned work.
+`
+
 // ---- Text output tests ----
 
 func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
@@ -162,6 +173,32 @@ func TestListCommand_TextOutput_AllSpecs(t *testing.T) {
 		if !strings.HasSuffix(trimmed, exp.path) || strings.Contains(row, tmpDir) {
 			t.Errorf("row %d: expected relative path %s, got: %s", i, exp.path, row)
 		}
+	}
+}
+
+func TestListCommand_TextOutput_AssigneeColumnUsesDisplayedSpecs(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-assigned/SPEC.md": strings.Replace(listAssignedSpec, "status: approved", "status: completed", 1),
+		"002-draft/SPEC.md":    listDraftSpec,
+	})
+
+	output, err := execList(t, tmpDir, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.Contains(strings.SplitN(output, "\n", 2)[0], "ASSIGNEE") {
+		t.Fatalf("did not expect assignee column when the assigned spec is filtered out:\n%s", output)
+	}
+
+	output, err = execList(t, tmpDir, map[string]string{"status": "all"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(strings.SplitN(output, "\n", 2)[0], "ASSIGNEE") {
+		t.Fatalf("expected assignee column when an assigned spec is displayed:\n%s", output)
+	}
+	if !strings.Contains(output, "Alice Example") {
+		t.Fatalf("expected assignee in assigned spec row:\n%s", output)
 	}
 }
 
@@ -789,6 +826,37 @@ func TestListCommand_JSONOutput_EmptyList(t *testing.T) {
 	}
 }
 
+func TestListCommand_JSONOutput_AlwaysIncludesAssignee(t *testing.T) {
+	tmpDir := setupListTest(t, map[string]string{
+		"001-assigned/SPEC.md":   listAssignedSpec,
+		"002-unassigned/SPEC.md": listDraftSpec,
+	})
+
+	output, err := execList(t, tmpDir, map[string]string{"format": "json"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var result []map[string]any
+	if err := json.Unmarshal([]byte(output), &result); err != nil {
+		t.Fatalf("failed to parse JSON: %v\noutput: %s", err, output)
+	}
+	if len(result) != 2 {
+		t.Fatalf("expected 2 specs, got %d", len(result))
+	}
+	if got := result[0]["assignee"]; got != "Alice Example" {
+		t.Errorf("expected assigned spec assignee %q, got %v", "Alice Example", got)
+	}
+	if got, ok := result[1]["assignee"]; !ok || got != "" {
+		t.Errorf("expected unassigned spec assignee to be an empty string, got %v (present: %t)", got, ok)
+	}
+	for i, entry := range result {
+		if len(entry) != 5 {
+			t.Errorf("entry %d: expected stable five-field schema, got %v", i, entry)
+		}
+	}
+}
+
 // ---- Filter tests ----
 
 func TestListCommand_FilterSingleStatus(t *testing.T) {
@@ -836,6 +904,35 @@ func TestListCommand_FilterMultipleStatuses(t *testing.T) {
 	}
 	if !strings.Contains(lines[2], "in-progress") {
 		t.Errorf("expected in-progress in second data row, got: %s", lines[2])
+	}
+}
+
+func TestListCommand_FilterAssignees(t *testing.T) {
+	bobSpec := strings.ReplaceAll(listAssignedSpec, "Alice Example", "Bob Builder")
+	bobSpec = strings.ReplaceAll(bobSpec, "Assigned Feature", "Bob's Feature")
+	tmpDir := setupListTest(t, map[string]string{
+		"001-alice/SPEC.md":      listAssignedSpec,
+		"002-bob/SPEC.md":        bobSpec,
+		"003-unassigned/SPEC.md": listDraftSpec,
+	})
+
+	output, err := execList(t, tmpDir, map[string]string{"assignee": " alice example, BOB BUILDER "})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(output, "Assigned Feature") || !strings.Contains(output, "Bob's Feature") {
+		t.Fatalf("expected exact case-insensitive, comma-separated matches:\n%s", output)
+	}
+	if strings.Contains(output, "Future Feature") {
+		t.Fatalf("did not expect unassigned spec in filtered output:\n%s", output)
+	}
+
+	output, err = execList(t, tmpDir, map[string]string{"assignee": "Alice"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(output, "No specs found") {
+		t.Fatalf("partial assignee name should not match:\n%s", output)
 	}
 }
 

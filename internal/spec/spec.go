@@ -25,16 +25,18 @@ const (
 
 // SpecInfo represents a parsed spec file with all extracted metadata.
 type SpecInfo struct {
-	Path    string
-	Name    string
-	Number  int
-	FullRef string
-	Status  string
+	Path     string
+	Name     string
+	Number   int
+	FullRef  string
+	Status   string
+	Assignee string
 }
 
 // frontmatter represents the YAML frontmatter of a spec.
 type frontmatter struct {
-	Status string `yaml:"status"`
+	Status   string `yaml:"status"`
+	Assignee string `yaml:"assignee"`
 }
 
 // Parse reads and parses a spec file, returning a fully populated SpecInfo.
@@ -64,12 +66,12 @@ func ParseContent(path string, content []byte) (*SpecInfo, error) {
 	doc := md.Parser().Parse(reader, parser.WithContext(ctx))
 
 	// Extract frontmatter
-	var fmStatus string
+	var fm frontmatter
 	fmData := gmfrontmatter.Get(ctx)
 	if fmData != nil {
-		var fm frontmatter
-		if err := fmData.Decode(&fm); err == nil {
-			fmStatus = fm.Status
+		var decoded frontmatter
+		if err := fmData.Decode(&decoded); err == nil {
+			fm = decoded
 		}
 	}
 
@@ -85,7 +87,8 @@ func ParseContent(path string, content []byte) (*SpecInfo, error) {
 	info.Name = extractTitle(doc, content)
 
 	// Status comes from frontmatter only.
-	info.Status = inferStatus(fmStatus)
+	info.Status = inferStatus(fm.Status)
+	info.Assignee = fm.Assignee
 
 	return info, nil
 }

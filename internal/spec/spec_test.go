@@ -70,6 +70,37 @@ func TestStatusInference(t *testing.T) {
 	}
 }
 
+func TestParseContent_Assignee(t *testing.T) {
+	tests := []struct {
+		name         string
+		frontmatter  string
+		wantAssignee string
+	}{
+		{
+			name:         "assigned",
+			frontmatter:  "status: approved\nassignee: Alice Example",
+			wantAssignee: "Alice Example",
+		},
+		{
+			name:         "unassigned",
+			frontmatter:  "status: approved",
+			wantAssignee: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			info, err := ParseContent("001-test.md", buildSpec(tt.frontmatter, "Test", "Description."))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if info.Assignee != tt.wantAssignee {
+				t.Errorf("expected assignee %q, got %q", tt.wantAssignee, info.Assignee)
+			}
+		})
+	}
+}
+
 // ---------- FindAll tests ----------
 
 func TestFindAll_MatchesOnlySpecFiles(t *testing.T) {

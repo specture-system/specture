@@ -29,9 +29,37 @@ Optional fields include `author`, `creation_date`, `approved_by`, and `approval_
 
 ## Body
 
-Start with a single H1 title, followed by a description and any useful sections.
+Start with a single H1 title. Use the structure that matches the spec's role in the hierarchy.
 
-Recommended structure:
+### Parent Specs
+
+A spec with child specs is a concise index for that feature area. It contains a simple description, goals, and a `## Child Specs` section with repo-root-relative links to its direct children.
+
+Parent structure:
+
+```markdown
+# Parent Feature
+
+Describe the overall feature area simply.
+
+## Goals
+
+- Goal one
+- Goal two
+
+## Child Specs
+
+- [First Child](specs/012-parent/000-first-child/SPEC.md)
+- [Second Child](specs/012-parent/001-second-child/SPEC.md)
+```
+
+Do not put design decisions in a parent spec. Record each decision in the child spec that owns the relevant design. Update the child index when adding, renaming, moving, or removing a direct child.
+
+### Leaf Specs
+
+A spec without children contains the detailed design. Include only goals, requirements, and design decisions the user explicitly discussed or confirmed. Do not infer decisions merely to complete the recommended structure.
+
+Recommended leaf structure:
 
 ```markdown
 # Feature Name
@@ -56,6 +84,8 @@ Describe the problem, motivation, and high-level approach.
 ## Rules
 
 - Do not number markdown headings.
+- Keep parent specs limited to a simple description, goals, and linked child-spec index; keep design decisions in child specs.
+- Do not add goals, requirements, or design decisions that the user has not explicitly discussed or confirmed.
 - Keep task checklists and execution notes in `PLAN.md`, not `SPEC.md`.
 - Use repo-root-relative markdown links for cross-spec references, such as `[Status command](specs/002-status-command/SPEC.md)`.
 - Run `specture validate` after edits.

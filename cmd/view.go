@@ -14,11 +14,11 @@ import (
 var viewCmd = &cobra.Command{
 	Use:   "view <ref>",
 	Args:  cobra.ExactArgs(1),
-	Short: "Open a spec in your configured editor",
+	Short: "Open a spec in your configured editor or cat",
 	Long: `Resolve a spec reference and open its spec file in your preferred editor.
 
-VISUAL is used when set, with EDITOR as a fallback. Editor commands may include
-arguments, such as "code --wait" or "nvim -f".
+VISUAL is used when set, with EDITOR as a fallback. When neither is set, cat is
+used. Editor commands may include arguments, such as "code --wait" or "nvim -f".
 
 Examples:
   specture view 4
@@ -63,5 +63,5 @@ func configuredEditor() (string, error) {
 	if editor := os.Getenv("EDITOR"); strings.TrimSpace(editor) != "" {
 		return editor, nil
 	}
-	return "", fmt.Errorf("no editor configured: set VISUAL or EDITOR")
+	return "cat", nil
 }

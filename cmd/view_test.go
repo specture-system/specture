@@ -44,14 +44,17 @@ func TestViewCommand_FallsBackToEditor(t *testing.T) {
 	}
 }
 
-func TestViewCommand_RequiresConfiguredEditor(t *testing.T) {
+func TestViewCommand_DefaultsToCat(t *testing.T) {
 	repoDir, _ := setupViewTest(t)
 	t.Setenv("VISUAL", "")
 	t.Setenv("EDITOR", "")
 
-	_, err := execView(t, repoDir, "1", "")
-	if err == nil || !strings.Contains(err.Error(), "set VISUAL or EDITOR") {
-		t.Fatalf("expected actionable editor error, got %v", err)
+	output, err := execView(t, repoDir, "1", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if output != "# Parent\n" {
+		t.Fatalf("expected cat output %q, got %q", "# Parent\n", output)
 	}
 }
 

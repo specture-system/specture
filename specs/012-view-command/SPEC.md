@@ -19,7 +19,7 @@ the user's preferred interactive editor.
 
 - Let users select a top-level or nested spec by reference, such as `4.2`.
 - Open the selected spec's `SPEC.md` in the editor configured by `$VISUAL`, falling
-  back to `$EDITOR`.
+  back to `$EDITOR`, or use `cat` when neither variable is set.
 
 ## Design Decisions
 
@@ -59,11 +59,14 @@ the user's preferred interactive editor.
   - Detaching would prevent terminal editors from using the terminal correctly and
     override the behavior selected by the user's editor command.
 
-### Require a configured editor
+### Default to cat
 
-- Chosen: Return an actionable error when neither `$VISUAL` nor `$EDITOR` is set.
-  - Specture should not guess the user's preferred editor or assume a particular
-    editor is available on every supported platform.
+- Chosen: Use `cat` when neither `$VISUAL` nor `$EDITOR` is set.
+  - This makes `specture view` useful in non-interactive environments and does not
+    require an editor to be installed.
+- Considered: Return an actionable error when neither variable is set.
+  - Requiring configuration prevents users from quickly viewing a spec in a
+    terminal or script.
 - Considered: Fall back to a default editor such as `vi`.
-  - An implicit default could be surprising and may not exist in the user's
+  - An implicit editor could be surprising and may not exist in the user's
     environment.
